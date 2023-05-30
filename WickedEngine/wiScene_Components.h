@@ -13,6 +13,10 @@
 #include "wiArchive.h"
 #include "wiRectPacker.h"
 #include "wiUnorderedSet.h"
+#include "json.hpp"
+#include <unordered_map>
+#include <map>
+#include <bitset>
 
 namespace wi::scene
 {
@@ -1540,9 +1544,134 @@ namespace wi::scene
 			// Other:
 			Neutral,	// left for backwards compatibility.
 
+			//FACS expresion list
+			// Inner brow rasier.
+			AU1L,
+			AU1R,
+			//Outer brow rasier
+			AU2L,
+			AU2R,
+			//Brow lower
+			AU4L,
+			AU4R,
+			//Upper lid rasier
+			AU5L,
+			AU5R,
+			// Cheek rasier
+			AU6L,
+			AU6R,
+			//Lid tightener
+			AU7L,
+			AU7R,
+			// Lips toward each other
+			AU8L,
+			AU8R,
+			// Nose wrinkler
+			AU9L,
+			AU9R,
+			//Upper lip rasier
+			AU10L,
+			AU10R,
+			//Nasolabial deepener
+			AU11L,
+			AU11R,
+			// Lip corner puller
+			AU12L,
+			AU12R,
+			//Sharp lip puller
+			AU13L,
+			AU13R,
+			//Dimpler
+			AU14L,
+			AU14R,
+			//Lip corner depressor
+			AU15L,
+			AU15R,
+			//Lower lip depressor
+			AU16L,
+			AU16R,
+			//Chin rasier
+			AU17,
+			//Lip pucker
+			AU18L,
+			AU18R,
+			//Tongue show
+			AU19,
+			//Lip strecher
+			AU20L,
+			AU20R,
+			//Neck tightener
+			AU21L,
+			AU21R,
+			//Lip funneler
+			AU22L,
+			AU22R,
+			//Lip tightener
+			AU23L,
+			AU23R,
+			//Lip pressor
+			AU24L,
+			AU24R,
+			//Lips part
+			AU25L,
+			AU25R,
+			//Jaw drop
+			AU26,
+			//Mouth stretch
+			AU27L,
+			AU27R,
+			// Lip suck
+			AU28,
+			//Jaw Thrust
+			AU29L,
+			AU29R,
+			//Jaw sideways
+			AU30L,
+			AU30R,
+			//Jaw clencher
+			AU31,
+			// Lip bite
+			AU32,
+			//Cheek blow
+			AU33L,
+			AU33R,
+			//Cheek puff
+			AU34L,
+			AU34R,
+			//Tongue bulge
+			AU36,
+			//lip wipe
+			AU37L,
+			AU37R,
+			// Nostril dilator
+			AU38L,
+			AU38R,
+			//Nostril compressor
+			AU39L,
+			AU39R,
+			//Sniff
+			AU40,
+			//Lid droop
+			AU41L,
+			AU41R,
+			//Squint
+			AU44L,
+			AU44R,
+			//Wink
+			AU46L,
+			AU46R,
+			//Swallow
+			AU80,
+			//Chewing
+			AU81L,
+			AU81R,
+
 			Count,
 		};
-		int presets[size_t(Preset::Count)] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+		int presets[size_t(Preset::Count)] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+			-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+			-1, -1, -1 ,-1 , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+			-1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 
 		enum class Override
 		{
@@ -1601,6 +1730,57 @@ namespace wi::scene
 		};
 		wi::vector<Expression> expressions;
 
+		std::vector<ExpressionComponent::Preset>phAI = { ExpressionComponent::Preset::AU6L, ExpressionComponent::Preset::AU6R, ExpressionComponent::Preset::AU7L };
+		std::vector<ExpressionComponent::Preset>phO = { ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU10L };
+		std::vector<ExpressionComponent::Preset>phE = { ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU12L };
+		std::vector<ExpressionComponent::Preset>phU = { ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU15L };
+		std::vector<ExpressionComponent::Preset>phL = { ExpressionComponent::Preset::AU11L, ExpressionComponent::Preset::AU11R };
+		std::vector<ExpressionComponent::Preset>phWQ = { ExpressionComponent::Preset::AU23L, ExpressionComponent::Preset::AU23R, ExpressionComponent::Preset::AU25L };
+		std::vector<ExpressionComponent::Preset>phMBP = { ExpressionComponent::Preset::AU20L, ExpressionComponent::Preset::AU20R, ExpressionComponent::Preset::AU28, ExpressionComponent::Preset::AU31 };
+		std::vector<ExpressionComponent::Preset>phFV = { ExpressionComponent::Preset::AU15L, ExpressionComponent::Preset::AU15R, ExpressionComponent::Preset::AU20L };
+		std::vector<ExpressionComponent::Preset>phSIL = { ExpressionComponent::Preset::AU1L, ExpressionComponent::Preset::AU1R, ExpressionComponent::Preset::AU2L, ExpressionComponent::Preset::AU2R, ExpressionComponent::Preset::AU4L, ExpressionComponent::Preset::AU4R, ExpressionComponent::Preset::AU5L, ExpressionComponent::Preset::AU5R, ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU8L, ExpressionComponent::Preset::AU8R, ExpressionComponent::Preset::AU9L, ExpressionComponent::Preset::AU9R, ExpressionComponent::Preset::AU10L, ExpressionComponent::Preset::AU10R, ExpressionComponent::Preset::AU12L, ExpressionComponent::Preset::AU12R, ExpressionComponent::Preset::AU13L, ExpressionComponent::Preset::AU13R, ExpressionComponent::Preset::AU14L, ExpressionComponent::Preset::AU14R, ExpressionComponent::Preset::AU16L, ExpressionComponent::Preset::AU16R, ExpressionComponent::Preset::AU17, ExpressionComponent::Preset::AU18L, ExpressionComponent::Preset::AU18R, ExpressionComponent::Preset::AU20L, ExpressionComponent::Preset::AU20R, ExpressionComponent::Preset::AU21L, ExpressionComponent::Preset::AU21R, ExpressionComponent::Preset::AU22L, ExpressionComponent::Preset::AU22R, ExpressionComponent::Preset::AU23L, ExpressionComponent::Preset::AU23R, ExpressionComponent::Preset::AU24L, ExpressionComponent::Preset::AU24R, ExpressionComponent::Preset::AU25L, ExpressionComponent::Preset::AU25R, ExpressionComponent::Preset::AU26, ExpressionComponent::Preset::AU27L, ExpressionComponent::Preset::AU27R, ExpressionComponent::Preset::AU29L, ExpressionComponent::Preset::AU29R, ExpressionComponent::Preset::AU30L, ExpressionComponent::Preset::AU30R, ExpressionComponent::Preset::AU33L, ExpressionComponent::Preset::AU33R, ExpressionComponent::Preset::AU34L, ExpressionComponent::Preset::AU34R, ExpressionComponent::Preset::AU36, ExpressionComponent::Preset::AU37L, ExpressionComponent::Preset::AU37R, ExpressionComponent::Preset::AU38L, ExpressionComponent::Preset::AU38R, ExpressionComponent::Preset::AU39L, ExpressionComponent::Preset::AU39R, ExpressionComponent::Preset::AU40, ExpressionComponent::Preset::AU41L, ExpressionComponent::Preset::AU41R, ExpressionComponent::Preset::AU44L, ExpressionComponent::Preset::AU44R };
+		std::vector<ExpressionComponent::Preset>phCH = { ExpressionComponent::Preset::AU20L, ExpressionComponent::Preset::AU20R, ExpressionComponent::Preset::AU27L };
+		std::vector<ExpressionComponent::Preset>phAA = { ExpressionComponent::Preset::AU6L, ExpressionComponent::Preset::AU6R, ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R };
+		std::vector<ExpressionComponent::Preset>phAE = { ExpressionComponent::Preset::AU6L, ExpressionComponent::Preset::AU6R, ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU12L };
+		std::vector<ExpressionComponent::Preset>phAH = { ExpressionComponent::Preset::AU6L, ExpressionComponent::Preset::AU6R, ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU15L };
+		std::vector<ExpressionComponent::Preset>phAO = { ExpressionComponent::Preset::AU6L, ExpressionComponent::Preset::AU6R, ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU10L };
+		std::vector<ExpressionComponent::Preset>phAW = { ExpressionComponent::Preset::AU6L, ExpressionComponent::Preset::AU6R, ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phAY = { ExpressionComponent::Preset::AU6L, ExpressionComponent::Preset::AU6R, ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU25L };
+		std::vector<ExpressionComponent::Preset>phB = { ExpressionComponent::Preset::AU20L, ExpressionComponent::Preset::AU20R, ExpressionComponent::Preset::AU28 };
+		std::vector<ExpressionComponent::Preset>phD = { ExpressionComponent::Preset::AU20L, ExpressionComponent::Preset::AU20R, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phDH = { ExpressionComponent::Preset::AU20L, ExpressionComponent::Preset::AU20R, ExpressionComponent::Preset::AU22L };
+		std::vector<ExpressionComponent::Preset>phEH = { ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU12L };
+		std::vector<ExpressionComponent::Preset>phER = { ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU12L, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phEY = { ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU12L, ExpressionComponent::Preset::AU25L };
+		std::vector<ExpressionComponent::Preset>phF = { ExpressionComponent::Preset::AU15L, ExpressionComponent::Preset::AU15R, ExpressionComponent::Preset::AU20L };
+		std::vector<ExpressionComponent::Preset>phG = { ExpressionComponent::Preset::AU25L, ExpressionComponent::Preset::AU25R, ExpressionComponent::Preset::AU26 };
+		std::vector<ExpressionComponent::Preset>phHH = { ExpressionComponent::Preset::AU22L, ExpressionComponent::Preset::AU22R, ExpressionComponent::Preset::AU27L };
+		std::vector<ExpressionComponent::Preset>phIH = { ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU9L };
+		std::vector<ExpressionComponent::Preset>phIY = { ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU25L };
+		std::vector<ExpressionComponent::Preset>phJH = { ExpressionComponent::Preset::AU20L, ExpressionComponent::Preset::AU20R, ExpressionComponent::Preset::AU23L };
+		std::vector<ExpressionComponent::Preset>phK = { ExpressionComponent::Preset::AU16L, ExpressionComponent::Preset::AU16R, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phM = { ExpressionComponent::Preset::AU20L, ExpressionComponent::Preset::AU20R, ExpressionComponent::Preset::AU28 };
+		std::vector<ExpressionComponent::Preset>phN = { ExpressionComponent::Preset::AU10L, ExpressionComponent::Preset::AU10R, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phNG = { ExpressionComponent::Preset::AU10L, ExpressionComponent::Preset::AU10R, ExpressionComponent::Preset::AU26 };
+		std::vector<ExpressionComponent::Preset>phOW = { ExpressionComponent::Preset::AU10L, ExpressionComponent::Preset::AU10R, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phOY = { ExpressionComponent::Preset::AU10L, ExpressionComponent::Preset::AU10R, ExpressionComponent::Preset::AU25L };
+		std::vector<ExpressionComponent::Preset>phP = { ExpressionComponent::Preset::AU20L, ExpressionComponent::Preset::AU20R, ExpressionComponent::Preset::AU28 };
+		std::vector<ExpressionComponent::Preset>phR = { ExpressionComponent::Preset::AU11L, ExpressionComponent::Preset::AU11R, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phS = { ExpressionComponent::Preset::AU15L, ExpressionComponent::Preset::AU15R, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phSH = { ExpressionComponent::Preset::AU15L, ExpressionComponent::Preset::AU15R, ExpressionComponent::Preset::AU22L };
+		std::vector<ExpressionComponent::Preset>phT = { ExpressionComponent::Preset::AU14L, ExpressionComponent::Preset::AU14R, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phTH = { ExpressionComponent::Preset::AU14L, ExpressionComponent::Preset::AU14R, ExpressionComponent::Preset::AU22L };
+		std::vector<ExpressionComponent::Preset>phUH = { ExpressionComponent::Preset::AU7L, ExpressionComponent::Preset::AU7R, ExpressionComponent::Preset::AU15L };
+		std::vector<ExpressionComponent::Preset>phUW = { ExpressionComponent::Preset::AU18L, ExpressionComponent::Preset::AU18R, ExpressionComponent::Preset::AU25L, ExpressionComponent::Preset::AU25R,ExpressionComponent::Preset::AU26 };
+		std::vector<ExpressionComponent::Preset>phV = { ExpressionComponent::Preset::AU15L, ExpressionComponent::Preset::AU15R, ExpressionComponent::Preset::AU20L };
+		std::vector<ExpressionComponent::Preset>phW = { ExpressionComponent::Preset::AU23L,ExpressionComponent::Preset::AU23R, ExpressionComponent::Preset::AU25L };
+		std::vector<ExpressionComponent::Preset>phY = { ExpressionComponent::Preset::AU25L, ExpressionComponent::Preset::AU25R };
+		std::vector<ExpressionComponent::Preset>phZ = { ExpressionComponent::Preset::AU9L, ExpressionComponent::Preset::AU9R, ExpressionComponent::Preset::AU17 };
+		std::vector<ExpressionComponent::Preset>phZH = { ExpressionComponent::Preset::AU9L, ExpressionComponent::Preset::AU9R, ExpressionComponent::Preset::AU22L };
+
+
+		
+
 		constexpr bool IsForceTalkingEnabled() const { return _flags & FORCE_TALKING; }
 
 		// Force continuous talking animation, even if no voice is playing
@@ -1613,6 +1793,56 @@ namespace wi::scene
 		Preset talking_phoneme = Preset::Aa;
 		float talking_weight_prev_prev = 0;
 		float talking_weight_prev = 0;
+
+		std::map<std::string, std::vector<ExpressionComponent::Preset>> PhonemeToExpressionMap = {
+	   {"AI", phAI},
+	   {"O", phO},
+	   {"E", phE},
+	   {"U", phU},
+	   {"L", phL},
+	   {"WQ", phWQ},
+	   {"MBP", phMBP},
+	   {"FV", phFV},
+	   {"SIL", phSIL},
+	   {"CH", phCH},
+	   {"AA", phAA},
+	   {"IH", phIH},
+	   {"EH", phEH},
+	   {"UH", phUH},
+	   {"AO", phAO},
+	   {"AA", phAA},
+	   {"IY", phIY},
+	   {"UW", phUW},
+	   {"AH", phAH},
+	   {"AE", phAE},
+	   {"EY", phEY},
+	   {"AY", phAY},
+	   {"OW", phOW},
+	   {"AW", phAW},
+	   {"OY", phOY},
+	   {"ER", phER},
+	   {"B", phB},
+	   {"D", phD},
+	   {"DH", phDH},
+	   {"G", phG},
+	   {"HH", phHH},
+	   {"JH", phJH},
+	   {"K", phK},
+	   {"M", phM},
+	   {"N", phN},
+	   {"NG", phNG},
+	   {"P", phP},
+	   {"R", phR},
+	   {"S", phS},
+	   {"SH", phSH},
+	   {"T", phT},
+	   {"TH", phTH},
+	   {"V", phV},
+	   {"W", phW},
+	   {"Y", phY},
+	   {"Z", phZ},
+	   {"ZH", phZH},
+		};
 
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 	};
@@ -1716,4 +1946,235 @@ namespace wi::scene
 
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 	};
+
+
+	struct RelationshipComponent
+	{
+
+		enum DISPOSITION
+		{
+			D_ERR = 0,
+			D_LK = 1 << 0,
+			D_NU = 1 << 1,
+			D_HT = 1 << 2,
+			D_FR = 1 << 3,
+			D_LV = 1 << 4,
+		};
+
+		enum CLASS
+		{
+			C_NONE = 0,
+			C_PLAYER = 1 << 0,
+			C_BULLSEYE = 1 << 1,
+			C_GENRICENENMY = 1 << 2,
+			C_GENRICALLIE = 1 << 3,
+			C_FEMALE = 1 << 4,
+			C_MALE = 1 << 4,
+		};
+
+
+		struct relation
+		{
+			uint32_t _Diposition = D_NU;
+			uint32_t _class = C_NONE;
+			wi::ecs::Entity target = wi::ecs::INVALID_ENTITY; // relationship to a particular entity.
+			int priority; // higher this is the more important this is than others.
+		};
+
+
+		wi::vector<relation> Relationships;
+
+		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
+
+	struct ResponseComponent
+	{
+
+		enum FLAGS
+		{
+			EMPTY = 0,
+			PLAYING = 1 << 0,
+			PLAY_ONCE = 1 << 1,
+		};
+		uint32_t _flags = EMPTY;
+
+		enum CONDS
+		{
+			COND_NONE = 0,
+			COND_BURN,
+			COND_GOTO,
+			COND_SEE_ENEMY,
+			COND_SEE_HATE,
+			COND_SEE_FEAR,
+			COND_SEE_DISLIKE,
+			COND_HEAR_PLAYER,
+			COND_SMELLED_PLAYER,
+			COND_SMELLED,
+			COND_HEAR_DANGER,
+			COND_HEAR_COMBAT,
+			COND_HEAR_PHYSICS_DANGER,
+			COND_HEAR_NO_DANGER,
+			COND_RECIEVED_ORDERS,
+			COND_PLAYER_PUSHING,
+			COND_RESPOND_TO_QUESTION,
+			COND_SEE_LIKE,
+
+			LAST_COND_TOTAL,
+		};
+
+		inline static const wi::vector<std::string> CondsDefines[] = {
+			{"NONE"},
+			{"BURN"},
+			{"GOTO"},
+			{"SEE ENEMY"},
+			{"SEE HATE"},
+			{"SEE FEAR"},
+			{"SEE DISLIKE"},
+			{"HEAR PLAYER"},
+			{"SMELLED PLAYER"},
+			{"SMELLED"},
+			{"HEAR DANGER"},
+			{"HEAR COMBAT"},
+			{"HEAR PHYSICS DANGER"},
+			{"HEAR NO DANGER"},
+			{"RECIEVED ORDERS"},
+			{"PLAYER PUSHING"},
+			{"RESPOND TO QUESTION"},
+			{"SEE LIKE"},
+		};
+
+		// Define a bunch of Cond states
+		std::bitset<LAST_COND_TOTAL> isNone{ COND_NONE };
+		std::bitset<LAST_COND_TOTAL> isBurn{ COND_BURN };
+		std::bitset<LAST_COND_TOTAL> isGoto{ COND_GOTO };
+		std::bitset<LAST_COND_TOTAL> isSee_Enemy{ COND_SEE_ENEMY };
+		std::bitset<LAST_COND_TOTAL> isSee_Hate{ COND_SEE_HATE };
+		std::bitset<LAST_COND_TOTAL> isSee_Fear{ COND_SEE_FEAR };
+		std::bitset<LAST_COND_TOTAL> isSee_Dislike{ COND_SEE_DISLIKE };
+		std::bitset<LAST_COND_TOTAL> isHear_Player{ COND_HEAR_PLAYER };
+		std::bitset<LAST_COND_TOTAL> isSmelled_Player{ COND_SMELLED_PLAYER };
+		std::bitset<LAST_COND_TOTAL> isSmelled{ COND_SMELLED };
+		std::bitset<LAST_COND_TOTAL> isHear_Danger{ COND_HEAR_DANGER };
+		std::bitset<LAST_COND_TOTAL> isHear_Combat{ COND_HEAR_COMBAT };
+		std::bitset<LAST_COND_TOTAL> isHear_Physics_Danger{ COND_HEAR_PHYSICS_DANGER };
+		std::bitset<LAST_COND_TOTAL> isNo_Danger{ COND_HEAR_NO_DANGER };
+		std::bitset<LAST_COND_TOTAL> isRecieved_Orders{ COND_RECIEVED_ORDERS };
+		std::bitset<LAST_COND_TOTAL> isPlayer_Pushing{ COND_PLAYER_PUSHING };
+		std::bitset<LAST_COND_TOTAL> isRespond_to_Question{ COND_RESPOND_TO_QUESTION };
+		std::bitset<LAST_COND_TOTAL> isSee_Like{ COND_SEE_LIKE };
+
+		std::bitset<LAST_COND_TOTAL> _conditions;
+
+
+		std::string filename;
+
+		// Non-serialized attributes:
+		std::string script;
+		wi::Resource resource;
+
+		struct response
+		{
+			std::string name;
+			std::map<std::string, std::string> sequences;
+		};
+
+		std::unordered_map<std::bitset<LAST_COND_TOTAL>, response> responses;
+
+		nlohmann::json_abi_v3_11_2::json json;
+
+		bool isDirty;
+
+		inline void Play() { _flags |= PLAYING; }
+		inline void SetPlayOnce(bool once = true) { if (once) { _flags |= PLAY_ONCE; } else { _flags &= ~PLAY_ONCE; } }
+		inline void Stop() { _flags &= ~PLAYING; }
+
+		inline bool IsPlaying() const { return _flags & PLAYING; }
+		inline bool IsPlayingOnlyOnce() const { return _flags & PLAY_ONCE; }
+
+		void CreateFromFile(const std::string& filename);
+
+
+		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
+
+
+	struct InventoryComponent
+	{
+
+		enum FLAGS
+		{
+			EMPTY = 0,
+			PLAYING = 1 << 0,
+			PLAY_ONCE = 1 << 1,
+		};
+		uint32_t _flags = EMPTY;
+
+		enum TYPE
+		{
+			INV_NONE = 0,
+			INV_CONSUMABLE,
+			INV_WEAPON,
+			INV_SCROLL,
+			INV_ARMOR,
+			INV_STORAGE,
+			INV_SPELLBOOK,
+			INV_HOLYSYMBOL,
+			INV_QUEST,
+
+			LAST_TYPE_TOTAL,
+		};
+
+		enum SUBTYPE
+		{
+			SUB_NONE = 0,
+			SUB_SHIELD,
+			SUB_LONGSWORD,
+			SUB_DAGGER,
+			SUB_MACE,
+			SUB_STAFF,
+			SUB_WAND,
+			SUB_SPECIALITEM,
+
+			LAST_SUBTYPE_TOTAL,
+		};
+
+		struct ITEM
+		{
+			TYPE type;
+			SUBTYPE subtype;
+			std::string internalname;
+			std::string displayname;
+			std::string description;
+			float droprate;
+			wi::Resource resource;
+		};
+
+		std::map<int, ITEM> slot;
+
+		std::string filename;
+
+		// Non-serialized attributes:
+		std::string script;
+		//wi::Resource resource;
+
+		//void CreateFromFile(const std::string& filename);
+
+		//void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
+
+	/*struct WeaponComponent
+	{
+		enum WTYPE
+		{
+			NONE,
+			MELEE,
+			RANGED,
+		};
+		enum SUBWTYPE
+		{
+			NONE,
+			PROJECTILE,
+			RAY,
+		};
+	};*/
 }

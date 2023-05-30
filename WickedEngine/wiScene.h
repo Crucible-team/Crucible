@@ -56,6 +56,18 @@ namespace wi::scene
 		wi::ecs::ComponentManager<HumanoidComponent>& humanoids = componentLibrary.Register<HumanoidComponent>("wi::scene::Scene::humanoids");
 		wi::ecs::ComponentManager<wi::terrain::Terrain>& terrains = componentLibrary.Register<wi::terrain::Terrain>("wi::scene::Scene::terrains", 3); // version = 3
 
+
+
+
+
+		//Crucible specific
+		//wi::ecs::ComponentManager<FmodComponent>& fmod = componentLibrary.Register<FmodComponent>("wi::scene::Scene::fmod");
+		//wi::ecs::ComponentManager<IOComponent>& IOs = componentLibrary.Register<IOComponent>("wi::scene::Scene::ios");
+		wi::ecs::ComponentManager<ResponseComponent>& responses = componentLibrary.Register<ResponseComponent>("wi::scene::Scene::responses");
+		wi::ecs::ComponentManager<RelationshipComponent>& relationships = componentLibrary.Register<RelationshipComponent>("wi::scene::Scene::relationships");
+		//wi::ecs::ComponentManager<RTMaterialComponent>& rtmaterials = componentLibrary.Register<RTMaterialComponent>("wi::scene::Scene::rtmaterials");
+		//wi::ecs::ComponentManager<LipSyncComponent>& LipSyncs = componentLibrary.Register<LipSyncComponent>("wi::scene::Scene::lipsyncs");
+
 		// Non-serialized attributes:
 		float dt = 0;
 		enum FLAGS

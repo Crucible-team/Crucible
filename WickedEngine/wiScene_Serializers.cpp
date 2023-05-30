@@ -1808,9 +1808,20 @@ namespace wi::scene
 		if (archive.IsReadMode())
 		{
 			archive >> _flags;
-			for (int& index : presets)
+			if (archive.GetVersion() >= 150) //TODO: check what version we really want here turan's version and mine have diverage at this point and any files I saved previously with this wouldn't load.
 			{
-				archive >> index;
+				for (int& index : presets)
+				{
+					archive >> index;
+				}
+			}
+			//older scene's had less presets
+			if (archive.GetVersion() <= 89)
+			{
+				for (size_t i = 0; i < 18; i++)
+				{
+					archive >> presets[i];
+				}
 			}
 			archive >> blink_frequency;
 			archive >> blink_length;
@@ -1920,6 +1931,91 @@ namespace wi::scene
 			for (auto& entity : bones)
 			{
 				SerializeEntity(archive, entity, seri);
+			}
+		}
+	}
+
+	void RelationshipComponent::Serialize(wi::Archive& archive, EntitySerializer& seri)
+	{
+
+		if (archive.IsReadMode())
+		{
+			size_t relation_count = 0;
+			archive >> relation_count;
+			Relationships.resize(relation_count);
+			for (size_t relation_index = 0; relation_index < relation_count; ++relation_index)
+			{
+				relation& relation = Relationships[relation_index];
+
+				uint32_t value = 0;
+				archive >> value;
+				relation._Diposition = (DISPOSITION)value;
+
+				archive >> value;
+				relation._class = (CLASS)value;
+				SerializeEntity(archive, relation.target, seri);
+				archive >> value;
+				relation.priority = (int)value;
+			}
+		}
+		else
+		{
+			archive << Relationships.size();
+			for (size_t relation_index = 0; relation_index < Relationships.size(); ++relation_index)
+			{
+				relation& relation = Relationships[relation_index];
+
+				archive << (uint32_t)relation._Diposition;
+				archive << (uint32_t)relation._class;
+				SerializeEntity(archive, relation.target, seri);
+				archive << (int)relation.priority;
+			}
+		}
+	}
+
+	void ResponseComponent::Serialize(wi::Archive& archive, EntitySerializer& seri)
+	{
+		const std::string& dir = archive.GetSourceDirectory();
+
+		if (archive.IsReadMode())
+		{
+			archive >> _flags;
+
+			archive >> filename;
+
+			size_t test_count = 0;
+			archive >> test_count;
+			for (size_t test_index = 0; test_index < test_count; test_index++)
+			{
+				bool value;
+				archive >> value;
+				_conditions.set(test_index, value);
+			}
+
+			if (IsPlayingOnlyOnce())
+			{
+				Play();
+			}
+
+			wi::jobsystem::Execute(seri.ctx, [&](wi::jobsystem::JobArgs args) {
+				CreateFromFile(dir + filename);
+				});
+		}
+		else
+		{
+			std::string relative_filename = filename; // don't modify actual filename, because script_file() and script_dir() can rely on it
+			if (!dir.empty())
+			{
+				wi::helper::MakePathRelative(dir, relative_filename);
+			}
+
+			archive << _flags;
+			archive << relative_filename;
+
+			archive << _conditions.size();
+			for (size_t test_index = 0; test_index < _conditions.size(); test_index++)
+			{
+				archive << _conditions[test_index];
 			}
 		}
 	}
@@ -2205,6 +2301,8 @@ namespace wi::scene
 			}
 		}
 	}
+
+
 
 	Entity Scene::Entity_Serialize(
 		wi::Archive& archive,

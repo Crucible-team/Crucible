@@ -1668,4 +1668,167 @@ namespace wi::scene
 		script.clear(); // will be created on first Update()
 	}
 
+	void ResponseComponent::CreateFromFile(const std::string& filename)
+	{
+		this->filename = filename;
+		resource = wi::resourcemanager::Load(filename, wi::resourcemanager::Flags::IMPORT_RETAIN_FILEDATA);
+
+		json = nlohmann::json_abi_v3_11_2::json::parse(resource.GetScript());
+
+		isDirty = true;
+
+		for (auto it1 = json.begin(); it1 != json.end(); ++it1)
+		{
+			auto conds = json[it1.key()];
+
+
+			for (auto it = conds.begin(); it != conds.end(); ++it)
+			{
+
+				std::string keyvalue = "[" + it1.key() + "] " + "[ " + it.key() + ":" + it.value().dump() + "]";
+
+				auto sequence = json[it1.key()]["sequence"];
+
+				ResponseComponent::response element;
+				element.name = it1.key();
+
+				for (auto it2 = sequence.begin(); it2 != sequence.end(); ++it2)
+				{
+					element.sequences.emplace(it2.key(), it2.value().dump());
+				}
+
+
+
+				auto cond = LAST_COND_TOTAL;
+
+				std::bitset<LAST_COND_TOTAL>bit{};
+
+				auto conds2 = json[it1.key()]["conditions"];
+
+				for (auto it2 = conds2.begin(); it2 != conds2.end(); ++it2)
+				{
+
+					for (int i = 0; i < ResponseComponent::LAST_COND_TOTAL; i++)
+					{
+
+						std::string conddef = CondsDefines[i][0].c_str();
+						std::string cond_compare = it2.key().c_str();
+						if (conddef == cond_compare)
+						{
+
+							switch (i)
+							{
+							case COND_BURN:
+
+								bit |= isBurn;
+								break;
+							case COND_GOTO:
+
+								bit |= isGoto;
+								break;
+
+							case COND_SEE_ENEMY:
+
+								bit |= isSee_Enemy;
+								break;
+
+							case COND_SEE_HATE:
+
+								bit |= isSee_Hate;
+								break;
+
+							case COND_SEE_FEAR:
+								bit |= isSee_Fear;
+								break;
+
+							case COND_SEE_DISLIKE:
+
+								bit |= isSee_Dislike;
+								break;
+
+							case COND_HEAR_PLAYER:
+
+								bit |= isHear_Player;
+								break;
+
+							case COND_SMELLED_PLAYER:
+
+								bit |= isSmelled_Player;
+								break;
+
+							case  COND_SMELLED:
+
+								bit |= isSmelled;
+								break;
+
+							case  COND_HEAR_DANGER:
+
+								bit |= isHear_Danger;
+								break;
+
+							case  COND_HEAR_COMBAT:
+
+								bit |= isHear_Combat;
+								break;
+
+							case  COND_HEAR_PHYSICS_DANGER:
+
+								bit |= isHear_Physics_Danger;
+								break;
+
+							case  COND_HEAR_NO_DANGER:
+
+								bit |= isNo_Danger;
+								break;
+
+							case  COND_RECIEVED_ORDERS:
+
+								bit |= isRecieved_Orders;
+								break;
+
+							case  COND_PLAYER_PUSHING:
+
+								bit |= isPlayer_Pushing;
+								break;
+
+							case  COND_RESPOND_TO_QUESTION:
+
+								bit |= isRespond_to_Question;
+								break;
+
+							case  COND_SEE_LIKE:
+
+								bit |= isSee_Like;
+								break;
+
+							default:
+								break;
+							}
+
+						}
+
+					}
+
+				}
+
+
+				responses.emplace(bit, element);
+
+
+				//wi::backlog::post(keyvalue);
+
+
+				//std::cout << it.key() << ": " << it.value() << std::endl;
+
+				//wi::backlog::post(bit.to_string());
+			}
+
+
+			//script.json["conditions"]["delay"];
+		}
+
+		//json = nlohmann::json_abi_v3_11_2::json::parse(f);
+		script.clear(); // will be created on first Update()
+	}
+
 }
