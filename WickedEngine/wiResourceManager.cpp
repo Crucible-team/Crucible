@@ -316,12 +316,13 @@ namespace wi
 
 							if (has_flag(flags, Flags::IMPORT_BLOCK_COMPRESSED))
 							{
-								if (has_flag(flags, Flags::IMPORT_NORMALMAP))
-								{
-									fmt = basist::transcoder_texture_format::cTFBC5_RG;
-									desc.format = Format::BC5_UNORM;
-								}
-								else
+								// BC5 is disabled because it's missing green channel!
+								//if (has_flag(flags, Flags::IMPORT_NORMALMAP))
+								//{
+								//	fmt = basist::transcoder_texture_format::cTFBC5_RG;
+								//	desc.format = Format::BC5_UNORM;
+								//}
+								//else
 								{
 									if (transcoder.get_has_alpha())
 									{
@@ -443,23 +444,29 @@ namespace wi
 									desc.mip_levels = info.m_total_levels;
 									desc.misc_flags = ResourceMiscFlag::TYPED_FORMAT_CASTING;
 
-									basist::transcoder_texture_format fmt;
-									if (has_flag(flags, Flags::IMPORT_NORMALMAP))
+									basist::transcoder_texture_format fmt = basist::transcoder_texture_format::cTFRGBA32;
+									desc.format = Format::R8G8B8A8_UNORM;
+
+									if (has_flag(flags, Flags::IMPORT_BLOCK_COMPRESSED))
 									{
-										fmt = basist::transcoder_texture_format::cTFBC5_RG;
-										desc.format = Format::BC5_UNORM;
-									}
-									else
-									{
-										if (info.m_alpha_flag)
+										// BC5 is disabled because it's missing green channel!
+										//if (has_flag(flags, Flags::IMPORT_NORMALMAP))
+										//{
+										//	fmt = basist::transcoder_texture_format::cTFBC5_RG;
+										//	desc.format = Format::BC5_UNORM;
+										//}
+										//else
 										{
-											fmt = basist::transcoder_texture_format::cTFBC3_RGBA;
-											desc.format = Format::BC3_UNORM;
-										}
-										else
-										{
-											fmt = basist::transcoder_texture_format::cTFBC1_RGB;
-											desc.format = Format::BC1_UNORM;
+											if (info.m_alpha_flag)
+											{
+												fmt = basist::transcoder_texture_format::cTFBC3_RGBA;
+												desc.format = Format::BC3_UNORM;
+											}
+											else
+											{
+												fmt = basist::transcoder_texture_format::cTFBC1_RGB;
+												desc.format = Format::BC1_UNORM;
+											}
 										}
 									}
 									uint32_t bytes_per_block = basis_get_bytes_per_block_or_pixel(fmt);
@@ -842,7 +849,7 @@ namespace wi
 
 								if (has_flag(flags, Flags::IMPORT_BLOCK_COMPRESSED))
 								{
-									// Schedul additional task to compress into BC format and replace resource texture:
+									// Schedule additional task to compress into BC format and replace resource texture:
 									Texture uncompressed_src = std::move(resource->texture);
 									resource->srgb_subresource = -1;
 
@@ -856,21 +863,39 @@ namespace wi
 									}
 									else
 									{
-										// scan for transparency:
+										// scan for transparency and also check if fully grayscale:
 										//	By default we should use BC1 that doesn't have transparency, but half the size of BC3 that supports it
+										//	We only care about grayscale if it's not transparent
 										bool has_transparency = false;
+										bool is_grayscale = true;
 										for (int y = 0; (y < height) && !has_transparency; ++y)
 										{
 											for (int x = 0; (x < width) && !has_transparency; ++x)
 											{
-												wi::Color color = ((wi::Color*)rgba)[x + y * width];
-												has_transparency |= color.getA() < 255;
+												const wi::Color color = ((wi::Color*)rgba)[x + y * width];
+												const uint8_t r = color.getR();
+												const uint8_t g = color.getG();
+												const uint8_t b = color.getB();
+												const uint8_t a = color.getA();
+												has_transparency |= a < 255;
+												is_grayscale &= r == g;
+												is_grayscale &= r == b;
 											}
 										}
 										if (has_transparency)
 										{
 											// BC3 format supports transparency:
 											desc.format = Format::BC3_UNORM;
+										}
+										else if (is_grayscale)
+										{
+											// If not transparent and grayscale, than BC4 is better quality than BC1 with same memory footprint
+											desc.format = Format::BC4_UNORM;
+											// In this case, reswizzle the texture to be grayscale, not red. Red is ok for some maps, but not all, it's better to use all channels, for example grayscale specular map
+											desc.swizzle.r = ComponentSwizzle::R;
+											desc.swizzle.g = ComponentSwizzle::R;
+											desc.swizzle.b = ComponentSwizzle::R;
+											desc.swizzle.a = ComponentSwizzle::ONE;
 										}
 									}
 									desc.bind_flags = BindFlag::SHADER_RESOURCE;
