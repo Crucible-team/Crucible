@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "main_Windows.h"
+#include "gameconfig.h"
 
 #include <fstream>
 #include <thread>
@@ -21,7 +22,6 @@ extern "C"
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-Editor editor;
 bool window_recreating = false;
 
 
@@ -46,16 +46,74 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: Place code here.
+	//wi::renderer::SetShaderSourcePath("./Data/shaders/");
+
+	//wi::renderer::SetShaderPath("./shaders/");
 
 	BOOL dpi_success = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 	assert(dpi_success);
 
 	wi::arguments::Parse(lpCmdLine); // if you wish to use command line arguments, here is a good place to parse them...
+	
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_WICKEDENGINEGAME, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
+
+	
+
+	Gameconfig::getInstance().get_game_directories("./games");
+
+	
+
+
+	wi::Timer timer;
+	if (Gameconfig::getInstance().config.Open("gameconfig.ini"))
+	{
+		for (auto i = Gameconfig::getInstance().games.begin(); i != Gameconfig::getInstance().games.end(); i++)
+		{
+			std::string name = i->first;
+			std::string name2 = i->second;
+
+			Gameconfig::getInstance().config.GetSection(name.c_str()).Set("gamepath", name2);
+			Gameconfig::getInstance().config.Commit();
+			
+			
+			//wi::backlog::post("game: " + name + " , " + name2);
+		}
+		Gameconfig::getInstance().config.Commit();
+		Gameconfig::getInstance().currentgame = "default";
+
+		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shadersourcepath"))
+		{
+			wi::renderer::SetShaderSourcePath(Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shadersourcepath"));
+		}
+		else
+		{
+			wi::renderer::SetShaderSourcePath("./Data/shaders/");
+		}
+		
+		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shaderpath"))
+		{
+			wi::renderer::SetShaderPath(Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shaderpath"));
+		}
+		else
+		{
+			wi::renderer::SetShaderPath("./shaders/");
+		}
+	
+
+		wi::backlog::post("gameconfig.ini loaded in " + std::to_string(timer.elapsed_milliseconds()) + " milliseconds\n");
+	}
+	else
+	{
+		wi::renderer::SetShaderSourcePath("./Data/shaders/");
+		wi::renderer::SetShaderPath("./shaders/");
+	}
+
+	Gameconfig::getInstance().config.Commit();
+	
 
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))
@@ -75,7 +133,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		else {
 
-			editor.Run();
+			Editor::getInstance().Run();
 
 		}
 	}
@@ -120,16 +178,18 @@ BOOL CreateEditorWindow(int nCmdShow)
 	bool borderless = false;
 
 	wi::Timer timer;
-	if (editor.config.Open("config.ini"))
+	if (Editor::getInstance().config.Open("config.ini"))
 	{
-		if (editor.config.Has("width"))
+		if (Editor::getInstance().config.Has("width"))
 		{
-			width = editor.config.GetInt("width");
-			height = editor.config.GetInt("height");
+			width = Editor::getInstance().config.GetInt("width");
+			height = Editor::getInstance().config.GetInt("height");
 		}
-		fullscreen = editor.config.GetBool("fullscreen");
-		borderless = editor.config.GetBool("borderless");
-		editor.allow_hdr = editor.config.GetBool("allow_hdr");
+		fullscreen = Editor::getInstance().config.GetBool("fullscreen");
+		borderless = Editor::getInstance().config.GetBool("borderless");
+		Editor::getInstance().allow_hdr = Editor::getInstance().config.GetBool("allow_hdr");
+
+		
 
 		wi::backlog::post("config.ini loaded in " + std::to_string(timer.elapsed_milliseconds()) + " milliseconds\n");
 	}
@@ -183,7 +243,7 @@ BOOL CreateEditorWindow(int nCmdShow)
 		MoveWindow(hWnd, 0, 0, width, height, FALSE);
 	}
 
-	editor.SetWindow(hWnd);
+	Editor::getInstance().SetWindow(hWnd);
 
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
@@ -243,15 +303,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 	case WM_SIZE:
 	case WM_DPICHANGED:
-		if(editor.is_window_active && LOWORD(lParam) > 0 && HIWORD(lParam) > 0)
-			editor.SetWindow(hWnd);
+		if(Editor::getInstance().is_window_active && LOWORD(lParam) > 0 && HIWORD(lParam) > 0)
+			Editor::getInstance().SetWindow(hWnd);
 	    break;
 	case WM_HOTKEY:
 		switch (wParam)
 		{
 		case PRINTSCREEN:
 			{
-				wi::helper::screenshot(editor.swapChain);
+				wi::helper::screenshot(Editor::getInstance().swapChain);
 			}
 			break;
 		default:
@@ -290,10 +350,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_KILLFOCUS:
-		editor.is_window_active = false;
+		Editor::getInstance().is_window_active = false;
 		break;
 	case WM_SETFOCUS:
-		editor.is_window_active = true;
+		Editor::getInstance().is_window_active = true;
 		if (wi::shadercompiler::GetRegisteredShaderCount() > 0)
 		{
 			std::thread([] {
@@ -311,7 +371,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				}).detach();
 		}
-		editor.renderComponent.ReloadLanguage();
+		Editor::getInstance().renderComponent.ReloadLanguage();
 		break;
     case WM_PAINT:
         {

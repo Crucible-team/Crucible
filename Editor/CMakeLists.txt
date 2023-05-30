@@ -54,19 +54,19 @@ if (WIN32)
 		Editor.rc
 	)
 
-	add_executable(WickedEngineEditor WIN32 ${SOURCE_FILES})
+	add_executable(JOE WIN32 ${SOURCE_FILES})
 
-	target_link_libraries(WickedEngineEditor PUBLIC
+	target_link_libraries(JOE PUBLIC
 		WickedEngine_Windows
 		meshoptimizer
 	)
 
-	set_property(TARGET WickedEngineEditor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+	set_property(TARGET JOE PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 	set(LIB_DXCOMPILER "dxcompiler.dll")
 else ()
-	add_executable(WickedEngineEditor ${SOURCE_FILES})
+	add_executable(JOE ${SOURCE_FILES})
 
-	target_link_libraries(WickedEngineEditor PUBLIC
+	target_link_libraries(JOE PUBLIC
 		WickedEngine
 		meshoptimizer
 	)
@@ -76,7 +76,7 @@ endif ()
 
 # Copy content to build folder:
 add_custom_command(
-	TARGET WickedEngineEditor POST_BUILD
+	TARGET JOE POST_BUILD
 	# Copy shader compiler library in the source folder
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/WickedEngine/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/terrain ${CMAKE_CURRENT_BINARY_DIR}/terrain
@@ -94,8 +94,8 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/wicked-engine.sh"
 		DESTINATION ${CMAKE_INSTALL_BINDIR}
 		PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 
-# WickedEngineEditor executable
-install(TARGETS WickedEngineEditor RUNTIME DESTINATION ${EDITOR_INSTALL_FOLDER})
+# JOE executable
+install(TARGETS JOE RUNTIME DESTINATION ${EDITOR_INSTALL_FOLDER})
 
 # install editor assets
 # mandatory terrain folder
@@ -117,9 +117,9 @@ if (UNIX)
 			RENAME wicked.png
 			DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/")
 
-	configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Linux/Installer/Distribution/WickedEngineEditor.template.desktop"
-			"${CMAKE_CURRENT_BINARY_DIR}/WickedEngineEditor.desktop")
+	configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Linux/Installer/Distribution/JOE.template.desktop"
+			"${CMAKE_CURRENT_BINARY_DIR}/JOE.desktop")
 
-	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/WickedEngineEditor.desktop"
+	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/JOE.desktop"
 			DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications/")
 endif()

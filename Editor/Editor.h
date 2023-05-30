@@ -5,6 +5,7 @@
 #include "ComponentsWindow.h"
 #include "ProfilerWindow.h"
 #include "IconDefinitions.h"
+#include <map>
 
 class EditorLoadingScreen : public wi::LoadingScreen
 {
@@ -95,6 +96,8 @@ public:
 
 	void UpdateTopMenuAnimation();
 
+	
+
 	wi::Archive clipboard;
 
 	enum HistoryOperationType
@@ -167,16 +170,27 @@ public:
 class Editor : public wi::Application
 {
 public:
+
+	static Editor& getInstance() {
+		static Editor instance;  // This instance is created lazily and only once
+		return instance;
+	}
 	EditorComponent renderComponent;
 	EditorLoadingScreen loader;
 	wi::config::File config;
+	wi::config::File gameconfig;
 
 	void Initialize() override;
+
+
 
 	~Editor()
 	{
 		config.Commit();
 	}
+
+private:
+	Editor() {}  // Private constructor to prevent external instantiation
 };
 
 // Additional localizations that are outside the GUI can be defined here:

@@ -22,6 +22,10 @@ extern bool window_recreating;
 
 void Editor::Initialize()
 {
+	
+
+
+
 	if (config.Has("font"))
 	{
 		// Replace default font from config:
