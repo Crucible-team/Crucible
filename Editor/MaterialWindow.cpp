@@ -211,6 +211,29 @@ void MaterialWindow::Create(EditorComponent* _editor)
 	shadingRateComboBox.SetMaxVisibleItemCount(4);
 	AddWidget(&shadingRateComboBox);
 
+	surfacepropComboBox.Create("Surface Property: ");
+	surfacepropComboBox.SetPos(XMFLOAT2(x, y += step));
+	surfacepropComboBox.SetSize(XMFLOAT2(wid, hei));
+	surfacepropComboBox.OnSelect([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr && args.iValue >= 0)
+		{
+			material->surfacetype = (wi::enums::SURFACEPROP)args.iValue;
+		}
+
+		//editor->optionsWnd.RefreshMaterialPicker();
+		});
+
+
+	for (size_t i = 0; i < wi::enums::SURFACEPROP::SURFACEPROP_COUNT; i++)
+	{
+		std::string name = MaterialComponent::surfaceTypeDefines[i][0];
+		surfacepropComboBox.AddItem(name, (uint64_t)i);
+	}
+	surfacepropComboBox.SetEnabled(false);
+	surfacepropComboBox.SetTooltip("Set the surface type of the material.");
+
+	AddWidget(&surfacepropComboBox);
 
 
 
@@ -807,6 +830,7 @@ void MaterialWindow::SetEntity(Entity entity)
 		texMulSliderY.SetValue(material->texMulAdd.y);
 		alphaRefSlider.SetValue(material->alphaRef);
 		blendModeComboBox.SetSelected((int)material->userBlendMode);
+		surfacepropComboBox.SetSelected((int)material->surfacetype);
 
 		shaderTypeComboBox.ClearItems();
 		shaderTypeComboBox.AddItem("PBR", MaterialComponent::SHADERTYPE_PBR);
@@ -959,6 +983,7 @@ void MaterialWindow::ResizeLayout()
 	add_right(outlineCheckBox);
 	add_right(preferUncompressedCheckBox);
 	add(shaderTypeComboBox);
+	add(surfacepropComboBox);
 	add(blendModeComboBox);
 	add(shadingRateComboBox);
 	add(alphaRefSlider);

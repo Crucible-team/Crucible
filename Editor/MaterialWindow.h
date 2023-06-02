@@ -24,6 +24,7 @@ public:
 	wi::gui::ComboBox shaderTypeComboBox;
 	wi::gui::ComboBox blendModeComboBox;
 	wi::gui::ComboBox shadingRateComboBox;
+	wi::gui::ComboBox surfacepropComboBox;
 	wi::gui::Slider normalMapSlider;
 	wi::gui::Slider roughnessSlider;
 	wi::gui::Slider reflectanceSlider;
