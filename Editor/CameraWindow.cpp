@@ -274,6 +274,21 @@ void CameraWindow::Create(EditorComponent* _editor)
 	followSlider.SetPos(XMFLOAT2(x, y += step));
 	AddWidget(&followSlider);
 
+	isFlycamAltCheckBox.Create("FPS Alt Key: ");
+	isFlycamAltCheckBox.SetTooltip("Use middle mouse button instead of Z toggle.");
+	isFlycamAltCheckBox.SetSize(XMFLOAT2(hei, hei));
+	isFlycamAltCheckBox.SetPos(XMFLOAT2(x, y += step));
+	isFlycamAltCheckBox.SetCheck(false);
+	if (editor->main->config.GetSection("camera").Has("fpsalt"))
+	{
+		fpsCheckBox.SetCheck(editor->main->config.GetSection("camera").GetBool("fpsalt"));
+	}
+	isFlycamAltCheckBox.OnClick([&](wi::gui::EventArgs args) {
+		editor->main->config.GetSection("camera").Set("fpsalt", args.bValue);
+		editor->main->config.Commit();
+		});
+	AddWidget(&isFlycamAltCheckBox);
+
 
 	SetEntity(INVALID_ENTITY);
 
@@ -372,6 +387,7 @@ void CameraWindow::ResizeLayout()
 	add(rotationspeedSlider);
 	add(accelerationSlider);
 	add_right(fpsCheckBox);
+	add_right(isFlycamAltCheckBox);
 
 	y += 20;
 

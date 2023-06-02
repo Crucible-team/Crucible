@@ -424,6 +424,39 @@ void HumanoidWindow::RefreshBoneList()
 			case wi::scene::HumanoidComponent::HumanoidBone::RightLittleDistal:
 				item.name += "RightLittleDistal";
 				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::Spine3:
+				item.name += "Spine3";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::Spine4:
+				item.name += "Spine4";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::LeftTrapezius:
+				item.name += "LeftTrapezius";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::RightTrapezius:
+				item.name += "RightTrapezius";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::LeftBicep:
+				item.name += "LeftBicep";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::RightBicep:
+				item.name += "RightBicep";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::LeftUlna:
+				item.name += "LeftUlna";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::RightUlna:
+				item.name += "RightUlna";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::LeftWrist:
+				item.name += "LeftWrist";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::RightWrist:
+				item.name += "RightWrist";
+				break;
+			case wi::scene::HumanoidComponent::HumanoidBone::Forward:
+				item.name += "Forward";
+				break;
 			default:
 				assert(0); // unhandled type
 				break;

@@ -692,6 +692,13 @@ void EditorComponent::Update(float dt)
 				renderPath->GetGUI().SetVisible(true);
 			}
 			GetGUI().SetVisible(true);
+
+			//If we are in fps toggle mode disable it if we hit escape to get out of cinema mode
+			if (fpscamToggle)
+			{
+				fpscamToggle = false;
+			}
+
 		}
 		else
 		{
@@ -716,7 +723,7 @@ void EditorComponent::Update(float dt)
 
 		float xDif = 0, yDif = 0;
 
-		if (wi::input::Down(wi::input::MOUSE_BUTTON_MIDDLE))
+		if ((wi::input::Down(wi::input::MOUSE_BUTTON_MIDDLE) && !optionsWnd.cameraWnd.fpsCheckBox.GetCheck()))
 		{
 			camControlStart = false;
 #if 0
@@ -732,12 +739,66 @@ void EditorComponent::Update(float dt)
 			yDif = 0.1f * yDif * (1.0f / 60.0f);
 			wi::input::SetPointer(originalMouse);
 			wi::input::HidePointer(true);
-	}
+		}
 		else
 		{
 			camControlStart = true;
 			wi::input::HidePointer(false);
 		}
+
+		if ((wi::input::Down(wi::input::MOUSE_BUTTON_MIDDLE) && optionsWnd.cameraWnd.isFlycamAltCheckBox.GetCheck()))
+		{
+			camControlStart = false;
+#if 0
+			// Mouse delta from previous frame:
+			xDif = currentMouse.x - originalMouse.x;
+			yDif = currentMouse.y - originalMouse.y;
+#else
+			// Mouse delta from hardware read:
+			xDif = wi::input::GetMouseState().delta_position.x;
+			yDif = wi::input::GetMouseState().delta_position.y;
+#endif
+			xDif = 0.1f * xDif * (1.0f / 60.0f);
+			yDif = 0.1f * yDif * (1.0f / 60.0f);
+			wi::input::SetPointer(originalMouse);
+			wi::input::HidePointer(true);
+		}
+		else
+		{
+			camControlStart = true;
+			wi::input::HidePointer(false);
+		}
+
+		if ((!wi::input::Down(wi::input::KEYBOARD_BUTTON_LCONTROL) && wi::input::Press((wi::input::BUTTON)'Z') && optionsWnd.cameraWnd.fpsCheckBox.GetCheck() && !optionsWnd.cameraWnd.isFlycamAltCheckBox.GetCheck()))
+		{
+			fpscamToggle = !fpscamToggle;
+		}
+
+		if (fpscamToggle)
+		{
+			camControlStart = false;
+#if 0
+			// Mouse delta from previous frame:
+			xDif = currentMouse.x - originalMouse.x;
+			yDif = currentMouse.y - originalMouse.y;
+#else
+			// Mouse delta from hardware read:
+			xDif = wi::input::GetMouseState().delta_position.x;
+			yDif = wi::input::GetMouseState().delta_position.y;
+#endif
+			xDif = 0.1f * xDif * (1.0f / 60.0f);
+			yDif = 0.1f * yDif * (1.0f / 60.0f);
+			wi::input::SetPointer(originalMouse);
+			wi::input::HidePointer(true);
+		}
+		else if ((!wi::input::Down(wi::input::MOUSE_BUTTON_MIDDLE)) && !fpscamToggle)
+		{
+			camControlStart = true;
+			wi::input::HidePointer(false);
+		}
+
+
+
 
 		const float buttonrotSpeed = 2.0f * dt;
 		if (wi::input::Down(wi::input::KEYBOARD_BUTTON_LEFT))
@@ -787,6 +848,7 @@ void EditorComponent::Update(float dt)
 				if (wi::input::Down((wi::input::BUTTON)'S') || wi::input::Down(wi::input::GAMEPAD_BUTTON_DOWN)) { moveNew += XMVectorSet(0, 0, -1, 0); }
 				if (wi::input::Down((wi::input::BUTTON)'E') || wi::input::Down(wi::input::GAMEPAD_BUTTON_2)) { moveNew += XMVectorSet(0, 1, 0, 0); }
 				if (wi::input::Down((wi::input::BUTTON)'Q') || wi::input::Down(wi::input::GAMEPAD_BUTTON_1)) { moveNew += XMVectorSet(0, -1, 0, 0); }
+
 				moveNew += XMVector3Normalize(moveNew);
 			}
 			moveNew *= speed;
@@ -1530,6 +1592,9 @@ void EditorComponent::Update(float dt)
 		componentsWnd.armatureWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.humanoidWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.terrainWnd.SetEntity(INVALID_ENTITY);
+
+		componentsWnd.ioWnd.SetEntity(INVALID_ENTITY);
+		componentsWnd.responseWnd.SetEntity(INVALID_ENTITY);
 	}
 	else
 	{
@@ -1572,6 +1637,9 @@ void EditorComponent::Update(float dt)
 		componentsWnd.armatureWnd.SetEntity(picked.entity);
 		componentsWnd.humanoidWnd.SetEntity(picked.entity);
 		componentsWnd.terrainWnd.SetEntity(picked.entity);
+
+		componentsWnd.ioWnd.SetEntity(picked.entity);
+		componentsWnd.responseWnd.SetEntity(picked.entity);
 
 		if (picked.subsetIndex >= 0)
 		{
@@ -2609,6 +2677,68 @@ void EditorComponent::Render() const
 				{
 					str += "\nName: " + name->name;
 				}
+
+
+
+				const MaterialComponent* material = scene.materials.GetComponent(hovered.entity);
+
+
+				if (material != nullptr)
+				{
+					auto type = material->shaderTypeDefines[material->shaderType];
+					std::string finalname;
+					if (material->shaderType == 0)
+					{
+						finalname = "PBR";
+					}
+					else
+					{
+						for (size_t i = 0; i < type.size(); i++)
+						{
+							finalname += " " + type[i];
+						}
+
+					}
+
+					str += "\nShader: " + finalname;
+				}
+
+				if (material != nullptr)
+				{
+					auto type = material->surfaceTypeDefines[material->surfacetype];
+
+					str += "\nSurface type: " + type[0];
+				}
+
+				const ResponseComponent* response = scene.responses.GetComponent(hovered.entity);
+
+				if (response != nullptr)
+				{
+					auto type = response->_conditions;
+					std::string finalname;
+
+					finalname = "CONDS: ";
+
+					if ((type & response->isBurn).any())
+					{
+						auto type = response->CondsDefines[ResponseComponent::COND_BURN];
+						finalname += " " + type[0];
+					}
+					if ((type & response->isSee_Hate).any())
+					{
+						auto type = response->CondsDefines[ResponseComponent::COND_SEE_HATE];
+						finalname += "," + type[0];
+					}
+					/*for (size_t i = 0; i < type.size(); i++)
+					{
+						finalname += " " + std::to_string(type.test(i));
+
+					}*/
+
+					str += "\n" + finalname;
+				}
+
+
 				XMFLOAT4 pointer = wi::input::GetPointer();
 				wi::font::Params params;
 				params.position = XMFLOAT3(pointer.x - 10, pointer.y, 0);
@@ -3416,6 +3546,9 @@ void EditorComponent::RefreshSceneList()
 			componentsWnd.armatureWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 			componentsWnd.humanoidWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 			componentsWnd.terrainWnd.SetEntity(wi::ecs::INVALID_ENTITY);
+
+			componentsWnd.ioWnd.SetEntity(wi::ecs::INVALID_ENTITY);
+			componentsWnd.responseWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 
 			optionsWnd.RefreshEntityTree();
 			ResetHistory();

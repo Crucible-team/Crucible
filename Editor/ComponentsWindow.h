@@ -26,6 +26,8 @@
 #include "ExpressionWindow.h"
 #include "ArmatureWindow.h"
 #include "HumanoidWindow.h"
+#include "IOWindow.h"
+#include "ResponseWindow.h"
 #include "TerrainWindow.h"
 
 class EditorComponent;
@@ -68,4 +70,6 @@ public:
 	ArmatureWindow armatureWnd;
 	HumanoidWindow humanoidWnd;
 	TerrainWindow terrainWnd;
+	IOWindow ioWnd;
+	ResponseWindow responseWnd;
 };

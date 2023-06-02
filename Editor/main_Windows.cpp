@@ -54,6 +54,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	assert(dpi_success);
 
 	wi::arguments::Parse(lpCmdLine); // if you wish to use command line arguments, here is a good place to parse them...
+
+	
 	
 
     // Initialize global strings
@@ -65,7 +67,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	Gameconfig::getInstance().get_game_directories("./games");
 
-	
+	Gameconfig::getInstance().currentgame = "default";
 
 
 	wi::Timer timer;
@@ -83,8 +85,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			//wi::backlog::post("game: " + name + " , " + name2);
 		}
 		Gameconfig::getInstance().config.Commit();
-		Gameconfig::getInstance().currentgame = "default";
-
+		
+		
 		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shadersourcepath"))
 		{
 			wi::renderer::SetShaderSourcePath(Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shadersourcepath"));

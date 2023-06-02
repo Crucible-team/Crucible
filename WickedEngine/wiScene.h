@@ -62,7 +62,7 @@ namespace wi::scene
 
 		//Crucible specific
 		//wi::ecs::ComponentManager<FmodComponent>& fmod = componentLibrary.Register<FmodComponent>("wi::scene::Scene::fmod");
-		//wi::ecs::ComponentManager<IOComponent>& IOs = componentLibrary.Register<IOComponent>("wi::scene::Scene::ios");
+		wi::ecs::ComponentManager<IOComponent>& IOs = componentLibrary.Register<IOComponent>("wi::scene::Scene::ios");
 		wi::ecs::ComponentManager<ResponseComponent>& responses = componentLibrary.Register<ResponseComponent>("wi::scene::Scene::responses");
 		wi::ecs::ComponentManager<RelationshipComponent>& relationships = componentLibrary.Register<RelationshipComponent>("wi::scene::Scene::relationships");
 		//wi::ecs::ComponentManager<RTMaterialComponent>& rtmaterials = componentLibrary.Register<RTMaterialComponent>("wi::scene::Scene::rtmaterials");

@@ -174,6 +174,42 @@ namespace wi::lua::scene
 		int SetWeather(lua_State* L);
 
 		int RetargetAnimation(lua_State* L);
+
+
+
+
+		//crucible
+		int Component_CreateRelationship(lua_State* L);
+		int Component_GetRelationship(lua_State* L);
+		int Component_GetRelationshipArray(lua_State* L);
+
+		int Entity_GetRelationshipArray(lua_State* L);
+
+		int Component_RemoveRelationship(lua_State* L);
+
+
+	};
+
+	class RelationshipComponent_BindLua
+	{
+	private:
+		wi::scene::RelationshipComponent owning;
+	public:
+		wi::scene::RelationshipComponent* component = nullptr;
+
+		inline static constexpr char className[] = "RelationshipComponent";
+		static Luna<RelationshipComponent_BindLua>::FunctionType methods[];
+		static Luna<RelationshipComponent_BindLua>::PropertyType properties[];
+
+		RelationshipComponent_BindLua(wi::scene::RelationshipComponent* component) :component(component) {}
+		RelationshipComponent_BindLua(lua_State* L) : component(&owning) {}
+
+		int AddRelationship(lua_State* L);
+		int SetRelationship(lua_State* L);
+		int GetClass(lua_State* L);
+		int GetDiposition(lua_State* L);
+		int GetPriority(lua_State* L);
+		//int GetRelationship(lua_State* L);
 	};
 
 	class NameComponent_BindLua
@@ -1697,5 +1733,9 @@ namespace wi::lua::scene
 		int SetSlopeBlendPower(lua_State* L);
 		int GetSlopeBlendPower(lua_State* L);
 	};
+
+
+
+	
 }
 

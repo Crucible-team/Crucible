@@ -214,6 +214,11 @@ namespace wi::scene
 				archive >> textures[SPECULARMAP].uvset;
 			}
 
+			if (archive.GetVersion() >= 150)
+			{
+				archive >> (uint32_t&)surfacetype;
+			}
+
 			if (seri.GetVersion() >= 1)
 			{
 				archive >> userdata;
@@ -356,6 +361,8 @@ namespace wi::scene
 				archive << textures[SPECULARMAP].name;
 				archive << textures[SPECULARMAP].uvset;
 			}
+
+			archive << (uint32_t)surfacetype;
 
 			if (seri.GetVersion() >= 1)
 			{
@@ -1914,9 +1921,23 @@ namespace wi::scene
 			archive >> eye_rotation_max;
 			archive >> eye_rotation_speed;
 
-			for (auto& entity : bones)
+			if (archive.GetVersion() >= 150)
 			{
-				SerializeEntity(archive, entity, seri);
+				for (auto& entity : bones)
+				{
+					SerializeEntity(archive, entity, seri);
+				}
+			}
+
+			//Older scene's had less bones.
+			if (archive.GetVersion() <= 89)
+			{
+				int limit = 55;
+				int count = 0;
+				for (auto& entity : bones) {
+					if (count++ >= limit) break;
+					SerializeEntity(archive, entity, seri);
+				}
 			}
 		}
 		else
@@ -1932,6 +1953,24 @@ namespace wi::scene
 			{
 				SerializeEntity(archive, entity, seri);
 			}
+		}
+	}
+
+	void IOComponent::Serialize(wi::Archive& archive, EntitySerializer& seri)
+	{
+		if (archive.IsReadMode())
+		{
+			archive >> _flags;
+			//archive >> InputName;
+
+
+
+		}
+		else
+		{
+			archive << _flags;
+			//archive << InputName;
+
 		}
 	}
 

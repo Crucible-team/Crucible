@@ -42,6 +42,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	armatureWnd.Create(editor);
 	humanoidWnd.Create(editor);
 	terrainWnd.Create(editor);
+	ioWnd.Create(editor);
+	responseWnd.Create(editor);
 
 
 	newComponentCombo.Create("Add: ");
@@ -73,6 +75,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	newComponentCombo.AddItem("Camera " ICON_CAMERA, 20);
 	newComponentCombo.AddItem("Object " ICON_OBJECT, 21);
 	newComponentCombo.AddItem("Video " ICON_VIDEO, 22);
+	newComponentCombo.AddItem("IO " ICON_IO, 23);
+	newComponentCombo.AddItem("Response " ICON_FA_CHART_AREA, 24);
 	newComponentCombo.OnSelect([=](wi::gui::EventArgs args) {
 		newComponentCombo.SetSelectedWithoutCallback(-1);
 		if (editor->translator.selected.empty())
@@ -189,6 +193,14 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 			if (scene.videos.Contains(entity))
 				return;
 			break;
+		case 23:
+			if (scene.IOs.Contains(entity))
+				return;
+			break;
+		case 24:
+			if (scene.responses.Contains(entity))
+				return;
+			break;
 		default:
 			return;
 		}
@@ -288,6 +300,12 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 		case 22:
 			scene.videos.Create(entity);
 			break;
+		case 23:
+			scene.IOs.Create(entity);
+			break;
+		case 24:
+			scene.responses.Create(entity);
+			break;
 		default:
 			break;
 		}
@@ -328,6 +346,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	AddWidget(&armatureWnd);
 	AddWidget(&humanoidWnd);
 	AddWidget(&terrainWnd);
+	AddWidget(&ioWnd);
+	AddWidget(&responseWnd);
 
 	materialWnd.SetVisible(false);
 	weatherWnd.SetVisible(false);
@@ -357,6 +377,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	armatureWnd.SetVisible(false);
 	humanoidWnd.SetVisible(false);
 	terrainWnd.SetVisible(false);
+	ioWnd.SetVisible(false);
+	responseWnd.SetVisible(false);
 
 	XMFLOAT2 size = XMFLOAT2(338, 500);
 	if (editor->main->config.GetSection("layout").Has("components.width"))
@@ -773,5 +795,33 @@ void ComponentsWindow::ResizeLayout()
 	else
 	{
 		terrainWnd.SetVisible(false);
+	}
+
+	//Crucible
+
+	if (scene.IOs.Contains(ioWnd.entity))
+	{
+		ioWnd.SetVisible(true);
+		ioWnd.SetPos(pos);
+		ioWnd.SetSize(XMFLOAT2(width, ioWnd.GetScale().y));
+		pos.y += ioWnd.GetSize().y;
+		pos.y += padding;
+	}
+	else
+	{
+		ioWnd.SetVisible(false);
+	}
+
+	if (scene.responses.Contains(responseWnd.entity))
+	{
+		responseWnd.SetVisible(true);
+		responseWnd.SetPos(pos);
+		responseWnd.SetSize(XMFLOAT2(width, responseWnd.GetScale().y));
+		pos.y += responseWnd.GetSize().y;
+		pos.y += padding;
+	}
+	else
+	{
+		responseWnd.SetVisible(false);
 	}
 }

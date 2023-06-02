@@ -163,6 +163,8 @@ namespace wi
 			{"OGG", DataType::SOUND},
 			{"LUA", DataType::SCRIPT},
 			{"MP4", DataType::VIDEO},
+			{"RPS", DataType::SCRIPT},
+			{"SCS", DataType::SCRIPT},
 		};
 		wi::vector<std::string> GetSupportedImageExtensions()
 		{

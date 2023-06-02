@@ -158,6 +158,86 @@ namespace wi::scene
 		};
 		static_assert(SHADERTYPE_COUNT == arraysize(shaderTypeDefines), "These values must match!");
 
+
+		wi::enums::SURFACEPROP surfacetype = wi::enums::DEFUALT;
+
+		inline static const wi::vector<std::string> surfaceTypeDefines[] = {
+			{"Default"}, // SHADERTYPE_PBR,
+			{"Defaul_silent"}, // SHADERTYPE_PBR_PLANARREFLECTION,
+			{"ROCK"},
+			{"BRICK"},
+			{"CONCRETE"},
+			{"CONCRETE_BLOCK"},
+			{"CHAIN"},
+			{"CHAINLINK"},
+			{"GRENADE"},
+			{"METAL"},
+			{"METAL_BARREL"},
+			{"METAL_BOX"},
+			{"METALGRATE"},
+			{"METALPANEL"},
+			{"METALVENT"},
+			{"METALVEHICLE"},
+			{"PAINTCAN"},
+			{"POPCAN"},
+			{"SLIPPERYMETAL"},
+			{"SOILDMETAL"},
+			{"WEAPON"},
+			{"WOOD"},
+			{"WOOD_BOX"},
+			{"WOOD_CRATE"},
+			{"WOOD_FURNITURE"},
+			{"WOOD_LOWDENSITY"},
+			{"WOOD_PLANK"},
+			{"WOOD_PANEL"},
+			{"WOOD_SOILD"},
+			{"DIRT"},
+			{"GRASS"},
+			{"GRAVEL"},
+			{"MUD"},
+			{"QUICKSAND"},
+			{"SAND"},
+			{"SLIPPERYSAND"},
+			{"SLIME"},
+			{"WATER"},
+			{"WADE"},
+			{"PUDDLE"},
+			{"ICE"},
+			{"SNOW"},
+			{"ALIENFLESH"},
+			{"ARMORFLESH"},
+			{"BLOODYFLESH"},
+			{"FLESH"},
+			{"FOLIAGE"},
+			{"WATERMELON"},
+			{"ZOMBIEFLESH"},
+			{"ASPHALT"},
+			{"GLASS"},
+			{"GLASSBOTTLE"},
+			{"TILE"},
+			{"PAPER"},
+			{"PAPERCUP"},
+			{"CARDBOARD"},
+			{"PLASTER"},
+			{"PLASTIC_BARREL"},
+			{"PLASTIC_BARREL_BUOYANT"},
+			{"PLASTIC_BOX"},
+			{"PLASTIC"},
+			{"PLASTIC_METAL"},
+			{"RUBBER"},
+			{"RUBBERTIRE"},
+			{"SLIDINGRUBBERTIRE"},
+			{"SLIDINGRUBBERTIRE_FRONT"},
+			{"SLIDINGRUBBERTIRE_REAR"},
+			{"JEEPTIRE"},
+			{"BRAKINGRUBBERTIRE"},
+			{"CARPET"},
+			{"CEILING_TILE"},
+			{"COMPUTER"},
+			{"POTTERY"},
+
+		};
+
 		wi::enums::STENCILREF engineStencilRef = wi::enums::STENCILREF_DEFAULT;
 		uint8_t userStencilRef = 0;
 		wi::enums::BLENDMODE userBlendMode = wi::enums::BLENDMODE_OPAQUE;
@@ -1924,6 +2004,19 @@ namespace wi::scene
 			RightLittleIntermediate,
 			RightLittleDistal,
 
+			//Extra bones
+			Spine3,
+			Spine4,
+			LeftTrapezius,
+			RightTrapezius,
+			LeftBicep,
+			RightBicep,
+			LeftUlna,
+			RightUlna,
+			LeftWrist,
+			RightWrist,
+			Forward,
+
 			Count
 		};
 		wi::ecs::Entity bones[size_t(HumanoidBone::Count)] = {};
@@ -1943,6 +2036,47 @@ namespace wi::scene
 		XMFLOAT4 lookAtDeltaRotationState_Head = XMFLOAT4(0, 0, 0, 1);
 		XMFLOAT4 lookAtDeltaRotationState_LeftEye = XMFLOAT4(0, 0, 0, 1);
 		XMFLOAT4 lookAtDeltaRotationState_RightEye = XMFLOAT4(0, 0, 0, 1);
+
+		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
+
+	struct IOComponent
+	{
+
+		float timer = 0;
+
+		float last_update_time = 0;
+		enum FLAGS
+		{
+			EMPTY = 0,
+			FIRE_ONCE = 1 << 0,
+			FIRE_MULIPLE = 1 << 1,
+			//DISABLE_3D = 1 << 2,
+		};
+
+		enum TRIGGERTYPE
+		{
+			ONMAPSPAWN = 0,
+			ONSPAWN = 1 << 0,
+			ONKILLED = 1 << 1,
+			ONREMOVE = 1 << 2,
+		};
+
+		uint32_t _flags = FIRE_ONCE;
+
+
+		struct outputdata
+		{
+			uint32_t _Triggertype = ONSPAWN;
+			std::string EntityName;
+			std::string InputName;
+			float delay;
+
+			uint64_t userdata;
+		};
+
+
+		wi::vector<outputdata> Outputs;
 
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 	};

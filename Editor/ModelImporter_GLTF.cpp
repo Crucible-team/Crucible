@@ -147,6 +147,10 @@ struct LoaderState
 void Import_Extension_VRM(LoaderState& state);
 void Import_Extension_VRMC(LoaderState& state);
 void Import_Mixamo_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node);
+void Import_HL_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node);
+void Import_HLHD_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node);
+void Import_Valve_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node);
+
 
 // Recursively loads nodes and resolves hierarchy:
 void LoadNode(int nodeIndex, Entity parent, LoaderState& state)
@@ -1646,6 +1650,9 @@ void ImportModel_GLTF(const std::string& fileName, Scene& scene)
 			armature.boneCollection[i] = boneEntity;
 
 			Import_Mixamo_Bone(state, armatureEntity, boneEntity, state.gltfModel.nodes[jointIndex]);
+			Import_HL_Bone(state, armatureEntity, boneEntity, state.gltfModel.nodes[jointIndex]);
+			Import_HLHD_Bone(state, armatureEntity, boneEntity, state.gltfModel.nodes[jointIndex]);
+			Import_Valve_Bone(state, armatureEntity, boneEntity, state.gltfModel.nodes[jointIndex]);
 		}
 	}
 
@@ -1973,6 +1980,306 @@ void Import_Extension_VRM(LoaderState& state)
 						else if (!wi::helper::toUpper(expression.name).compare("SURPRISED")) // wtf vroid
 						{
 							expression.preset = ExpressionComponent::Preset::Surprised;
+						}
+						else if (!presetName.compare("AU1L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU1L;
+						}
+						else if (!presetName.compare("AU1R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU1R;
+						}
+						else if (!presetName.compare("AU2L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU2L;
+						}
+						else if (!presetName.compare("AU2R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU2R;
+						}
+						else if (!presetName.compare("AU4L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU4L;
+						}
+						else if (!presetName.compare("AU4R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU4R;
+						}
+						else if (!presetName.compare("AU5L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU5L;
+						}
+						else if (!presetName.compare("AU5R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU5R;
+						}
+						else if (!presetName.compare("AU6L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU6L;
+						}
+						else if (!presetName.compare("AU6R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU6R;
+						}
+						else if (!presetName.compare("AU7L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU7L;
+						}
+						else if (!presetName.compare("AU7R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU7R;
+						}
+						else if (!presetName.compare("AU8L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU8L;
+						}
+						else if (!presetName.compare("AU8R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU8R;
+						}
+						else if (!presetName.compare("AU9L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU9L;
+						}
+						else if (!presetName.compare("AU9R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU9R;
+						}
+						else if (!presetName.compare("AU10L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU10L;
+						}
+						else if (!presetName.compare("AU10R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU10R;
+						}
+						else if (!presetName.compare("AU11L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU11L;
+						}
+						else if (!presetName.compare("AU11R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU11R;
+						}
+						else if (!presetName.compare("AU12L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU12L;
+						}
+						else if (!presetName.compare("AU12R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU12R;
+						}
+						else if (!presetName.compare("AU13L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU13L;
+						}
+						else if (!presetName.compare("AU13R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU13R;
+						}
+						else if (!presetName.compare("AU14L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU14L;
+						}
+						else if (!presetName.compare("AU14R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU14R;
+						}
+						else if (!presetName.compare("AU15L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU15L;
+						}
+						else if (!presetName.compare("AU15R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU15R;
+						}
+						else if (!presetName.compare("AU16L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU16L;
+						}
+						else if (!presetName.compare("AU16R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU16R;
+						}
+						else if (!presetName.compare("AU17"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU17;
+						}
+						else if (!presetName.compare("AU18L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU18L;
+						}
+						else if (!presetName.compare("AU18R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU18R;
+						}
+						else if (!presetName.compare("AU19"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU19;
+						}
+						else if (!presetName.compare("AU20L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU20L;
+						}
+						else if (!presetName.compare("AU20R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU20R;
+						}
+						else if (!presetName.compare("AU21L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU21L;
+						}
+						else if (!presetName.compare("AU21R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU21R;
+						}
+						else if (!presetName.compare("AU22L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU22L;
+						}
+						else if (!presetName.compare("AU22R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU22R;
+						}
+						else if (!presetName.compare("AU23L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU23L;
+						}
+						else if (!presetName.compare("AU23R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU23R;
+						}
+						else if (!presetName.compare("AU24L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU24L;
+						}
+						else if (!presetName.compare("AU24R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU24R;
+						}
+						else if (!presetName.compare("AU25L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU25L;
+						}
+						else if (!presetName.compare("AU25R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU25R;
+						}
+						else if (!presetName.compare("AU26"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU26;
+						}
+						else if (!presetName.compare("AU27L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU27L;
+						}
+						else if (!presetName.compare("AU27R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU27R;
+						}
+						else if (!presetName.compare("AU28"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU28;
+						}
+						else if (!presetName.compare("AU29L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU29L;
+						}
+						else if (!presetName.compare("AU29R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU29R;
+						}
+						else if (!presetName.compare("AU30L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU30L;
+						}
+						else if (!presetName.compare("AU30R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU30R;
+						}
+						else if (!presetName.compare("AU31"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU31;
+						}
+						else if (!presetName.compare("AU32"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU32;
+						}
+						else if (!presetName.compare("AU33L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU33L;
+						}
+						else if (!presetName.compare("AU33R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU33R;
+						}
+						else if (!presetName.compare("AU34L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU34L;
+						}
+						else if (!presetName.compare("AU34R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU34R;
+						}
+						else if (!presetName.compare("AU36"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU36;
+						}
+						else if (!presetName.compare("AU37L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU37L;
+						}
+						else if (!presetName.compare("AU37R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU37R;
+						}
+						else if (!presetName.compare("AU38L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU38L;
+						}
+						else if (!presetName.compare("AU38R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU38R;
+						}
+						else if (!presetName.compare("AU39L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU39L;
+						}
+						else if (!presetName.compare("AU39R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU39R;
+						}
+						else if (!presetName.compare("AU40"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU40;
+						}
+						else if (!presetName.compare("AU44L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU44L;
+						}
+						else if (!presetName.compare("AU44R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU44R;
+						}
+						else if (!presetName.compare("AU46L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU46L;
+						}
+						else if (!presetName.compare("AU46R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU46R;
+						}
+						else if (!presetName.compare("AU80"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU80;
+						}
+						else if (!presetName.compare("AU81L"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU81L;
+						}
+						else if (!presetName.compare("AU81R"))
+						{
+							expression.preset = ExpressionComponent::Preset::AU81R;
 						}
 
 						const size_t preset_index = (size_t)expression.preset;
@@ -2570,6 +2877,306 @@ void Import_Extension_VRMC(LoaderState& state)
 							else if (!presetName.compare("NEUTRAL"))
 							{
 								expression.preset = ExpressionComponent::Preset::Neutral;
+							}
+							else if (!presetName.compare("AU1L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU1L;
+							}
+							else if (!presetName.compare("AU1R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU1R;
+							}
+							else if (!presetName.compare("AU2L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU2L;
+							}
+							else if (!presetName.compare("AU2R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU2R;
+							}
+							else if (!presetName.compare("AU4L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU4L;
+							}
+							else if (!presetName.compare("AU4R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU4R;
+							}
+							else if (!presetName.compare("AU5L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU5L;
+							}
+							else if (!presetName.compare("AU5R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU5R;
+							}
+							else if (!presetName.compare("AU6L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU6L;
+							}
+							else if (!presetName.compare("AU6R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU6R;
+							}
+							else if (!presetName.compare("AU7L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU7L;
+							}
+							else if (!presetName.compare("AU7R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU7R;
+							}
+							else if (!presetName.compare("AU8L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU8L;
+							}
+							else if (!presetName.compare("AU8R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU8R;
+							}
+							else if (!presetName.compare("AU9L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU9L;
+							}
+							else if (!presetName.compare("AU9R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU9R;
+							}
+							else if (!presetName.compare("AU10L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU10L;
+							}
+							else if (!presetName.compare("AU10R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU10R;
+							}
+							else if (!presetName.compare("AU11L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU11L;
+							}
+							else if (!presetName.compare("AU11R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU11R;
+							}
+							else if (!presetName.compare("AU12L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU12L;
+							}
+							else if (!presetName.compare("AU12R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU12R;
+							}
+							else if (!presetName.compare("AU13L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU13L;
+							}
+							else if (!presetName.compare("AU13R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU13R;
+							}
+							else if (!presetName.compare("AU14L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU14L;
+							}
+							else if (!presetName.compare("AU14R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU14R;
+							}
+							else if (!presetName.compare("AU15L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU15L;
+							}
+							else if (!presetName.compare("AU15R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU15R;
+							}
+							else if (!presetName.compare("AU16L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU16L;
+							}
+							else if (!presetName.compare("AU16R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU16R;
+							}
+							else if (!presetName.compare("AU17"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU17;
+							}
+							else if (!presetName.compare("AU18L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU18L;
+							}
+							else if (!presetName.compare("AU18R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU18R;
+							}
+							else if (!presetName.compare("AU19"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU19;
+							}
+							else if (!presetName.compare("AU20L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU20L;
+							}
+							else if (!presetName.compare("AU20R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU20R;
+							}
+							else if (!presetName.compare("AU21L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU21L;
+							}
+							else if (!presetName.compare("AU21R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU21R;
+							}
+							else if (!presetName.compare("AU22L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU22L;
+							}
+							else if (!presetName.compare("AU22R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU22R;
+							}
+							else if (!presetName.compare("AU23L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU23L;
+							}
+							else if (!presetName.compare("AU23R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU23R;
+							}
+							else if (!presetName.compare("AU24L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU24L;
+							}
+							else if (!presetName.compare("AU24R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU24R;
+							}
+							else if (!presetName.compare("AU25L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU25L;
+							}
+							else if (!presetName.compare("AU25R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU25R;
+							}
+							else if (!presetName.compare("AU26"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU26;
+							}
+							else if (!presetName.compare("AU27L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU27L;
+							}
+							else if (!presetName.compare("AU27R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU27R;
+							}
+							else if (!presetName.compare("AU28"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU28;
+							}
+							else if (!presetName.compare("AU29L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU29L;
+							}
+							else if (!presetName.compare("AU29R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU29R;
+							}
+							else if (!presetName.compare("AU30L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU30L;
+							}
+							else if (!presetName.compare("AU30R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU30R;
+							}
+							else if (!presetName.compare("AU31"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU31;
+							}
+							else if (!presetName.compare("AU32"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU32;
+							}
+							else if (!presetName.compare("AU33L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU33L;
+							}
+							else if (!presetName.compare("AU33R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU33R;
+							}
+							else if (!presetName.compare("AU34L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU34L;
+							}
+							else if (!presetName.compare("AU34R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU34R;
+							}
+							else if (!presetName.compare("AU36"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU36;
+							}
+							else if (!presetName.compare("AU37L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU37L;
+							}
+							else if (!presetName.compare("AU37R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU37R;
+							}
+							else if (!presetName.compare("AU38L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU38L;
+							}
+							else if (!presetName.compare("AU38R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU38R;
+							}
+							else if (!presetName.compare("AU39L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU39L;
+							}
+							else if (!presetName.compare("AU39R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU39R;
+							}
+							else if (!presetName.compare("AU40"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU40;
+							}
+							else if (!presetName.compare("AU44L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU44L;
+							}
+							else if (!presetName.compare("AU44R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU44R;
+							}
+							else if (!presetName.compare("AU46L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU46L;
+							}
+							else if (!presetName.compare("AU46R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU46R;
+							}
+							else if (!presetName.compare("AU80"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU80;
+							}
+							else if (!presetName.compare("AU81L"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU81L;
+							}
+							else if (!presetName.compare("AU81R"))
+							{
+								expression.preset = ExpressionComponent::Preset::AU81R;
 							}
 
 							const size_t preset_index = (size_t)expression.preset;
@@ -3282,6 +3889,743 @@ void Import_Mixamo_Bone(LoaderState& state, Entity armatureEntity, Entity boneEn
 	else if (!node.name.compare("mixamorig:RightToeBase"))
 	{
 		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightToes)] = boneEntity;
+	}
+}
+
+void Import_HL_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node)
+{
+	auto get_humanoid = [&]() -> HumanoidComponent& {
+		HumanoidComponent* component = state.scene->humanoids.GetComponent(armatureEntity);
+		if (component == nullptr)
+		{
+			component = &state.scene->humanoids.Create(armatureEntity);
+			component->default_look_direction = XMFLOAT3(0, 0, -1);
+		}
+		return *component;
+	};
+
+	if (!node.name.compare("Bip02 Pelvis"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Hips)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 Spine"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Spine)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 Spine1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Chest)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 Spine2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::UpperChest)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 Neck"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Neck)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 Head"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Head)] = boneEntity;
+	}
+	else if (!node.name.compare("Bone01"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Jaw)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 L Arm"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftShoulder)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 R Arm"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightShoulder)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 L Arm1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftUpperArm)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 R Arm1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightUpperArm)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 L Arm2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLowerArm)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 R Arm2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLowerArm)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 L Hand"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftHand)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 R Hand"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightHand)] = boneEntity;
+	}
+	/*else if (!node.name.compare("mixamorig:LeftHandThumb1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftThumbMetacarpal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandThumb1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightThumbMetacarpal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandThumb2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftThumbProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandThumb2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightThumbProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandThumb3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftThumbDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandThumb3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightThumbDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandIndex1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftIndexProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandIndex1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightIndexProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandIndex2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftIndexIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandIndex2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightIndexIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandIndex3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftIndexDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandIndex3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightIndexDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandMiddle1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftMiddleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandMiddle1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightMiddleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandMiddle2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftMiddleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandMiddle2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightMiddleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandMiddle3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftMiddleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandMiddle3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightMiddleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandRing1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftRingProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandRing1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightRingProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandRing2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftRingIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandRing2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightRingIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandRing3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftRingDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandRing3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightRingDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandPinky1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLittleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandPinky1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLittleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandPinky2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLittleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandPinky2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLittleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandPinky3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLittleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandPinky3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLittleDistal)] = boneEntity;
+	}*/
+	else if (!node.name.compare("Bip02 L Leg"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftUpperLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 R Leg"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightUpperLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 L Leg1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLowerLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 R Leg1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLowerLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 L Foot"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftFoot)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip02 R Foot"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightFoot)] = boneEntity;
+	}
+	/*else if (!node.name.compare("mixamorig:LeftToeBase"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftToes)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightToeBase"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightToes)] = boneEntity;
+	}*/
+}
+
+void Import_HLHD_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node)
+{
+	auto get_humanoid = [&]() -> HumanoidComponent& {
+		HumanoidComponent* component = state.scene->humanoids.GetComponent(armatureEntity);
+		if (component == nullptr)
+		{
+			component = &state.scene->humanoids.Create(armatureEntity);
+			component->default_look_direction = XMFLOAT3(0, 0, -1);
+		}
+		return *component;
+	};
+	/*std::string nodename = node.name;
+
+
+	for (int i = 0; i < nodename.length(); i++) {
+		nodename[i] = tolower(nodename[i]);
+	}*/
+
+
+	if (!node.name.compare("Bip01 Pelvis") || !node.name.compare("bip01 pelvis"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Hips)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 Spine") || !node.name.compare("bip01 spine"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Spine)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 Spine2") || !node.name.compare("bip01 spine1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Chest)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 Spine3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::UpperChest)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 Neck") || !node.name.compare("bip01 neck"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Neck)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 Head") || !node.name.compare("bip01 head"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Head)] = boneEntity;
+	}
+	else if (!node.name.compare("Mouth"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Jaw)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Clavicle") || !node.name.compare("bip01 l clavicle"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftShoulder)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Clavicle") || !node.name.compare("bip01 r clavicle"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightShoulder)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L UpperArm") || !node.name.compare("bip01 l upperarm"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftUpperArm)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R UpperArm") || !node.name.compare("bip01 r upperarm"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightUpperArm)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Forearm") || !node.name.compare("bip01 l forearm"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLowerArm)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Forearm") || !node.name.compare("bip01 r forearm"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLowerArm)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Hand") || !node.name.compare("bip01 l hand"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftHand)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Hand") || !node.name.compare("bip01 r hand"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightHand)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Finger0"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftThumbMetacarpal)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Finger0"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightThumbMetacarpal)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Finger01"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftThumbProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Finger01"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightThumbProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Finger02"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftThumbDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Finger02"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightThumbDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Finger2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftIndexProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Finger2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightIndexProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Finger21"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftIndexIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Finger21"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightIndexIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Finger22"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftIndexDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Finger22"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightIndexDistal)] = boneEntity;
+	}
+	/*else if (!node.name.compare("mixamorig:LeftHandMiddle1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftMiddleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandMiddle1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightMiddleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandMiddle2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftMiddleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandMiddle2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightMiddleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandMiddle3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftMiddleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandMiddle3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightMiddleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandRing1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftRingProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandRing1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightRingProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandRing2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftRingIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandRing2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightRingIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandRing3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftRingDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandRing3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightRingDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandPinky1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLittleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandPinky1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLittleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandPinky2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLittleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandPinky2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLittleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:LeftHandPinky3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLittleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("mixamorig:RightHandPinky3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLittleDistal)] = boneEntity;
+	}*/
+	else if (!node.name.compare("Bip01 L Thigh") || !node.name.compare("bip01 l thigh"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftUpperLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Thigh") || !node.name.compare("bip01 r thigh"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightUpperLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Calf") || !node.name.compare("bip01 l calf"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLowerLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Calf") || !node.name.compare("bip01 r calf"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLowerLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Foot") || !node.name.compare("bip01 l foot"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftFoot)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Foot") || !node.name.compare("bip01 r foot"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightFoot)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Toe0") || !node.name.compare("bip01 l toe"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftToes)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Toe0") || !node.name.compare("bip01 r toe"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightToes)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 L Eye") || !node.name.compare("bip01 l eye"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftEye)] = boneEntity;
+	}
+	else if (!node.name.compare("Bip01 R Eye") || !node.name.compare("bip01 r eye"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightEye)] = boneEntity;
+	}
+}
+
+void Import_Valve_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node)
+{
+	auto get_humanoid = [&]() -> HumanoidComponent& {
+		HumanoidComponent* component = state.scene->humanoids.GetComponent(armatureEntity);
+		if (component == nullptr)
+		{
+			component = &state.scene->humanoids.Create(armatureEntity);
+			component->default_look_direction = XMFLOAT3(0, 0, -1);
+		}
+		return *component;
+	};
+
+	if (!node.name.compare("ValveBiped.Bip01_Pelvis"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Hips)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_Spine"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Spine)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_Spine1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Chest)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_Spine2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Spine3)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_Spine4"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::UpperChest)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_Neck1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Neck)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_Head1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Head)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Clavicle"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftShoulder)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Clavicle"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightShoulder)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_UpperArm"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftUpperArm)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_UpperArm"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightUpperArm)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Elbow"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLowerArm)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Elbow"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLowerArm)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Hand"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftHand)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Hand"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightHand)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger0"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftThumbMetacarpal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger0"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightThumbMetacarpal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger01"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftThumbProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger01"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightThumbProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger02"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftThumbDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger02"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightThumbDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftIndexProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger1"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightIndexProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger11"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftIndexIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger11"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightIndexIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger12"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftIndexDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger12"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightIndexDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftMiddleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger2"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightMiddleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger21"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftMiddleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger21"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightMiddleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger22"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftMiddleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger22"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightMiddleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftRingProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger3"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightRingProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger31"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftRingIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger31"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightRingIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger32"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftRingDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger32"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightRingDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger4"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLittleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger4"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLittleProximal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger41"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLittleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger41"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLittleIntermediate)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Finger42"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLittleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Finger42"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLittleDistal)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Thigh"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftUpperLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Thigh"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightUpperLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Calf"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftLowerLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Calf"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightLowerLeg)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Foot"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftFoot)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Foot"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightFoot)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Toe0"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftToes)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Toe0"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightToes)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Eye"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftEye)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Eye"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightEye)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.forward"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::Forward)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Trapezius"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftTrapezius)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Trapezius"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightTrapezius)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Bicep"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftBicep)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Bicep"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightBicep)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Ulna"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftUlna)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Ulna"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightUlna)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_L_Wrist"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::LeftWrist)] = boneEntity;
+	}
+	else if (!node.name.compare("ValveBiped.Bip01_R_Wrist"))
+	{
+		get_humanoid().bones[size_t(HumanoidComponent::HumanoidBone::RightWrist)] = boneEntity;
 	}
 }
 

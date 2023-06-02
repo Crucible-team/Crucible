@@ -92,6 +92,7 @@ public:
 	wi::unordered_set<wi::ecs::Entity> selectAllStorage;
 
 	bool bone_picking = false;
+	bool fpscamToggle = false;
 	void CheckBonePickingEnabled();
 
 	void UpdateTopMenuAnimation();

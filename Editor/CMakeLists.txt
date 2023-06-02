@@ -45,6 +45,9 @@ set (SOURCE_FILES
 	ProfilerWindow.cpp
 	xatlas.cpp
 	EmbeddedResources.cpp
+	ResponseWindow.cpp
+	IOWindow.cpp
+	ModelImporter_VMF.cpp
 )
 
 add_subdirectory(meshoptimizer)

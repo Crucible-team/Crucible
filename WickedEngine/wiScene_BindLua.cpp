@@ -460,6 +460,7 @@ void Bind()
 
 		Luna<Scene_BindLua>::Register(L);
 		Luna<NameComponent_BindLua>::Register(L);
+		Luna<RelationshipComponent_BindLua>::Register(L);
 		Luna<LayerComponent_BindLua>::Register(L);
 		Luna<TransformComponent_BindLua>::Register(L);
 		Luna<CameraComponent_BindLua>::Register(L);
@@ -523,6 +524,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_CreateHumanoid),
 	lunamethod(Scene_BindLua, Component_CreateDecal),
 
+	lunamethod(Scene_BindLua, Component_CreateRelationship),
+
 	lunamethod(Scene_BindLua, Component_GetName),
 	lunamethod(Scene_BindLua, Component_GetLayer),
 	lunamethod(Scene_BindLua, Component_GetTransform),
@@ -547,6 +550,9 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_GetHumanoid),
 	lunamethod(Scene_BindLua, Component_GetDecal),
 
+	//Crucible
+	lunamethod(Scene_BindLua, Component_GetRelationship),
+
 	lunamethod(Scene_BindLua, Component_GetNameArray),
 	lunamethod(Scene_BindLua, Component_GetLayerArray),
 	lunamethod(Scene_BindLua, Component_GetTransformArray),
@@ -570,6 +576,9 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_GetExpressionArray),
 	lunamethod(Scene_BindLua, Component_GetHumanoidArray),
 	lunamethod(Scene_BindLua, Component_GetDecalArray),
+
+	//Crucible
+	lunamethod(Scene_BindLua, Component_GetRelationshipArray),
 
 	lunamethod(Scene_BindLua, Entity_GetNameArray),
 	lunamethod(Scene_BindLua, Entity_GetLayerArray),
@@ -596,6 +605,9 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Entity_GetHumanoidArray),
 	lunamethod(Scene_BindLua, Entity_GetDecalArray),
 
+	//Crucible
+	lunamethod(Scene_BindLua, Entity_GetRelationshipArray),
+
 	lunamethod(Scene_BindLua, Component_RemoveName),
 	lunamethod(Scene_BindLua, Component_RemoveLayer),
 	lunamethod(Scene_BindLua, Component_RemoveTransform),
@@ -620,6 +632,9 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_RemoveExpression),
 	lunamethod(Scene_BindLua, Component_RemoveHumanoid),
 	lunamethod(Scene_BindLua, Component_RemoveDecal),
+
+	//Crucible
+	lunamethod(Scene_BindLua, Component_RemoveRelationship),
 
 	lunamethod(Scene_BindLua, Component_Attach),
 	lunamethod(Scene_BindLua, Component_Detach),
@@ -6023,6 +6038,251 @@ int DecalComponent_BindLua::GetSlopeBlendPower(lua_State* L)
 {
 	wi::lua::SSetFloat(L, component->slopeBlendPower);
 	return 1;
+}
+
+//Crucible
+
+Luna<RelationshipComponent_BindLua>::FunctionType RelationshipComponent_BindLua::methods[] = {
+	lunamethod(RelationshipComponent_BindLua, AddRelationship),
+	lunamethod(RelationshipComponent_BindLua, SetRelationship),
+	//lunamethod(RelationshipComponent_BindLua, GetRelationship),
+	lunamethod(RelationshipComponent_BindLua, GetClass),
+	lunamethod(RelationshipComponent_BindLua, GetDiposition),
+	lunamethod(RelationshipComponent_BindLua, GetPriority),
+	{ NULL, NULL }
+};
+Luna<RelationshipComponent_BindLua>::PropertyType RelationshipComponent_BindLua::properties[] = {
+	//lunaproperty(RelationshipComponent_BindLua, Relationships),
+	{ NULL, NULL }
+};
+
+int Scene_BindLua::Component_CreateRelationship(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		RelationshipComponent& component = scene->relationships.Create(entity);
+		Luna<RelationshipComponent_BindLua>::push(L, &component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_CreateRelationship(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+
+int Scene_BindLua::Component_GetRelationship(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		RelationshipComponent* component = scene->relationships.GetComponent(entity);
+		if (component == nullptr)
+		{
+			return 0;
+		}
+
+		Luna<RelationshipComponent_BindLua>::push(L, component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_GetRelationship(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+
+int Scene_BindLua::Component_GetRelationshipArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->relationships.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->relationships.GetCount(); ++i)
+	{
+		Luna<RelationshipComponent_BindLua>::push(L, &scene->relationships[i]);
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+
+int Scene_BindLua::Entity_GetRelationshipArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->relationships.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->relationships.GetCount(); ++i)
+	{
+		wi::lua::SSetLongLong(L, scene->relationships.GetEntity(i));
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+
+int Scene_BindLua::Component_RemoveRelationship(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+		if (scene->relationships.Contains(entity))
+		{
+			scene->relationships.Remove(entity);
+		}
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_RemoveRelationship(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+
+int RelationshipComponent_BindLua::GetClass(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int index = wi::lua::SGetInt(L, 1);
+
+		size_t relationshipsize = component->Relationships.size();
+
+		if (index < 0)
+		{
+			wi::lua::SError(L, "GetClass invalid index!");
+
+			return 0;
+		}
+
+		if (index > relationshipsize)
+		{
+			wi::lua::SError(L, "GetClass invalid index!");
+
+			return 0;
+		}
+
+		wi::lua::SSetLongLong(L, component->Relationships[index]._class);
+
+	}
+	else
+	{
+		wi::lua::SError(L, "GetClass(int Index) not enough arguments!");
+	}
+	return 0;
+}
+
+int RelationshipComponent_BindLua::GetDiposition(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int index = wi::lua::SGetInt(L, 1);
+
+		size_t relationshipsize = component->Relationships.size();
+
+		if (index < 0)
+		{
+			wi::lua::SError(L, "GetDiposition invalid index!");
+
+			return 0;
+		}
+
+		if (index > relationshipsize)
+		{
+			wi::lua::SError(L, "GetDiposition invalid index!");
+
+			return 0;
+		}
+
+		wi::lua::SSetLongLong(L, component->Relationships[index]._Diposition);
+
+	}
+	else
+	{
+		wi::lua::SError(L, "GetDiposition(int Index) not enough arguments!");
+	}
+	return 0;
+}
+
+int RelationshipComponent_BindLua::GetPriority(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int index = wi::lua::SGetInt(L, 1);
+
+		size_t relationshipsize = component->Relationships.size();
+
+		if (index < 0)
+		{
+			wi::lua::SError(L, "GetPriority invalid index!");
+
+			return 0;
+		}
+
+		if (index > relationshipsize)
+		{
+			wi::lua::SError(L, "GetPriority invalid index!");
+
+			return 0;
+		}
+
+		wi::lua::SSetInt(L, component->Relationships[index].priority);
+
+	}
+	else
+	{
+		wi::lua::SError(L, "GetPriority (int Index) not enough arguments!");
+	}
+	return 0;
+}
+
+int RelationshipComponent_BindLua::SetRelationship(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int index = wi::lua::SGetInt(L, 1);
+
+		component->Relationships[index].target = wi::lua::SGetLongLong(L, 2);
+		component->Relationships[index]._class = wi::lua::SGetLongLong(L, 3);
+		component->Relationships[index]._Diposition = wi::lua::SGetLongLong(L, 4);
+		component->Relationships[index].priority = wi::lua::SGetInt(L, 5);
+	}
+	else
+	{
+		wi::lua::SError(L, "SetRelationship(int Index, Entity entity, uint32 class, uint32 diposition, int priority) not enough arguments!");
+	}
+	return 0;
+}
+int RelationshipComponent_BindLua::AddRelationship(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		RelationshipComponent::relation rel;
+
+		if (entity != wi::ecs::INVALID_ENTITY)
+		{
+			rel.target = entity;
+		}
+
+		rel._class = wi::lua::SGetLongLong(L, 2);
+		rel._Diposition = wi::lua::SGetLongLong(L, 3);
+		rel.priority = wi::lua::SGetInt(L, 4);
+
+		component->Relationships.push_back(rel);
+
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "AddRelationship(Entity entity, uint32 class, uint32 diposition, int priority) not enough arguments!");
+	}
+	return 0;
 }
 
 }
