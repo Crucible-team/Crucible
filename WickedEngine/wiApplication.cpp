@@ -306,7 +306,7 @@ namespace wi
 			infodisplay_str.clear();
 			if (infoDisplay.watermark)
 			{
-				infodisplay_str += "Wicked Engine ";
+				infodisplay_str += "Crucible ";
 				infodisplay_str += wi::version::GetVersionString();
 				infodisplay_str += " ";
 
