@@ -109,9 +109,65 @@ void set_window_icon(SDL_Window *window) {
 
 int main(int argc, char *argv[])
 {
-    Editor editor;
-
+    
     wi::arguments::Parse(argc, argv);
+	
+	Gameconfig::getInstance().get_game_directories(wi::helper::GetCurrentPath() + "/games");
+
+	Gameconfig::getInstance().currentgame = "default";
+
+
+	wi::Timer timer;
+	if (Gameconfig::getInstance().config.Open("gameconfig.ini"))
+	{
+		for (auto i = Gameconfig::getInstance().games.begin(); i != Gameconfig::getInstance().games.end(); i++)
+		{
+			std::string name = i->first;
+			std::string name2 = i->second;
+
+			Gameconfig::getInstance().config.GetSection(name.c_str()).Set("gamepath", name2);
+			Gameconfig::getInstance().config.Commit();
+			
+			
+			//wi::backlog::post("game: " + name + " , " + name2);
+		}
+		Gameconfig::getInstance().config.Commit();
+		
+		
+		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shadersourcepath"))
+		{
+			std::string path = Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shadersourcepath");
+			wi::helper::MakePathRelative(wi::helper::GetCurrentPath(), path);
+
+			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + path);
+		}
+		else
+		{
+			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() +"\\Data\\shaders\\");
+		}
+		
+		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shaderpath"))
+		{
+			std::string path = Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shaderpath");
+			wi::helper::MakePathRelative(wi::helper::GetCurrentPath(),path);
+			
+			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + path);
+		}
+		else
+		{
+			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "\\shaders\\");
+		}
+	
+
+		wi::backlog::post("gameconfig.ini loaded in " + std::to_string(timer.elapsed_milliseconds()) + " milliseconds\n");
+	}
+	else
+	{
+		wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + "/Data/shaders/");
+		wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/shaders/");
+	}
+
+	Gameconfig::getInstance().config.Commit();
 
     sdl2::sdlsystem_ptr_t system = sdl2::make_sdlsystem(SDL_INIT_EVERYTHING | SDL_INIT_EVENTS);
     if (!system) {
@@ -123,15 +179,15 @@ int main(int argc, char *argv[])
 	bool fullscreen = false;
 
 	wi::Timer timer;
-	if (editor.config.Open("config.ini"))
+	if (Editor::getInstance()config.Open("config.ini"))
 	{
-		if (editor.config.Has("width"))
+		if (Editor::getInstance()config.Has("width"))
 		{
-			width = editor.config.GetInt("width");
-			height = editor.config.GetInt("height");
+			width = Editor::getInstance()config.GetInt("width");
+			height = Editor::getInstance()config.GetInt("height");
 		}
-		fullscreen = editor.config.GetBool("fullscreen");
-		editor.allow_hdr = editor.config.GetBool("allow_hdr");
+		fullscreen = Editor::getInstance()config.GetBool("fullscreen");
+		Editor::getInstance()allow_hdr = Editor::getInstance()config.GetBool("allow_hdr");
 
 		wi::backlog::post("config.ini loaded in " + std::to_string(timer.elapsed_milliseconds()) + " milliseconds\n");
 	}
@@ -157,9 +213,9 @@ int main(int argc, char *argv[])
 		SDL_SetWindowFullscreen(window.get(), SDL_WINDOW_FULLSCREEN_DESKTOP);
 	}
 
-    editor.SetWindow(window.get());
+    Editor::getInstance()SetWindow(window.get());
 
-    int ret = sdl_loop(editor);
+    int ret = sdl_loop(Editor::getInstance());
 
     return ret;
 }

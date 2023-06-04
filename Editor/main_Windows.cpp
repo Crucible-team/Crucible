@@ -65,7 +65,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	
 
-	Gameconfig::getInstance().get_game_directories("./games");
+	Gameconfig::getInstance().get_game_directories(wi::helper::GetCurrentPath() + "/games");
 
 	Gameconfig::getInstance().currentgame = "default";
 
@@ -89,20 +89,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		
 		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shadersourcepath"))
 		{
-			wi::renderer::SetShaderSourcePath(Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shadersourcepath"));
+			std::string path = Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shadersourcepath");
+			wi::helper::MakePathRelative(wi::helper::GetCurrentPath(), path);
+
+			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + path);
 		}
 		else
 		{
-			wi::renderer::SetShaderSourcePath("./Data/shaders/");
+			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() +"/Data/shaders/");
 		}
 		
 		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shaderpath"))
 		{
-			wi::renderer::SetShaderPath(Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shaderpath"));
+			std::string path = Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shaderpath");
+			wi::helper::MakePathRelative(wi::helper::GetCurrentPath(),path);
+			
+			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + path);
 		}
 		else
 		{
-			wi::renderer::SetShaderPath("./shaders/");
+			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/shaders/");
 		}
 	
 
@@ -110,8 +116,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 	else
 	{
-		wi::renderer::SetShaderSourcePath("./Data/shaders/");
-		wi::renderer::SetShaderPath("./shaders/");
+		wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + "/Data/shaders/");
+		wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/shaders/");
 	}
 
 	Gameconfig::getInstance().config.Commit();
