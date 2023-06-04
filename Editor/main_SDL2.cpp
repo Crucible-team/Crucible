@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 	int height = 1080;
 	bool fullscreen = false;
 
-	if (Editor::getInstance()config.Open("config.ini"))
+	if (Editor::getInstance().config.Open("config.ini"))
 	{
 		if (Editor::getInstance().config.Has("width"))
 		{
