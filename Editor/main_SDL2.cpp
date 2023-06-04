@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() +"\\Data\\shaders\\");
+			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() +"/Data/shaders/");
 		}
 		
 		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shaderpath"))
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "\\shaders\\");
+			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/shaders/");
 		}
 	
 
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
 		SDL_SetWindowFullscreen(window.get(), SDL_WINDOW_FULLSCREEN_DESKTOP);
 	}
 
-    Editor::getInstance()SetWindow(window.get());
+    Editor::getInstance().SetWindow(window.get());
 
     int ret = sdl_loop(Editor::getInstance());
 
