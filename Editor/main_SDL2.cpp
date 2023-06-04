@@ -179,7 +179,6 @@ int main(int argc, char *argv[])
 	int height = 1080;
 	bool fullscreen = false;
 
-	wi::Timer timer;
 	if (Editor::getInstance()config.Open("config.ini"))
 	{
 		if (Editor::getInstance().config.Has("width"))
@@ -197,7 +196,7 @@ int main(int argc, char *argv[])
 	height = std::max(100, height);
 
     sdl2::window_ptr_t window = sdl2::make_window(
-            "Wicked Engine Editor",
+            "JOE",
             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
             width, height,
             SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
