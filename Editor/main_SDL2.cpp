@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Editor.h"
+#include "gameconfig.h"
 
 #include "sdl2.h"
 #include <fstream>
