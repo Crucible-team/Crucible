@@ -181,13 +181,13 @@ int main(int argc, char *argv[])
 	wi::Timer timer;
 	if (Editor::getInstance()config.Open("config.ini"))
 	{
-		if (Editor::getInstance()config.Has("width"))
+		if (Editor::getInstance().config.Has("width"))
 		{
-			width = Editor::getInstance()config.GetInt("width");
-			height = Editor::getInstance()config.GetInt("height");
+			width = Editor::getInstance().config.GetInt("width");
+			height = Editor::getInstance().config.GetInt("height");
 		}
-		fullscreen = Editor::getInstance()config.GetBool("fullscreen");
-		Editor::getInstance()allow_hdr = Editor::getInstance()config.GetBool("allow_hdr");
+		fullscreen = Editor::getInstance().config.GetBool("fullscreen");
+		Editor::getInstance().allow_hdr = Editor::getInstance().config.GetBool("allow_hdr");
 
 		wi::backlog::post("config.ini loaded in " + std::to_string(timer.elapsed_milliseconds()) + " milliseconds\n");
 	}
