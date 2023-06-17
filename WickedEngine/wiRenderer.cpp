@@ -52,8 +52,7 @@ InputLayout			inputLayouts[ILTYPE_COUNT];
 RasterizerState		rasterizers[RSTYPE_COUNT];
 DepthStencilState	depthStencils[DSSTYPE_COUNT];
 BlendState			blendStates[BSTYPE_COUNT];
-GPUBuffer			constantBuffers[CBTYPE_COUNT];
-GPUBuffer			resourceBuffers[RBTYPE_COUNT];
+GPUBuffer			buffers[BUFFERTYPE_COUNT];
 Sampler				samplers[SAMPLER_COUNT];
 
 #if __has_include("wiShaderDump.h")
@@ -317,9 +316,9 @@ const BlendState* GetBlendState(BSTYPES id)
 {
 	return &blendStates[id];
 }
-const GPUBuffer* GetConstantBuffer(CBTYPES id)
+const GPUBuffer* GetBuffer(BUFFERTYPES id)
 {
-	return &constantBuffers[id];
+	return &buffers[id];
 }
 const Texture* GetTexture(TEXTYPES id)
 {
@@ -1822,29 +1821,18 @@ void LoadShaders()
 void LoadBuffers()
 {
 	GPUBufferDesc bd;
-
-	// The following buffers will be DEFAULT (long lifetime, slow update, fast read):
 	bd.usage = Usage::DEFAULT;
-
 	bd.size = sizeof(FrameCB);
 	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
-	device->CreateBuffer(&bd, nullptr, &constantBuffers[CBTYPE_FRAME]);
-	device->SetName(&constantBuffers[CBTYPE_FRAME], "constantBuffers[CBTYPE_FRAME]");
+	device->CreateBuffer(&bd, nullptr, &buffers[BUFFERTYPE_FRAMECB]);
+	device->SetName(&buffers[BUFFERTYPE_FRAMECB], "buffers[BUFFERTYPE_FRAMECB]");
 
-
-	bd.size = sizeof(ShaderEntity) * SHADER_ENTITY_COUNT;
+	bd.usage = Usage::DEFAULT;
+	bd.size = sizeof(ShaderEntity) * SHADER_ENTITY_COUNT + sizeof(XMMATRIX) * MATRIXARRAY_COUNT;
 	bd.bind_flags = BindFlag::SHADER_RESOURCE;
 	bd.misc_flags = ResourceMiscFlag::BUFFER_RAW;
-	bd.stride = sizeof(ShaderEntity);
-	device->CreateBuffer(&bd, nullptr, &resourceBuffers[RBTYPE_ENTITYARRAY]);
-	device->SetName(&resourceBuffers[RBTYPE_ENTITYARRAY], "resourceBuffers[RBTYPE_ENTITYARRAY]");
-
-	bd.size = sizeof(XMMATRIX) * MATRIXARRAY_COUNT;
-	bd.bind_flags = BindFlag::SHADER_RESOURCE;
-	bd.misc_flags = ResourceMiscFlag::BUFFER_RAW;
-	bd.stride = sizeof(XMMATRIX);
-	device->CreateBuffer(&bd, nullptr, &resourceBuffers[RBTYPE_MATRIXARRAY]);
-	device->SetName(&resourceBuffers[RBTYPE_MATRIXARRAY], "resourceBuffers[RBTYPE_MATRIXARRAY]");
+	device->CreateBuffer(&bd, nullptr, &buffers[BUFFERTYPE_ENTITY]);
+	device->SetName(&buffers[BUFFERTYPE_ENTITY], "buffers[BUFFERTYPE_ENTITY]");
 
 	{
 		TextureDesc desc;
@@ -2872,7 +2860,7 @@ void RenderImpostors(
 		device->BindResource(&vis.scene->impostorBuffer, 2, cmd, vis.scene->impostor_data.subresource_srv);
 		device->BindResource(&vis.scene->impostorArray, 1, cmd);
 
-		device->DrawIndexedInstancedIndirect(&vis.scene->impostorIndirectBuffer, 0, cmd);
+		device->DrawIndexedInstancedIndirect(&vis.scene->impostorBuffer, vis.scene->impostor_indirect.offset, cmd);
 
 		device->EventEnd(cmd);
 	}
@@ -3575,8 +3563,7 @@ void UpdatePerFrameData(
 	frameCB.texture_skyluminancelut_index = device->GetDescriptorIndex(&textures[TEXTYPE_2D_SKYATMOSPHERE_SKYLUMINANCELUT], SubresourceType::SRV);
 	frameCB.texture_cameravolumelut_index = device->GetDescriptorIndex(&textures[TEXTYPE_3D_SKYATMOSPHERE_CAMERAVOLUMELUT], SubresourceType::SRV);
 	frameCB.texture_wind_index = device->GetDescriptorIndex(&textures[TEXTYPE_3D_WIND], SubresourceType::SRV);
-	frameCB.buffer_entityarray_index = device->GetDescriptorIndex(&resourceBuffers[RBTYPE_ENTITYARRAY], SubresourceType::SRV);
-	frameCB.buffer_entitymatrixarray_index = device->GetDescriptorIndex(&resourceBuffers[RBTYPE_MATRIXARRAY], SubresourceType::SRV);
+	frameCB.buffer_entity_index = device->GetDescriptorIndex(&buffers[BUFFERTYPE_ENTITY], SubresourceType::SRV);
 
 	frameCB.texture_shadowatlas_index = device->GetDescriptorIndex(&shadowMapAtlas, SubresourceType::SRV);
 	frameCB.texture_shadowatlas_transparent_index = device->GetDescriptorIndex(&shadowMapAtlas_Transparent, SubresourceType::SRV);
@@ -3659,7 +3646,7 @@ void UpdateRenderData(
 	auto prof_updatebuffer_cpu = wi::profiler::BeginRangeCPU("Update Buffers (CPU)");
 	auto prof_updatebuffer_gpu = wi::profiler::BeginRangeGPU("Update Buffers (GPU)", cmd);
 
-	barrier_stack.push_back(GPUBarrier::Buffer(&constantBuffers[CBTYPE_FRAME], ResourceState::CONSTANT_BUFFER, ResourceState::COPY_DST));
+	barrier_stack.push_back(GPUBarrier::Buffer(&buffers[BUFFERTYPE_FRAMECB], ResourceState::CONSTANT_BUFFER, ResourceState::COPY_DST));
 	if (vis.scene->instanceBuffer.IsValid())
 	{
 		barrier_stack.push_back(GPUBarrier::Buffer(&vis.scene->instanceBuffer, ResourceState::SHADER_RESOURCE, ResourceState::COPY_DST));
@@ -3678,8 +3665,8 @@ void UpdateRenderData(
 	}
 	barrier_stack_flush(cmd);
 
-	device->UpdateBuffer(&constantBuffers[CBTYPE_FRAME], &frameCB, cmd);
-	barrier_stack.push_back(GPUBarrier::Buffer(&constantBuffers[CBTYPE_FRAME], ResourceState::COPY_DST, ResourceState::CONSTANT_BUFFER));
+	device->UpdateBuffer(&buffers[BUFFERTYPE_FRAMECB], &frameCB, cmd);
+	barrier_stack.push_back(GPUBarrier::Buffer(&buffers[BUFFERTYPE_FRAMECB], ResourceState::COPY_DST, ResourceState::CONSTANT_BUFFER));
 
 	if (vis.scene->instanceBuffer.IsValid() && vis.scene->instanceArraySize > 0)
 	{
@@ -4065,29 +4052,31 @@ void UpdateRenderData(
 		}
 
 		// Issue GPU entity array update:
-		if (entityCounter > 0)
+		if (entityCounter > 0 || matrixCounter > 0)
 		{
-			device->CopyBuffer(
-				&resourceBuffers[RBTYPE_ENTITYARRAY],
-				0,
-				&allocation_entityarray.buffer,
-				allocation_entityarray.offset,
-				sizeof(ShaderEntity) * entityCounter,
-				cmd
-			);
-			barrier_stack.push_back(GPUBarrier::Buffer(&resourceBuffers[RBTYPE_ENTITYARRAY], ResourceState::COPY_DST, ResourceState::SHADER_RESOURCE));
-		}
-		if (matrixCounter > 0)
-		{
-			device->CopyBuffer(
-				&resourceBuffers[RBTYPE_MATRIXARRAY],
-				0,
-				&allocation_matrixarray.buffer,
-				allocation_matrixarray.offset,
-				sizeof(XMMATRIX) * matrixCounter,
-				cmd
-			);
-			barrier_stack.push_back(GPUBarrier::Buffer(&resourceBuffers[RBTYPE_MATRIXARRAY], ResourceState::COPY_DST, ResourceState::SHADER_RESOURCE));
+			if (entityCounter > 0)
+			{
+				device->CopyBuffer(
+					&buffers[BUFFERTYPE_ENTITY],
+					0,
+					&allocation_entityarray.buffer,
+					allocation_entityarray.offset,
+					sizeof(ShaderEntity) * entityCounter,
+					cmd
+				);
+			}
+			if (matrixCounter > 0)
+			{
+				device->CopyBuffer(
+					&buffers[BUFFERTYPE_ENTITY],
+					sizeof(ShaderEntity) * SHADER_ENTITY_COUNT,
+					&allocation_matrixarray.buffer,
+					allocation_matrixarray.offset,
+					sizeof(XMMATRIX) * matrixCounter,
+					cmd
+				);
+			}
+			barrier_stack.push_back(GPUBarrier::Buffer(&buffers[BUFFERTYPE_ENTITY], ResourceState::COPY_DST, ResourceState::SHADER_RESOURCE));
 		}
 
 	}
@@ -4243,7 +4232,7 @@ void UpdateRenderData(
 		device->EventBegin("Impostor prepare", cmd);
 		auto range = wi::profiler::BeginRangeGPU("Impostor prepare", cmd);
 
-		barrier_stack.push_back(GPUBarrier::Buffer(&vis.scene->impostorIndirectBuffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DST));
+		barrier_stack.push_back(GPUBarrier::Buffer(&vis.scene->impostorBuffer, ResourceState::SHADER_RESOURCE | ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DST));
 		barrier_stack_flush(cmd);
 		IndirectDrawArgsIndexedInstanced clear_indirect = {};
 		clear_indirect.IndexCountPerInstance = 0;
@@ -4251,24 +4240,22 @@ void UpdateRenderData(
 		clear_indirect.StartIndexLocation = 0;
 		clear_indirect.BaseVertexLocation = 0;
 		clear_indirect.StartInstanceLocation = 0;
-		device->UpdateBuffer(&vis.scene->impostorIndirectBuffer, &clear_indirect, cmd, sizeof(clear_indirect), 0);
-		barrier_stack.push_back(GPUBarrier::Buffer(&vis.scene->impostorIndirectBuffer, ResourceState::COPY_DST, ResourceState::UNORDERED_ACCESS));
-		barrier_stack.push_back(GPUBarrier::Buffer(&vis.scene->impostorBuffer, ResourceState::SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS));
+		device->UpdateBuffer(&vis.scene->impostorBuffer, &clear_indirect, cmd, sizeof(clear_indirect), vis.scene->impostor_indirect.offset);
+		barrier_stack.push_back(GPUBarrier::Buffer(&vis.scene->impostorBuffer, ResourceState::COPY_DST, ResourceState::UNORDERED_ACCESS));
 		barrier_stack_flush(cmd);
 
 		device->BindComputeShader(&shaders[CSTYPE_IMPOSTOR_PREPARE], cmd);
 		device->BindUAV(&vis.scene->impostorBuffer, 0, cmd, vis.scene->impostor_ib.subresource_uav);
 		device->BindUAV(&vis.scene->impostorBuffer, 1, cmd, vis.scene->impostor_vb.subresource_uav);
 		device->BindUAV(&vis.scene->impostorBuffer, 2, cmd, vis.scene->impostor_data.subresource_uav);
-		device->BindUAV(&vis.scene->impostorIndirectBuffer, 3, cmd);
+		device->BindUAV(&vis.scene->impostorBuffer, 3, cmd, vis.scene->impostor_indirect.subresource_uav);
 
 		uint object_count = (uint)vis.scene->objects.GetCount();
 		device->PushConstants(&object_count, sizeof(object_count), cmd);
 
 		device->Dispatch((object_count + 63u) / 64u, 1, 1, cmd);
 
-		barrier_stack.push_back(GPUBarrier::Buffer(&vis.scene->impostorBuffer, ResourceState::UNORDERED_ACCESS, ResourceState::SHADER_RESOURCE));
-		barrier_stack.push_back(GPUBarrier::Buffer(&vis.scene->impostorIndirectBuffer,ResourceState::UNORDERED_ACCESS, ResourceState::INDIRECT_ARGUMENT));
+		barrier_stack.push_back(GPUBarrier::Buffer(&vis.scene->impostorBuffer, ResourceState::UNORDERED_ACCESS, ResourceState::SHADER_RESOURCE | ResourceState::INDIRECT_ARGUMENT));
 		barrier_stack_flush(cmd);
 
 		wi::profiler::EndRange(range);
@@ -7620,16 +7607,11 @@ void RefreshImpostors(const Scene& scene, CommandList cmd)
 
 	device->EventBegin("Impostor Refresh", cmd);
 
-	device->BindPipelineState(&PSO_captureimpostor, cmd);
-
 	Viewport viewport;
 	viewport.width = viewport.height = (float)scene.impostorTextureDim;
 	device->BindViewports(1, &viewport, cmd);
 
 	BindCommonResources(cmd);
-
-	barrier_stack.push_back(GPUBarrier::Image(&scene.impostorArray, ResourceState::SHADER_RESOURCE, ResourceState::RENDERTARGET));
-	barrier_stack_flush(cmd);
 
 	for (uint32_t impostorIndex = 0; impostorIndex < scene.impostors.GetCount(); ++impostorIndex)
 	{
@@ -7670,29 +7652,29 @@ void RefreshImpostors(const Scene& scene, CommandList cmd)
 
 			const RenderPassImage rp[] = {
 				RenderPassImage::RenderTarget(
-					&scene.impostorArray,
+					&scene.impostorRenderTarget_Albedo_MSAA,
 					RenderPassImage::LoadOp::CLEAR,
 					RenderPassImage::StoreOp::STORE,
 					ResourceState::RENDERTARGET,
-					ResourceState::RENDERTARGET,
-					slice
+					ResourceState::RENDERTARGET
 				),
 				RenderPassImage::RenderTarget(
-					&scene.impostorArray,
+					&scene.impostorRenderTarget_Normal_MSAA,
 					RenderPassImage::LoadOp::CLEAR,
 					RenderPassImage::StoreOp::STORE,
 					ResourceState::RENDERTARGET,
-					ResourceState::RENDERTARGET,
-					slice + 1
+					ResourceState::RENDERTARGET
 				),
 				RenderPassImage::RenderTarget(
-					&scene.impostorArray,
+					&scene.impostorRenderTarget_Surface_MSAA,
 					RenderPassImage::LoadOp::CLEAR,
 					RenderPassImage::StoreOp::STORE,
 					ResourceState::RENDERTARGET,
-					ResourceState::RENDERTARGET,
-					slice + 2
+					ResourceState::RENDERTARGET
 				),
+				RenderPassImage::Resolve(&scene.impostorRenderTarget_Albedo),
+				RenderPassImage::Resolve(&scene.impostorRenderTarget_Normal),
+				RenderPassImage::Resolve(&scene.impostorRenderTarget_Surface),
 				RenderPassImage::DepthStencil(
 					&scene.impostorDepthStencil,
 					RenderPassImage::LoadOp::CLEAR,
@@ -7700,6 +7682,8 @@ void RefreshImpostors(const Scene& scene, CommandList cmd)
 				)
 			};
 			device->RenderPassBegin(rp, arraysize(rp), cmd);
+
+			device->BindPipelineState(&PSO_captureimpostor, cmd);
 
 			uint32_t first_subset = 0;
 			uint32_t last_subset = 0;
@@ -7723,12 +7707,13 @@ void RefreshImpostors(const Scene& scene, CommandList cmd)
 			}
 
 			device->RenderPassEnd(cmd);
+
+			BlockCompress(scene.impostorRenderTarget_Albedo, scene.impostorArray, cmd, slice + 0);
+			BlockCompress(scene.impostorRenderTarget_Normal, scene.impostorArray, cmd, slice + 1);
+			BlockCompress(scene.impostorRenderTarget_Surface, scene.impostorArray, cmd, slice + 2);
 		}
 
 	}
-
-	barrier_stack.push_back(GPUBarrier::Image(&scene.impostorArray, ResourceState::RENDERTARGET, ResourceState::SHADER_RESOURCE));
-	barrier_stack_flush(cmd);
 
 	device->EventEnd(cmd);
 }
@@ -8569,7 +8554,7 @@ void BlockCompress(const wi::graphics::Texture& texture_src, const wi::graphics:
 	desc.height = std::max(1u, texture_bc.desc.height / block_size);
 	desc.bind_flags = BindFlag::UNORDERED_ACCESS;
 	desc.layout = ResourceState::UNORDERED_ACCESS;
-	desc.mip_levels = texture_bc.desc.mip_levels;
+	desc.mip_levels = GetMipCount(desc.width, desc.height);
 
 	static Texture bc_raw_uint2;
 	static Texture bc_raw_uint4;
@@ -8637,7 +8622,8 @@ void BlockCompress(const wi::graphics::Texture& texture_src, const wi::graphics:
 		}
 	}
 
-	for (uint32_t mip = 0; mip < desc.mip_levels; ++mip)
+	const uint32_t mip_levels = std::min(desc.mip_levels, std::min(texture_src.desc.mip_levels, texture_bc.desc.mip_levels));
+	for (uint32_t mip = 0; mip < mip_levels; ++mip)
 	{
 		const uint32_t width = std::max(1u, desc.width >> mip);
 		const uint32_t height = std::max(1u, desc.height >> mip);
@@ -9018,7 +9004,7 @@ void RefreshLightmaps(const Scene& scene, CommandList cmd, uint8_t instanceInclu
 
 void BindCommonResources(CommandList cmd)
 {
-	device->BindConstantBuffer(&constantBuffers[CBTYPE_FRAME], CBSLOT_RENDERER_FRAME, cmd);
+	device->BindConstantBuffer(&buffers[BUFFERTYPE_FRAMECB], CBSLOT_RENDERER_FRAME, cmd);
 }
 
 void BindCameraCB(

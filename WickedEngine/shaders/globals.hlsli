@@ -70,6 +70,41 @@ SamplerState sampler_aniso_wrap : register(s107);
 SamplerState sampler_aniso_mirror : register(s108);
 SamplerComparisonState sampler_cmp_depth : register(s109);
 
+#ifdef SPIRV
+// In Vulkan, we can manually overlap descriptor sets to reduce bindings:
+//	Note that HLSL register space declaration was not working correctly with overlapped spaces,
+//	But vk::binding works correctly in this case.
+//	HLSL register space declaration is working well with Vulkan when spaces are not overlapping.
+static const uint DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER = 1;
+static const uint DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER = 2;
+static const uint DESCRIPTOR_SET_BINDLESS_SAMPLER = 3;
+static const uint DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE = 4;
+static const uint DESCRIPTOR_SET_BINDLESS_STORAGE_IMAGE = 5;
+static const uint DESCRIPTOR_SET_BINDLESS_ACCELERATION_STRUCTURE = 6;
+
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] ByteAddressBuffer bindless_buffers[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<uint> bindless_ib[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLER)]] SamplerState bindless_samplers[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture2D bindless_textures[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture2DArray bindless_textures2DArray[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] TextureCube bindless_cubemaps[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] TextureCubeArray bindless_cubearrays[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture3D bindless_textures3D[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture2D<float> bindless_textures_float[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture2D<float2> bindless_textures_float2[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture2D<uint> bindless_textures_uint[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture2D<uint4> bindless_textures_uint4[];
+
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] RWByteAddressBuffer bindless_rwbuffers[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_IMAGE)]] RWTexture2D<float4> bindless_rwtextures[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_IMAGE)]] RWTexture2DArray<float4> bindless_rwtextures2DArray[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_IMAGE)]] RWTexture3D<float4> bindless_rwtextures3D[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_IMAGE)]] RWTexture2D<uint> bindless_rwtextures_uint[];
+#ifdef RTAPI
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_ACCELERATION_STRUCTURE)]] RaytracingAccelerationStructure bindless_accelerationstructures[];
+#endif // RTAPI
+
+#else
 SamplerState bindless_samplers[] : register(space1);
 Texture2D bindless_textures[] : register(space2);
 ByteAddressBuffer bindless_buffers[] : register(space3);
@@ -91,6 +126,7 @@ RWByteAddressBuffer bindless_rwbuffers[] : register(space15);
 RWTexture2DArray<float4> bindless_rwtextures2DArray[] : register(space16);
 RWTexture3D<float4> bindless_rwtextures3D[] : register(space17);
 RWTexture2D<uint> bindless_rwtextures_uint[] : register(space18);
+#endif // SPIRV
 
 #include "ShaderInterop_Renderer.h"
 
@@ -136,18 +172,19 @@ uint load_entitytile(uint tileIndex)
 }
 inline ShaderEntity load_entity(uint entityIndex)
 {
-	return bindless_buffers[GetFrame().buffer_entityarray_index].Load<ShaderEntity>(entityIndex * sizeof(ShaderEntity));
+	return bindless_buffers[GetFrame().buffer_entity_index].Load<ShaderEntity>(entityIndex * sizeof(ShaderEntity));
 }
 inline float4x4 load_entitymatrix(uint matrixIndex)
 {
 	// Workaround for: https://github.com/microsoft/DirectXShaderCompiler/issues/4738
-	ByteAddressBuffer buffer = bindless_buffers[GetFrame().buffer_entitymatrixarray_index];
+	ByteAddressBuffer buffer = bindless_buffers[GetFrame().buffer_entity_index];
+	const uint offset = sizeof(ShaderEntity) * SHADER_ENTITY_COUNT + matrixIndex * sizeof(float4x4);
 	return transpose(float4x4(
-		buffer.Load<float4>((matrixIndex * 4 + 0) * sizeof(float4)),
-		buffer.Load<float4>((matrixIndex * 4 + 1) * sizeof(float4)),
-		buffer.Load<float4>((matrixIndex * 4 + 2) * sizeof(float4)),
-		buffer.Load<float4>((matrixIndex * 4 + 3) * sizeof(float4))
-		));
+		buffer.Load<float4>(offset + 0 * sizeof(float4)),
+		buffer.Load<float4>(offset + 1 * sizeof(float4)),
+		buffer.Load<float4>(offset + 2 * sizeof(float4)),
+		buffer.Load<float4>(offset + 3 * sizeof(float4))
+	));
 }
 
 struct PrimitiveID
@@ -220,17 +257,16 @@ struct PrimitiveID
 #define texture_normal bindless_textures_float2[GetCamera().texture_normal_index]
 #define texture_roughness bindless_textures_float[GetCamera().texture_roughness_index]
 
-#define PI 3.14159265358979323846
-#define SQRT2 1.41421356237309504880
-#define FLT_MAX 3.402823466e+38
-#define FLT_EPSILON 1.192092896e-07
-#define GOLDEN_RATIO 1.6180339887
+static const float PI = 3.14159265358979323846;
+static const float SQRT2 = 1.41421356237309504880;
+static const float FLT_MAX = 3.402823466e+38;
+static const float FLT_EPSILON = 1.192092896e-07;
+static const float GOLDEN_RATIO = 1.6180339887;
+static const float M_TO_SKY_UNIT = 0.001f; // Engine units are in meters
+static const float SKY_UNIT_TO_M = rcp(M_TO_SKY_UNIT);
 
-#define sqr(a)		((a)*(a))
+#define sqr(a) ((a)*(a))
 #define pow5(x) pow(x, 5)
-
-#define M_TO_SKY_UNIT 0.001f // Engine units are in meters
-#define SKY_UNIT_TO_M (1.0 / M_TO_SKY_UNIT)
 
 // attribute computation with barycentric interpolation
 //	a0 : attribute at triangle corner 0
@@ -1321,7 +1357,7 @@ enum class ColorSpace
 };
 
 
-#define NUM_PARALLAX_OCCLUSION_STEPS 32
+static const uint NUM_PARALLAX_OCCLUSION_STEPS = 32;
 inline void ParallaxOcclusionMapping_Impl(
 	inout float4 uvsets,		// uvsets to modify
 	in float3 V,				// view vector (pointing towards camera)
