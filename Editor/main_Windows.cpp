@@ -96,8 +96,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		else
 		{
-			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() +"/Data/shaders/");
+			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + "\\Data\\shaders\\");
 		}
+
+		
 		
 		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shaderpath"))
 		{
@@ -108,7 +110,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		else
 		{
-			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/shaders/");
+			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "\\shaders\\");
+			
 		}
 	
 

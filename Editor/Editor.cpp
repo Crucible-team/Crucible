@@ -1495,7 +1495,7 @@ void EditorComponent::Update(float dt)
 			optionsWnd.RefreshEntityTree();
 		}
 		// Undo
-		if (wi::input::Press((wi::input::BUTTON)'Z') &&
+		if (wi::input::Down(wi::input::KEYBOARD_BUTTON_LCONTROL) && wi::input::Press((wi::input::BUTTON)'Z') &&
 			!wi::input::Down(wi::input::KEYBOARD_BUTTON_LSHIFT) &&
 			!wi::input::Down(wi::input::KEYBOARD_BUTTON_RSHIFT))
 		{
@@ -1504,10 +1504,7 @@ void EditorComponent::Update(float dt)
 			optionsWnd.RefreshEntityTree();
 		}
 		// Redo
-		if (wi::input::Press((wi::input::BUTTON)'Y') ||
-			(wi::input::Down(wi::input::KEYBOARD_BUTTON_LSHIFT) && wi::input::Press((wi::input::BUTTON)'Z')) ||
-			(wi::input::Down(wi::input::KEYBOARD_BUTTON_RSHIFT) && wi::input::Press((wi::input::BUTTON)'Z'))
-			)
+		if (wi::input::Down(wi::input::KEYBOARD_BUTTON_LCONTROL) && wi::input::Press((wi::input::BUTTON)'Y') )
 		{
 			ConsumeHistoryOperation(false);
 
