@@ -416,7 +416,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				std::string filename;
 				wi::helper::StringConvert(wfilename, filename);
-				editor.renderComponent.Open(filename);
+				Editor::getInstance().renderComponent.Open(filename);
 			}
 			SetForegroundWindow(hWnd);
 		}
