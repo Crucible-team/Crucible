@@ -68,6 +68,9 @@ namespace wi::scene
 		//wi::ecs::ComponentManager<RTMaterialComponent>& rtmaterials = componentLibrary.Register<RTMaterialComponent>("wi::scene::Scene::rtmaterials");
 		//wi::ecs::ComponentManager<LipSyncComponent>& LipSyncs = componentLibrary.Register<LipSyncComponent>("wi::scene::Scene::lipsyncs");
 
+		wi::ecs::ComponentManager<HealthComponent>& healths = componentLibrary.Register<HealthComponent>("wi::scene::Scene::healths");
+		wi::ecs::ComponentManager<ArmorComponent>& armors = componentLibrary.Register<ArmorComponent>("wi::scene::Scene::armors");
+
 		// Non-serialized attributes:
 		float dt = 0;
 		enum FLAGS

@@ -48,6 +48,8 @@ set (SOURCE_FILES
 	ResponseWindow.cpp
 	IOWindow.cpp
 	#ModelImporter_VMF.cpp
+	HealthWindow.cpp
+	ArmorWindow.cpp
 )
 
 add_subdirectory(meshoptimizer)

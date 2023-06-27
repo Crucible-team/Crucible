@@ -2323,7 +2323,7 @@ namespace wi::scene
 		void SubHealth(int hp) { health -= hp; };
 		int GetHealth() { return health; };
 
-		int SetMaxHealth(int maxhp) { MaxHealth = maxhp; };
+		void SetMaxHealth(int maxhp) { MaxHealth = maxhp; };
 		int GetMaxHealth() { return MaxHealth; };
 
 		void AddMaxHealth(int hp) { MaxHealth += hp; };
@@ -2340,7 +2340,7 @@ namespace wi::scene
 		void SubArmor(int ar) { armor -= ar; };
 		int GetArmor() { return armor; };
 
-		int SetMaxArmor(int maxar) { MaxArmor = maxar; };
+		void SetMaxArmor(int maxar) { MaxArmor = maxar; };
 		int GetMaxArmor() { return MaxArmor; };
 
 		void AddMaxArmor(int ar) { MaxArmor += ar; };

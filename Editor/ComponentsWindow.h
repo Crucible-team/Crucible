@@ -29,6 +29,8 @@
 #include "IOWindow.h"
 #include "ResponseWindow.h"
 #include "TerrainWindow.h"
+#include "HealthWindow.h"
+#include "ArmorWindow.h"
 
 class EditorComponent;
 
@@ -72,4 +74,6 @@ public:
 	TerrainWindow terrainWnd;
 	IOWindow ioWnd;
 	ResponseWindow responseWnd;
+	HealthWindow healthWnd;
+	ArmorWindow armorWnd;
 };

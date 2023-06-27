@@ -44,6 +44,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	terrainWnd.Create(editor);
 	ioWnd.Create(editor);
 	responseWnd.Create(editor);
+	healthWnd.Create(editor);
+	armorWnd.Create(editor);
 
 
 	newComponentCombo.Create("Add: ");
@@ -52,8 +54,10 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	newComponentCombo.selected_font.anim.typewriter.character_start = 1;
 	newComponentCombo.SetTooltip("Add a component to the last selected entity.");
 	newComponentCombo.SetInvalidSelectionText("...");
+	newComponentCombo.AddItem("Armor " ICON_FA_SHIELD, 26);
 	newComponentCombo.AddItem("Name " ICON_NAME, 0);
 	newComponentCombo.AddItem("Layer " ICON_LAYER, 1);
+	newComponentCombo.AddItem("Health " ICON_FA_HEART, 25);
 	newComponentCombo.AddItem("Hierarchy " ICON_HIERARCHY, 19);
 	newComponentCombo.AddItem("Transform " ICON_TRANSFORM, 2);
 	newComponentCombo.AddItem("Light " ICON_POINTLIGHT, 3);
@@ -77,6 +81,7 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	newComponentCombo.AddItem("Video " ICON_VIDEO, 22);
 	newComponentCombo.AddItem("IO " ICON_IO, 23);
 	newComponentCombo.AddItem("Response " ICON_FA_CHART_AREA, 24);
+	
 	newComponentCombo.OnSelect([=](wi::gui::EventArgs args) {
 		newComponentCombo.SetSelectedWithoutCallback(-1);
 		if (editor->translator.selected.empty())
@@ -201,6 +206,14 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 			if (scene.responses.Contains(entity))
 				return;
 			break;
+		case 25:
+			if (scene.healths.Contains(entity))
+				return;
+			break;
+		case 26:
+			if (scene.armors.Contains(entity))
+				return;
+			break;
 		default:
 			return;
 		}
@@ -306,6 +319,12 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 		case 24:
 			scene.responses.Create(entity);
 			break;
+		case 25:
+			scene.healths.Create(entity);
+			break;
+		case 26:
+			scene.armors.Create(entity);
+			break;
 		default:
 			break;
 		}
@@ -348,6 +367,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	AddWidget(&terrainWnd);
 	AddWidget(&ioWnd);
 	AddWidget(&responseWnd);
+	AddWidget(&healthWnd);
+	AddWidget(&armorWnd);
 
 	materialWnd.SetVisible(false);
 	weatherWnd.SetVisible(false);
@@ -379,6 +400,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	terrainWnd.SetVisible(false);
 	ioWnd.SetVisible(false);
 	responseWnd.SetVisible(false);
+	healthWnd.SetVisible(false);
+	armorWnd.SetVisible(false);
 
 	XMFLOAT2 size = XMFLOAT2(338, 500);
 	if (editor->main->config.GetSection("layout").Has("components.width"))
@@ -823,5 +846,31 @@ void ComponentsWindow::ResizeLayout()
 	else
 	{
 		responseWnd.SetVisible(false);
+	}
+
+	if (scene.healths.Contains(healthWnd.entity))
+	{
+		healthWnd.SetVisible(true);
+		healthWnd.SetPos(pos);
+		healthWnd.SetSize(XMFLOAT2(width, healthWnd.GetScale().y));
+		pos.y += healthWnd.GetSize().y;
+		pos.y += padding;
+	}
+	else
+	{
+		healthWnd.SetVisible(false);
+	}
+
+	if (scene.armors.Contains(armorWnd.entity))
+	{
+		armorWnd.SetVisible(true);
+		armorWnd.SetPos(pos);
+		armorWnd.SetSize(XMFLOAT2(width, armorWnd.GetScale().y));
+		pos.y += armorWnd.GetSize().y;
+		pos.y += padding;
+	}
+	else
+	{
+		armorWnd.SetVisible(false);
 	}
 }
