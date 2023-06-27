@@ -30,7 +30,7 @@ void ArmorWindow::Create(EditorComponent* _editor)
 	float step = hei + 2;
 	float wid = 220;
 
-	ArmorSlider.Create(0, 100, 100, 1, "Armor: ");
+	ArmorSlider.Create(0, 100, 100, 100, "Armor: ");
 	ArmorSlider.SetTooltip("Current amount of Armor.");
 	ArmorSlider.SetSize(XMFLOAT2(wid, hei));
 	ArmorSlider.OnSlide([=](wi::gui::EventArgs args) {
@@ -42,7 +42,7 @@ void ArmorWindow::Create(EditorComponent* _editor)
 		});
 	AddWidget(&ArmorSlider);
 
-	MaxArmorSlider.Create(0, 100, 100, 1, "MaxArmor: ");
+	MaxArmorSlider.Create(0, 100, 100, 100, "MaxArmor: ");
 	MaxArmorSlider.SetTooltip("Max Armor this can be.");
 	MaxArmorSlider.SetSize(XMFLOAT2(wid, hei));
 	MaxArmorSlider.OnSlide([=](wi::gui::EventArgs args) {

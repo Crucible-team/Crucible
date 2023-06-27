@@ -31,7 +31,7 @@ void HealthWindow::Create(EditorComponent* _editor)
 
 	float wid = 220;
 
-	HealthSlider.Create(0, 100, 100, 1, "Health: ");
+	HealthSlider.Create(0, 100, 100, 100, "Health: ");
 	HealthSlider.SetTooltip("Current amount of Health.");
 	HealthSlider.SetSize(XMFLOAT2(wid, hei));
 	HealthSlider.OnSlide([=](wi::gui::EventArgs args) {
@@ -43,7 +43,7 @@ void HealthWindow::Create(EditorComponent* _editor)
 		});
 	AddWidget(&HealthSlider);
 
-	MaxHealthSlider.Create(0, 100, 100, 1, "MaxHealth: ");
+	MaxHealthSlider.Create(0, 100, 100, 100, "MaxHealth: ");
 	MaxHealthSlider.SetTooltip("Max Health this can be.");
 	MaxHealthSlider.SetSize(XMFLOAT2(wid, hei));
 	MaxHealthSlider.OnSlide([=](wi::gui::EventArgs args) {
