@@ -1,5 +1,5 @@
 local distance = 1
-local scene = GetScene()
+local scene = GetGlobalScene()
 local zone_transform = scene.Component_GetTransform(GetEntity())
 
 if zone_transform ~= nil then
