@@ -100,6 +100,7 @@ This section describes the common tools for scripting which are not necessarily 
 - math.clamp(float x,min,max)  -- clamp x between min and max
 - math.saturate(float x)  -- clamp x between 0 and 1
 - math.round(float x)  -- round x to nearest integer
+- GetEntity() -- Only avaliable to scripts in a scripts component, returns the Entity ID for it's self.
 
 ## Engine Bindings
 The scripting API provides functions for the developer to manipulate engine behaviour or query it for information.
