@@ -1,5 +1,5 @@
 local distance = 1
-local scene = GetGlobalScene()
+local scene = GetScene()
 local zone_transform = scene.Component_GetTransform(GetEntity())
 local zone_animation = scene.Component_GetAnimation(GetEntity())
 
