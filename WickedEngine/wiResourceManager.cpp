@@ -323,6 +323,10 @@ namespace wi
 								//{
 								//	fmt = basist::transcoder_texture_format::cTFBC5_RG;
 								//	desc.format = Format::BC5_UNORM;
+								//	desc.swizzle.r = ComponentSwizzle::R;
+								//	desc.swizzle.g = ComponentSwizzle::G;
+								//	desc.swizzle.b = ComponentSwizzle::ONE;
+								//	desc.swizzle.a = ComponentSwizzle::ONE;
 								//}
 								//else
 								{
@@ -456,6 +460,10 @@ namespace wi
 										//{
 										//	fmt = basist::transcoder_texture_format::cTFBC5_RG;
 										//	desc.format = Format::BC5_UNORM;
+										//	desc.swizzle.r = ComponentSwizzle::R;
+										//	desc.swizzle.g = ComponentSwizzle::G;
+										//	desc.swizzle.b = ComponentSwizzle::ONE;
+										//	desc.swizzle.a = ComponentSwizzle::ONE;
 										//}
 										//else
 										{
@@ -642,6 +650,14 @@ namespace wi
 							default:
 								assert(0); // incoming format is not supported 
 								break;
+							}
+
+							if (desc.format == Format::BC5_UNORM)
+							{
+								desc.swizzle.r = ComponentSwizzle::R;
+								desc.swizzle.g = ComponentSwizzle::G;
+								desc.swizzle.b = ComponentSwizzle::ONE;
+								desc.swizzle.a = ComponentSwizzle::ONE;
 							}
 
 							wi::vector<SubresourceData> InitData;
@@ -859,6 +875,10 @@ namespace wi
 									if (has_flag(flags, Flags::IMPORT_NORMALMAP))
 									{
 										desc.format = Format::BC5_UNORM;
+										desc.swizzle.r = ComponentSwizzle::R;
+										desc.swizzle.g = ComponentSwizzle::G;
+										desc.swizzle.b = ComponentSwizzle::ONE;
+										desc.swizzle.a = ComponentSwizzle::ONE;
 									}
 									else
 									{
@@ -899,8 +919,10 @@ namespace wi
 									}
 									desc.bind_flags = BindFlag::SHADER_RESOURCE;
 
-									desc.width = AlignTo(desc.width, GetFormatBlockSize(desc.format));
-									desc.height = AlignTo(desc.height, GetFormatBlockSize(desc.format));
+									const uint32_t block_size = GetFormatBlockSize(desc.format);
+									desc.width = AlignTo(desc.width, block_size);
+									desc.height = AlignTo(desc.height, block_size);
+									desc.mip_levels = GetMipCount(desc.width, desc.height, desc.depth, block_size);
 
 									success = device->CreateTexture(&desc, nullptr, &resource->texture);
 									device->SetName(&resource->texture, name.c_str());

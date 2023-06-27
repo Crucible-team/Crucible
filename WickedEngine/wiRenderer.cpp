@@ -2853,7 +2853,7 @@ void RenderImpostors(
 		device->BindIndexBuffer(
 			&vis.scene->impostorBuffer,
 			vis.scene->impostor_ib_format == Format::R32_UINT ? IndexBufferFormat::UINT32 : IndexBufferFormat::UINT16,
-			vis.scene->impostor_ib.offset,
+			vis.scene->impostor_ib_format == Format::R32_UINT ? vis.scene->impostor_ib32.offset : vis.scene->impostor_ib16.offset,
 			cmd
 		);
 		device->BindResource(&vis.scene->impostorBuffer, 0, cmd, vis.scene->impostor_vb.subresource_srv);
@@ -4245,7 +4245,7 @@ void UpdateRenderData(
 		barrier_stack_flush(cmd);
 
 		device->BindComputeShader(&shaders[CSTYPE_IMPOSTOR_PREPARE], cmd);
-		device->BindUAV(&vis.scene->impostorBuffer, 0, cmd, vis.scene->impostor_ib.subresource_uav);
+		device->BindUAV(&vis.scene->impostorBuffer, 0, cmd, vis.scene->impostor_ib_format == Format::R32_UINT ? vis.scene->impostor_ib32.subresource_uav : vis.scene->impostor_ib16.subresource_uav);
 		device->BindUAV(&vis.scene->impostorBuffer, 1, cmd, vis.scene->impostor_vb.subresource_uav);
 		device->BindUAV(&vis.scene->impostorBuffer, 2, cmd, vis.scene->impostor_data.subresource_uav);
 		device->BindUAV(&vis.scene->impostorBuffer, 3, cmd, vis.scene->impostor_indirect.subresource_uav);
@@ -5340,6 +5340,38 @@ void DrawShadowmaps(
 						RenderMeshes(vis, renderQueue, RENDERPASS_SHADOW, FILTER_TRANSPARENT | FILTER_WATER, cmd, 0, (uint32_t)cascade_count);
 					}
 				}
+
+				if (!vis.visibleHairs.empty())
+				{
+					cb.cameras[0].position = vis.camera->Eye;
+					for (uint32_t cascade = 0; cascade < cascade_count; ++cascade)
+					{
+						XMStoreFloat4x4(&cb.cameras[0].view_projection, shcams[cascade].view_projection);
+						device->BindDynamicConstantBuffer(cb, CBSLOT_RENDERER_CAMERA, cmd);
+
+						Viewport vp;
+						vp.top_left_x = float(light.shadow_rect.x + cascade * light.shadow_rect.w);
+						vp.top_left_y = float(light.shadow_rect.y);
+						vp.width = float(light.shadow_rect.w);
+						vp.height = float(light.shadow_rect.h);
+						vp.min_depth = 0.0f;
+						vp.max_depth = 1.0f;
+						device->BindViewports(1, &vp, cmd);
+
+						for (uint32_t hairIndex : vis.visibleHairs)
+						{
+							const HairParticleSystem& hair = vis.scene->hairs[hairIndex];
+							if (!shcams[cascade].frustum.CheckBoxFast(hair.aabb))
+								continue;
+							Entity entity = vis.scene->hairs.GetEntity(hairIndex);
+							const MaterialComponent* material = vis.scene->materials.GetComponent(entity);
+							if (material != nullptr)
+							{
+								hair.Draw(*material, RENDERPASS_SHADOW, cmd);
+							}
+						}
+					}
+				}
 			}
 			break;
 			case LightComponent::SPOT:
@@ -5410,6 +5442,35 @@ void DrawShadowmaps(
 					}
 				}
 
+				if (!vis.visibleHairs.empty())
+				{
+					cb.cameras[0].position = vis.camera->Eye;
+					XMStoreFloat4x4(&cb.cameras[0].view_projection, shcam.view_projection);
+					device->BindDynamicConstantBuffer(cb, CBSLOT_RENDERER_CAMERA, cmd);
+
+					Viewport vp;
+					vp.top_left_x = float(light.shadow_rect.x);
+					vp.top_left_y = float(light.shadow_rect.y);
+					vp.width = float(light.shadow_rect.w);
+					vp.height = float(light.shadow_rect.h);
+					vp.min_depth = 0.0f;
+					vp.max_depth = 1.0f;
+					device->BindViewports(1, &vp, cmd);
+
+					for (uint32_t hairIndex : vis.visibleHairs)
+					{
+						const HairParticleSystem& hair = vis.scene->hairs[hairIndex];
+						if (!shcam.frustum.CheckBoxFast(hair.aabb))
+							continue;
+						Entity entity = vis.scene->hairs.GetEntity(hairIndex);
+						const MaterialComponent* material = vis.scene->materials.GetComponent(entity);
+						if (material != nullptr)
+						{
+							hair.Draw(*material, RENDERPASS_SHADOW, cmd);
+						}
+					}
+				}
+
 			}
 			break;
 			case LightComponent::POINT:
@@ -5423,8 +5484,8 @@ void DrawShadowmaps(
 				const float zFarP = std::max(1.0f, light.GetRange());
 				SHCAM cameras[6];
 				CreateCubemapCameras(light.position, zNearP, zFarP, cameras, arraysize(cameras));
-				Frustum frusta[arraysize(cameras)];
 				Viewport vp[arraysize(cameras)];
+				Frustum frusta[arraysize(cameras)];
 				uint32_t camera_count = 0;
 
 				for (uint32_t shcam = 0; shcam < arraysize(cameras); ++shcam)
@@ -5432,13 +5493,13 @@ void DrawShadowmaps(
 					// Check if cubemap face frustum is visible from main camera, otherwise, it will be skipped:
 					if (cam_frustum.Intersects(cameras[shcam].boundingfrustum))
 					{
-						frusta[camera_count] = cameras[shcam].frustum;
 						XMStoreFloat4x4(&cb.cameras[camera_count].view_projection, cameras[shcam].view_projection);
 						// We no longer have a straight mapping from camera to viewport:
 						//	- there will be always 6 viewports
 						//	- there will be only as many cameras, as many cubemap face frustums are visible from main camera
 						//	- output_index is mapping camera to viewport, used by shader to output to SV_ViewportArrayIndex
 						cb.cameras[camera_count].output_index = shcam;
+						frusta[camera_count] = cameras[shcam].frustum;
 						camera_count++;
 					}
 					vp[shcam].top_left_x = float(light.shadow_rect.x + shcam * light.shadow_rect.w);
@@ -5506,6 +5567,38 @@ void DrawShadowmaps(
 					if (predicationRequest && light.occlusionquery >= 0)
 					{
 						device->PredicationEnd(cmd);
+					}
+				}
+
+				if (!vis.visibleHairs.empty())
+				{
+					cb.cameras[0].position = vis.camera->Eye;
+					for (uint32_t shcam = 0; shcam < arraysize(cameras); ++shcam)
+					{
+						XMStoreFloat4x4(&cb.cameras[0].view_projection, cameras[shcam].view_projection);
+						device->BindDynamicConstantBuffer(cb, CBSLOT_RENDERER_CAMERA, cmd);
+
+						Viewport vp;
+						vp.top_left_x = float(light.shadow_rect.x + shcam * light.shadow_rect.w);
+						vp.top_left_y = float(light.shadow_rect.y);
+						vp.width = float(light.shadow_rect.w);
+						vp.height = float(light.shadow_rect.h);
+						vp.min_depth = 0;
+						vp.max_depth = 1;
+						device->BindViewports(1, &vp, cmd);
+
+						for (uint32_t hairIndex : vis.visibleHairs)
+						{
+							const HairParticleSystem& hair = vis.scene->hairs[hairIndex];
+							if (!cameras[shcam].frustum.CheckBoxFast(hair.aabb))
+								continue;
+							Entity entity = vis.scene->hairs.GetEntity(hairIndex);
+							const MaterialComponent* material = vis.scene->materials.GetComponent(entity);
+							if (material != nullptr)
+							{
+								hair.Draw(*material, RENDERPASS_SHADOW, cmd);
+							}
+						}
 					}
 				}
 
@@ -7521,7 +7614,12 @@ void RefreshEnvProbes(const Visibility& vis, CommandList cmd)
 			{
 				{
 					GPUBarrier barriers[] = {
-						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS, i),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS, i, 0),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS, i, 1),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS, i, 2),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS, i, 3),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS, i, 4),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS, i, 5),
 					};
 					device->Barrier(barriers, arraysize(barriers), cmd);
 				}
@@ -7545,7 +7643,12 @@ void RefreshEnvProbes(const Visibility& vis, CommandList cmd)
 
 				{
 					GPUBarrier barriers[] = {
-						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::UNORDERED_ACCESS, ResourceState::SHADER_RESOURCE, i),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::UNORDERED_ACCESS, ResourceState::SHADER_RESOURCE, i, 0),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::UNORDERED_ACCESS, ResourceState::SHADER_RESOURCE, i, 1),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::UNORDERED_ACCESS, ResourceState::SHADER_RESOURCE, i, 2),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::UNORDERED_ACCESS, ResourceState::SHADER_RESOURCE, i, 3),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::UNORDERED_ACCESS, ResourceState::SHADER_RESOURCE, i, 4),
+						GPUBarrier::Image(&vis.scene->envrenderingColorBuffer, ResourceState::UNORDERED_ACCESS, ResourceState::SHADER_RESOURCE, i, 5),
 					};
 					device->Barrier(barriers, arraysize(barriers), cmd);
 				}
@@ -8670,7 +8773,7 @@ void BlockCompress(const wi::graphics::Texture& texture_src, const wi::graphics:
 	device->EventEnd(cmd);
 }
 
-void CopyTexture2D(const Texture& dst, int DstMIP, int DstX, int DstY, const Texture& src, int SrcMIP, CommandList cmd, BORDEREXPANDSTYLE borderExpand)
+void CopyTexture2D(const Texture& dst, int DstMIP, int DstX, int DstY, const Texture& src, int SrcMIP, int SrcX, int SrcY, CommandList cmd, BORDEREXPANDSTYLE borderExpand, bool srgb_convert)
 {
 	const TextureDesc& desc_dst = dst.GetDesc();
 	const TextureDesc& desc_src = src.GetDesc();
@@ -8708,12 +8811,22 @@ void CopyTexture2D(const Texture& dst, int DstMIP, int DstX, int DstY, const Tex
 	}
 
 	CopyTextureCB cb;
-	cb.xCopyDest.x = DstX;
-	cb.xCopyDest.y = DstY;
+	cb.xCopyDst.x = DstX;
+	cb.xCopyDst.y = DstY;
+	cb.xCopySrc.x = SrcX;
+	cb.xCopySrc.y = SrcY;
 	cb.xCopySrcSize.x = desc_src.width >> SrcMIP;
 	cb.xCopySrcSize.y = desc_src.height >> SrcMIP;
 	cb.xCopySrcMIP = SrcMIP;
-	cb.xCopyBorderExpandStyle = (uint)borderExpand;
+	cb.xCopyFlags = 0;
+	if (borderExpand == BORDEREXPAND_WRAP)
+	{
+		cb.xCopyFlags |= COPY_TEXTURE_WRAP;
+	}
+	if (srgb_convert)
+	{
+		cb.xCopyFlags |= COPY_TEXTURE_SRGB;
+	}
 	device->PushConstants(&cb, sizeof(cb), cmd);
 
 	device->BindResource(&src, 0, cmd);
@@ -8727,7 +8840,11 @@ void CopyTexture2D(const Texture& dst, int DstMIP, int DstX, int DstY, const Tex
 		device->Barrier(barriers, arraysize(barriers), cmd);
 	}
 
-	device->Dispatch((cb.xCopySrcSize.x + 7) / 8, (cb.xCopySrcSize.y + 7) / 8, 1, cmd);
+	XMUINT2 copy_dim = XMUINT2(
+		std::min((uint32_t)cb.xCopySrcSize.x, uint32_t((desc_dst.width - DstX) >> DstMIP)),
+		std::min((uint32_t)cb.xCopySrcSize.y, uint32_t((desc_dst.height - DstY) >> DstMIP))
+	);
+	device->Dispatch((copy_dim.x + 7) / 8, (copy_dim.y + 7) / 8, 1, cmd);
 
 	{
 		GPUBarrier barriers[] = {

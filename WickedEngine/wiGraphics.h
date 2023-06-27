@@ -1664,6 +1664,25 @@ namespace wi::graphics
 			return IndexBufferFormat::UINT16;
 		}
 	}
+	constexpr IndexBufferFormat GetIndexBufferFormat(uint32_t vertex_count)
+	{
+		return vertex_count > 65536 ? IndexBufferFormat::UINT32 : IndexBufferFormat::UINT16;
+	}
+	constexpr Format GetIndexBufferFormatRaw(uint32_t vertex_count)
+	{
+		return vertex_count > 65536 ? Format::R32_UINT : Format::R16_UINT;
+	}
+	constexpr const char* GetIndexBufferFormatString(IndexBufferFormat format)
+	{
+		switch (format)
+		{
+		default:
+		case IndexBufferFormat::UINT32:
+			return "UINT32";
+		case IndexBufferFormat::UINT16:
+			return "UINT16";
+		}
+	}
 
 	constexpr uint32_t AlignTo(uint32_t value, uint32_t alignment)
 	{
@@ -1673,14 +1692,14 @@ namespace wi::graphics
 	{
 		return ((value + alignment - 1) / alignment) * alignment;
 	}
-	constexpr uint32_t GetMipCount(uint32_t width, uint32_t height, uint32_t depth = 1u)
+	constexpr uint32_t GetMipCount(uint32_t width, uint32_t height, uint32_t depth = 1u, uint32_t min_dimension = 1u)
 	{
 		uint32_t mips = 1;
-		while (width > 1u || height > 1u || depth > 1u)
+		while (width > min_dimension || height > min_dimension || depth > min_dimension)
 		{
-			width = std::max(1u, width >> 1u);
-			height = std::max(1u, height >> 1u);
-			depth = std::max(1u, depth >> 1u);
+			width = std::max(min_dimension, width >> 1u);
+			height = std::max(min_dimension, height >> 1u);
+			depth = std::max(min_dimension, depth >> 1u);
 			mips++;
 		}
 		return mips;
