@@ -2314,4 +2314,38 @@ namespace wi::scene
 			RAY,
 		};
 	};*/
+
+	struct HealthComponent
+	{
+		int health = 100;
+		void SetHealth(int hp) { health = hp; };
+		void AddHealth(int hp) { health += hp; };
+		void SubHealth(int hp) { health -= hp; };
+		int GetHealth() { return health; };
+
+		int SetMaxHealth(int maxhp) { MaxHealth = maxhp; };
+		int GetMaxHealth() { return MaxHealth; };
+
+		void AddMaxHealth(int hp) { MaxHealth += hp; };
+		void SubMaxHealth(int hp) { MaxHealth -= hp; };
+		int MaxHealth = 100;
+		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
+
+	struct ArmorComponent
+	{
+		int armor = 50;
+		void SetArmor(int ar) { armor = ar; };
+		void AddArmor(int ar) { armor += ar; };
+		void SubArmor(int ar) { armor -= ar; };
+		int GetArmor() { return armor; };
+
+		int SetMaxArmor(int maxar) { MaxArmor = maxar; };
+		int GetMaxArmor() { return MaxArmor; };
+
+		void AddMaxArmor(int ar) { MaxArmor += ar; };
+		void SubMaxArmor(int ar) { MaxArmor -= ar; };
+		int MaxArmor = 1000;
+		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
 }

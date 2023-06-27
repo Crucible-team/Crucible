@@ -1,4 +1,4 @@
-local scene = GetScene() -- GetScene() is from global scope
+local scene = GetGlobalScene() -- GetGlobalScene() is from global scope
 local entity = GetEntity() -- GetEntity() is local to this script (only available if this is running from a ScriptComponent)
 local transform = scene.Component_GetTransform(entity)
 if transform ~= nil then

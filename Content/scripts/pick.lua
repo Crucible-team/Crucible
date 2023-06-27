@@ -3,9 +3,9 @@ killProcesses()  -- stops all running lua coroutine processes
 
 backlog_post("---> START SCRIPT: pick.lua")
 
-scene = GetScene()
+scene = GetGlobalScene()
 scene.Clear()
-model_entity = LoadModel(script_dir() .. "../models/teapot.wiscene")
+model_entity = LoadScene(script_dir() .. "../models/teapot.wiscene")
 
 runProcess(function()
 	local t = 0

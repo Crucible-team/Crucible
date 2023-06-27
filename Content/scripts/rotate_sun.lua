@@ -3,7 +3,7 @@ killProcesses()  -- stops all running lua coroutine processes
 
 backlog_post("---> START SCRIPT: rotate_sun.lua")
 
-scene = GetScene()
+scene = GetGlobalScene()
 
 runProcess(function()
 	while true do

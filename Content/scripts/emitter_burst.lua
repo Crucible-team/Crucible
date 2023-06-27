@@ -3,9 +3,9 @@ killProcesses()  -- stops all running lua coroutine processes
 
 backlog_post("---> START SCRIPT: emitter_burst.lua")
 
-scene = GetScene()
+scene = GetGlobalScene()
 scene.Clear()
-LoadModel(script_dir() .. "../models/emitter_smoke.wiscene")
+LoadScene(script_dir() .. "../models/emitter_smoke.wiscene")
 emitter_entity = scene.Entity_FindByName("smoke")  -- query the emitter entity by name
 emitter_component = scene.Component_GetEmitter(emitter_entity)
 emitter_component.SetEmitCount(0)  -- don't emit continuously

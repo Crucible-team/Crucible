@@ -2,7 +2,7 @@
 
 backlog_post("---> START SCRIPT: camera_pointlight.lua")
 
-scene = GetScene()
+scene = GetGlobalScene()
 
 runProcess(function()
 

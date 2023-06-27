@@ -452,8 +452,8 @@ void Bind()
 		wi::lua::RegisterFunc("CreateEntity", CreateEntity_BindLua);
 
 		wi::lua::RegisterFunc("GetCamera", GetCamera);
-		wi::lua::RegisterFunc("GetScene", GetScene);
-		wi::lua::RegisterFunc("LoadModel", LoadModel);
+		wi::lua::RegisterFunc("GetGlobalScene", GetScene);
+		wi::lua::RegisterFunc("LoadScene", LoadModel);
 		wi::lua::RegisterFunc("Pick", Pick);
 		wi::lua::RegisterFunc("SceneIntersectSphere", SceneIntersectSphere);
 		wi::lua::RegisterFunc("SceneIntersectCapsule", SceneIntersectCapsule);

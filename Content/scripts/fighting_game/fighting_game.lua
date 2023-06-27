@@ -22,7 +22,7 @@
 --	The require_input_window("inputstring", allowed_latency_window) facility can detect inputs that are executed over multiple frames
 --	Neutral motion is "5", that can help to specify in some cases, for example: double tap right button would need a neutral in between the two presses, like this: 656. Also, "5A" means that A is pressed only once, not continuously.
 
-local scene = GetScene()
+local scene = GetGlobalScene()
 
 local debug_draw = true -- press H button to toggle
 local player2_control = "CPU" -- can be "CPU" or "Controller2". player1 will always use Keyboard and Controller1 for now (for simplicity)
@@ -1234,7 +1234,7 @@ local function Character(face, skin_color, shirt_color, hair_color, shoe_color)
 			--	We use a custom scene because if two models are loaded into the global scene, they will have name collisions
 			--	and thus we couldn't properly query entities by name
 			local model_scene = Scene()
-			self.model = LoadModel(model_scene, script_dir() .. "assets/character.wiscene")
+			self.model = LoadScene(model_scene, script_dir() .. "assets/character.wiscene")
 
 			-- Place model according to starting facing direction:
 			self.face = face
@@ -1270,31 +1270,31 @@ local function Character(face, skin_color, shirt_color, hair_color, shoe_color)
 			local effect_scene = Scene()
 			
 			effect_scene.Clear()
-			LoadModel(effect_scene, script_dir() .. "assets/emitter_dust.wiscene")
+			LoadScene(effect_scene, script_dir() .. "assets/emitter_dust.wiscene")
 			self.effect_dust = effect_scene.Entity_FindByName("dust")  -- query the emitter entity by name
 			effect_scene.Component_GetEmitter(self.effect_dust).SetEmitCount(0)  -- don't emit continuously
 			scene.Merge(effect_scene)
 
 			effect_scene.Clear()
-			LoadModel(effect_scene, script_dir() .. "assets/emitter_hiteffect.wiscene")
+			LoadScene(effect_scene, script_dir() .. "assets/emitter_hiteffect.wiscene")
 			self.effect_hit = effect_scene.Entity_FindByName("hit")  -- query the emitter entity by name
 			effect_scene.Component_GetEmitter(self.effect_hit).SetEmitCount(0)  -- don't emit continuously
 			scene.Merge(effect_scene)
 
 			effect_scene.Clear()
-			LoadModel(effect_scene, script_dir() .. "assets/emitter_guardeffect.wiscene")
+			LoadScene(effect_scene, script_dir() .. "assets/emitter_guardeffect.wiscene")
 			self.effect_guard = effect_scene.Entity_FindByName("guard")  -- query the emitter entity by name
 			effect_scene.Component_GetEmitter(self.effect_guard).SetEmitCount(0)  -- don't emit continuously
 			scene.Merge(effect_scene)
 
 			effect_scene.Clear()
-			LoadModel(effect_scene, script_dir() .. "assets/emitter_spark.wiscene")
+			LoadScene(effect_scene, script_dir() .. "assets/emitter_spark.wiscene")
 			self.effect_spark = effect_scene.Entity_FindByName("spark")  -- query the emitter entity by name
 			effect_scene.Component_GetEmitter(self.effect_spark).SetEmitCount(0)  -- don't emit continuously
 			scene.Merge(effect_scene)
 
 			effect_scene.Clear()
-			self.model_fireball = LoadModel(effect_scene, script_dir() .. "assets/emitter_fireball.wiscene")
+			self.model_fireball = LoadScene(effect_scene, script_dir() .. "assets/emitter_fireball.wiscene")
 			self.effect_fireball = effect_scene.Entity_FindByName("fireball")  -- query the emitter entity by name
 			effect_scene.Component_GetEmitter(self.effect_fireball).SetEmitCount(0)  -- don't emit continuously
 			self.effect_fireball_haze = effect_scene.Entity_FindByName("haze")  -- query the emitter entity by name
@@ -1960,7 +1960,7 @@ runProcess(function()
 	info.SetShadowColor(Vector(0,0,0,1))
 	path.AddFont(info)
 
-	LoadModel(script_dir() .. "assets/dojo.wiscene")
+	LoadScene(script_dir() .. "assets/dojo.wiscene")
 	
 	-- Create the two player characters. Parameters are facing direction and material colors to differentiate between them:
 	--						Facing:		skin color:				shirt color				hair color				shoe color

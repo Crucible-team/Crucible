@@ -3,9 +3,9 @@ killProcesses()  -- stops all running lua coroutine processes
 
 backlog_post("---> START SCRIPT: set_material_color.lua")
 
-scene = GetScene()
+scene = GetGlobalScene()
 scene.Clear()
-LoadModel(script_dir() .. "../models/teapot.wiscene")
+LoadScene(script_dir() .. "../models/teapot.wiscene")
 material_entity = scene.Entity_FindByName("teapot_material") -- query the teapot's material by name
 material_component = scene.Component_GetMaterial(material_entity)
 

@@ -229,7 +229,7 @@ return self
 end
 local conversation = Conversation()
 
-local scene = GetScene()
+local scene = GetGlobalScene()
 
 local Layers = {
 Player = 1 << 0,
@@ -263,7 +263,7 @@ local footprints = {}
 local animations = {}
 local function LoadAnimations(model_name)
 local anim_scene = Scene()
-LoadModel(anim_scene, model_name)
+LoadScene(anim_scene, model_name)
 animations = {
 IDLE = anim_scene.Entity_FindByName("idle"),
 WALK = anim_scene.Entity_FindByName("walk"),
@@ -337,7 +337,7 @@ Create = function(self, model_name, start_position, face, controllable)
     else
         self.layerMask = Layers.NPC
     end
-    self.model = LoadModel(model_name)
+    self.model = LoadScene(model_name)
     local layer = scene.Component_GetLayer(self.model)
     layer.SetLayerMask(self.layerMask)
 
@@ -1091,8 +1091,8 @@ local function ThirdPersonCamera(character)
 end
 
 ClearWorld()
---LoadModel(script_dir() .. "assets/level.wiscene")
-LoadModel(script_dir() .. "assets/detroitholophys.wiscene")
+--LoadScene(script_dir() .. "assets/level.wiscene")
+LoadScene(script_dir() .. "assets/detroitholophys.wiscene")
 LoadAnimations(script_dir() .. "assets/animations.wiscene")
 local player = Character(script_dir() .. "assets/character.wiscene", Vector(0,0.5,0), Vector(0,0,1), true)
 

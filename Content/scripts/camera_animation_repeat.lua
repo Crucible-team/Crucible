@@ -9,7 +9,7 @@ local cam = GetCamera()
 local target = TransformComponent()
 
 -- Get the main scene:
-local scene = GetScene()
+local scene = GetGlobalScene()
 
 -- Camera speed overridable from outer scope too:
 scriptableCameraSpeed = 0.4

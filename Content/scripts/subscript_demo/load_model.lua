@@ -3,6 +3,6 @@
 
 backlog_post("---> START SCRIPT: load_model.lua")
 
-LoadModel(script_dir() .. "../../models/teapot.wiscene")
+LoadScene(script_dir() .. "../../models/teapot.wiscene")
 
 backlog_post("---> END SCRIPT: load_model.lua")

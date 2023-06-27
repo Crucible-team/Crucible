@@ -2047,6 +2047,45 @@ namespace wi::scene
 		}
 	}
 
+	void HealthComponent::Serialize(wi::Archive& archive, EntitySerializer& seri)
+	{
+
+		if (archive.IsReadMode())
+		{
+			archive >> health;
+
+			archive >> MaxHealth;
+
+		}
+		else
+		{
+			
+
+			archive << health;
+			archive << MaxHealth;
+
+		}
+	}
+
+	void ArmorComponent::Serialize(wi::Archive& archive, EntitySerializer& seri)
+	{
+
+		if (archive.IsReadMode())
+		{
+			archive >> armor;
+
+			archive >> MaxArmor;
+		}
+		else
+		{
+
+
+			archive << armor;
+			archive << MaxArmor;
+
+		}
+	}
+
 	void Scene::Serialize(wi::Archive& archive)
 	{
 		wi::Timer timer;

@@ -6,7 +6,7 @@ backlog_post("---> START SCRIPT: class_parameters.lua")
 
 ClearWorld()
 
-local scene = GetScene()
+local scene = GetGlobalScene()
 
 local sun_entity = CreateEntity()
 local sun_name = scene.Component_CreateName(sun_entity)

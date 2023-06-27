@@ -523,17 +523,17 @@ An entity is just an int value (int in LUA and uint32 in C++) and works as a han
 #### Scene
 The scene holds components. Entity handles can be used to retrieve associated components through the scene.
 - [constructor]Scene() : Scene result  -- creates a custom scene
-- [outer]GetScene() : Scene result  -- returns the global scene
+- [outer]GetGlobalScene() : Scene result  -- returns the global scene
 - [outer]GetCamera() : Camera result  -- returns the global camera
-- [outer]LoadModel(string fileName, opt Matrix transform) : int rootEntity	-- Load Model from file. returns a root entity that everything in this model is attached to
-- [outer]LoadModel(Scene scene, string fileName, opt Matrix transform) : int rootEntity	-- Load Model from file into specified scene. returns a root entity that everything in this model is attached to
+- [outer]LoadScene(string fileName, opt Matrix transform) : int rootEntity	-- Load Model from file. returns a root entity that everything in this model is attached to
+- [outer]LoadScene(Scene scene, string fileName, opt Matrix transform) : int rootEntity	-- Load Model from file into specified scene. returns a root entity that everything in this model is attached to
 
 - [deprecated][outer]PICK_OPAQUE : uint	-- deprecated, you can use FILTER_ enums instead
 - [deprecated][outer]PICK_TRANSPARENT : uint	-- deprecated, you can use FILTER_ enums instead
 - [deprecated][outer]PICK_WATER : uint	-- deprecated, you can use FILTER_ enums instead
-- [deprecated][outer]Pick(Ray ray, opt uint filterMask = ~0, opt uint layerMask = ~0, opt Scene scene = GetScene(), uint lod = 0) : int entity, Vector position,normal, float distance		-- Perform ray-picking in the scene. pickType is a bitmask specifying object types to check against. layerMask is a bitmask specifying which layers to check against. Scene parameter is optional and will use the global scene if not specified. (deprecated, you can use the scene's Intersects() function instead)
-- [deprecated][outer]SceneIntersectSphere(Sphere sphere, opt uint filterMask = ~0, opt uint layerMask = ~0, opt Scene scene = GetScene(), opt uint lod = 0) : int entity, Vector position,normal, float distance		-- Perform ray-picking in the scene. pickType is a bitmask specifying object types to check against. layerMask is a bitmask specifying which layers to check against. Scene parameter is optional and will use the global scene if not specified. (deprecated, you can use the scene's Intersects() function instead)
-- [deprecated][outer]SceneIntersectCapsule(Capsule capsule, opt uint filterMask = ~0, opt uint layerMask = ~0, opt Scene scene = GetScene(), opt uint lod = 0) : int entity, Vector position,normal, float distance		-- Perform ray-picking in the scene. pickType is a bitmask specifying object types to check against. layerMask is a bitmask specifying which layers to check against. Scene parameter is optional and will use the global scene if not specified. (deprecated, you can use the scene's Intersects() function instead)
+- [deprecated][outer]Pick(Ray ray, opt uint filterMask = ~0, opt uint layerMask = ~0, opt Scene scene = GetGlobalScene(), uint lod = 0) : int entity, Vector position,normal, float distance		-- Perform ray-picking in the scene. pickType is a bitmask specifying object types to check against. layerMask is a bitmask specifying which layers to check against. Scene parameter is optional and will use the global scene if not specified. (deprecated, you can use the scene's Intersects() function instead)
+- [deprecated][outer]SceneIntersectSphere(Sphere sphere, opt uint filterMask = ~0, opt uint layerMask = ~0, opt Scene scene = GetGlobalScene(), opt uint lod = 0) : int entity, Vector position,normal, float distance		-- Perform ray-picking in the scene. pickType is a bitmask specifying object types to check against. layerMask is a bitmask specifying which layers to check against. Scene parameter is optional and will use the global scene if not specified. (deprecated, you can use the scene's Intersects() function instead)
+- [deprecated][outer]SceneIntersectCapsule(Capsule capsule, opt uint filterMask = ~0, opt uint layerMask = ~0, opt Scene scene = GetGlobalScene(), opt uint lod = 0) : int entity, Vector position,normal, float distance		-- Perform ray-picking in the scene. pickType is a bitmask specifying object types to check against. layerMask is a bitmask specifying which layers to check against. Scene parameter is optional and will use the global scene if not specified. (deprecated, you can use the scene's Intersects() function instead)
 
 - [outer]FILTER_NONE : uint	-- include nothing
 - [outer]FILTER_OPAQUE : uint	-- include opaque meshes

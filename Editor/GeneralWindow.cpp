@@ -328,14 +328,14 @@ void GeneralWindow::Create(EditorComponent* _editor)
 	themeCombo.OnSelect([=](wi::gui::EventArgs args) {
 
 		// Dark theme defaults:
-		wi::Color theme_color_idle = wi::Color(30, 40, 60, 200);
-		wi::Color theme_color_focus = wi::Color(70, 150, 170, 220);
-		wi::Color dark_point = wi::Color(10, 10, 20, 220); // darker elements will lerp towards this
+		wi::Color theme_color_idle = wi::Color(30, 40, 60, 255);
+		wi::Color theme_color_focus = wi::Color(70, 150, 170, 255);
+		wi::Color dark_point = wi::Color(10, 10, 20, 255); // darker elements will lerp towards this
 		wi::gui::Theme theme;
-		theme.image.background = true;
+		theme.image.background = false;
 		theme.image.blendFlag = wi::enums::BLENDMODE_OPAQUE;
 		theme.font.color = wi::Color(130, 210, 220, 255);
-		theme.shadow_color = wi::Color(80, 140, 180, 100);
+		theme.shadow_color = wi::Color(80, 140, 180, 255);
 
 		switch ((Theme)args.userdata)
 		{

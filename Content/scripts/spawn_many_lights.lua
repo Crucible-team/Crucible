@@ -2,7 +2,7 @@
 --	Use this when you already loaded a scene, because the lights will be placed inside the scene bounds
 backlog_post("---> START SCRIPT: spawn_many_lights.lua")
 
-scene = GetScene()
+scene = GetGlobalScene()
 
 local entities = {}
 local velocities = {}

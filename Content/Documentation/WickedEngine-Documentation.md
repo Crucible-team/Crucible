@@ -246,9 +246,9 @@ Entity is a number, it can reference components through ComponentManager contain
 ### Scene System
 [[Header]](../../WickedEngine/wiScene.h) [[Cpp]](../../WickedEngine/wiScene.cpp)
 The logical scene representation using the Entity-Component System
-- GetScene <br/>
+- GetGlobalScene <br/>
 Returns a global scene instance. This is a convenience feature for simple applications that need a single scene. The RenderPath3D will use the global scene by default, but it can be set to a custom scene if needed.
-- LoadModel() <br/>
+- LoadScene() <br/>
 There are two flavours to this. One of them immediately loads into the global scene. The other loads into a custom scene, which is usefult to manage the contents separately. This function will return an Entity that represents the root transform of the scene - if the attached parameter was true, otherwise it will return INVALID_ENTITY and no root transform will be created.
 - Pick <br/>
 Allows to pick the closest object with a RAY (closest ray intersection hit to the ray origin). The user can provide a custom scene or layermask to filter the objects to be checked.

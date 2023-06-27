@@ -3,9 +3,9 @@ killProcesses()  -- stops all running lua coroutine processes
 
 backlog_post("---> START SCRIPT: move_object.lua")
 
-scene = GetScene()
+scene = GetGlobalScene()
 scene.Clear()
-LoadModel(script_dir() .. "../models/teapot.wiscene")
+LoadScene(script_dir() .. "../models/teapot.wiscene")
 top_entity = scene.Entity_FindByName("Top") -- query the teapot lid object by name
 transform_component = scene.Component_GetTransform(top_entity)
 rest_matrix = transform_component.GetMatrix()
