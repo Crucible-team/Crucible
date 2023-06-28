@@ -465,6 +465,7 @@ namespace wi::lua::scene
 			TexAnimFrameRate = FloatProperty(&component->roughness);
 			texAnimElapsedTime = FloatProperty(&component->roughness);
 			customShaderID = IntProperty(&component->customShaderID);
+			surfacetype = IntProperty(reinterpret_cast<int*>(&component->surfacetype));
 		}
 
 		MaterialComponent_BindLua(wi::scene::MaterialComponent* component) :component(component)
@@ -500,6 +501,7 @@ namespace wi::lua::scene
 		FloatProperty TexAnimFrameRate;
 		FloatProperty texAnimElapsedTime;
 		IntProperty customShaderID;
+		IntProperty surfacetype;
 
 		PropertyFunction(_flags)
 		PropertyFunction(ShaderType)
@@ -525,6 +527,7 @@ namespace wi::lua::scene
 		PropertyFunction(TexAnimFrameRate)
 		PropertyFunction(texAnimElapsedTime)
 		PropertyFunction(customShaderID)
+		PropertyFunction(surfacetype)
 
 		int SetBaseColor(lua_State* L);
 		int GetBaseColor(lua_State* L);
@@ -541,6 +544,9 @@ namespace wi::lua::scene
 		int GetTexture(lua_State* L);
 		int GetTextureName(lua_State* L);
 		int GetTextureUVSet(lua_State* L);
+
+		int SetSurfaceProperty(lua_State* L);
+		int GetSurfaceProperty(lua_State* L);
 	};
 
 	class MeshComponent_BindLua

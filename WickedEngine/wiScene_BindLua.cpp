@@ -3552,6 +3552,8 @@ Luna<MaterialComponent_BindLua>::FunctionType MaterialComponent_BindLua::methods
 	lunamethod(MaterialComponent_BindLua, GetTexture),
 	lunamethod(MaterialComponent_BindLua, GetTextureName),
 	lunamethod(MaterialComponent_BindLua, GetTextureUVSet),
+	lunamethod(MaterialComponent_BindLua, SetSurfaceProperty),
+	lunamethod(MaterialComponent_BindLua, GetSurfaceProperty),
 	{ NULL, NULL }
 };
 Luna<MaterialComponent_BindLua>::PropertyType MaterialComponent_BindLua::properties[] = {
@@ -3585,6 +3587,7 @@ Luna<MaterialComponent_BindLua>::PropertyType MaterialComponent_BindLua::propert
 	lunaproperty(MaterialComponent_BindLua, TexAnimFrameRate),
 	lunaproperty(MaterialComponent_BindLua, texAnimElapsedTime),
 	lunaproperty(MaterialComponent_BindLua, customShaderID),
+	lunaproperty(MaterialComponent_BindLua, surfacetype),
 	{ NULL, NULL }
 };
 
@@ -3822,6 +3825,38 @@ int MaterialComponent_BindLua::GetTextureUVSet(lua_State* L)
 		wi::lua::SError(L, "GetTextureUVSet(TextureSlot slot) not enough arguments!");
 	}
 	return 0;
+}
+
+int MaterialComponent_BindLua::SetSurfaceProperty(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int value = wi::lua::SGetInt(L, 1);
+
+
+		if (value < 0)
+		{
+			wi::lua::SError(L, "SetSurfaceProperty can't be negative!");
+
+			return 0;
+		}
+
+		component->surfacetype = (wi::enums::SURFACEPROP)value;
+		return 0;
+
+	}
+	else
+	{
+		wi::lua::SError(L, "SetMaxArmor (int value) not enough arguments!");
+	}
+	return 0;
+}
+
+int MaterialComponent_BindLua::GetSurfaceProperty(lua_State* L)
+{
+	wi::lua::SSetInt(L, component->surfacetype);
+	return 1;
 }
 
 
@@ -6291,6 +6326,8 @@ int RelationshipComponent_BindLua::SetRelationship(lua_State* L)
 		component->Relationships[index]._class = wi::lua::SGetLongLong(L, 3);
 		component->Relationships[index]._Diposition = wi::lua::SGetLongLong(L, 4);
 		component->Relationships[index].priority = wi::lua::SGetInt(L, 5);
+
+		return 0;
 	}
 	else
 	{
@@ -6318,7 +6355,7 @@ int RelationshipComponent_BindLua::AddRelationship(lua_State* L)
 
 		component->Relationships.push_back(rel);
 
-		return 1;
+		return 0;
 	}
 	else
 	{
@@ -6424,7 +6461,7 @@ int HealthComponent_BindLua::AddHealth(lua_State* L)
 	}
 	else
 	{
-		wi::lua::SError(L, "SetHealth (int value) not enough arguments!");
+		wi::lua::SError(L, "AddHealth (int value) not enough arguments!");
 	}
 	return 0;
 }
