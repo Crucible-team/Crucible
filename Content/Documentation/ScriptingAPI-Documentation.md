@@ -808,7 +808,8 @@ Describes an orientation in 3D space.
 - GetSurfaceProperty() : int
 
 
-```enum SURFACEPROP
+```lua
+enum SURFACEPROP
 	{
 		DEFUALT,
 		DEFAULT_SILENT,
