@@ -461,6 +461,7 @@ void Bind()
 		Luna<Scene_BindLua>::Register(L);
 		Luna<NameComponent_BindLua>::Register(L);
 		Luna<RelationshipComponent_BindLua>::Register(L);
+		Luna<HealthComponent_BindLua>::Register(L);
 		Luna<LayerComponent_BindLua>::Register(L);
 		Luna<TransformComponent_BindLua>::Register(L);
 		Luna<CameraComponent_BindLua>::Register(L);
@@ -525,6 +526,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_CreateDecal),
 
 	lunamethod(Scene_BindLua, Component_CreateRelationship),
+	lunamethod(Scene_BindLua, Component_CreateHealth),
+	lunamethod(Scene_BindLua, Component_CreateArmor),
 
 	lunamethod(Scene_BindLua, Component_GetName),
 	lunamethod(Scene_BindLua, Component_GetLayer),
@@ -552,6 +555,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 
 	//Crucible
 	lunamethod(Scene_BindLua, Component_GetRelationship),
+	lunamethod(Scene_BindLua, Component_GetHealth),
+	lunamethod(Scene_BindLua, Component_GetArmor),
 
 	lunamethod(Scene_BindLua, Component_GetNameArray),
 	lunamethod(Scene_BindLua, Component_GetLayerArray),
@@ -579,6 +584,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 
 	//Crucible
 	lunamethod(Scene_BindLua, Component_GetRelationshipArray),
+	lunamethod(Scene_BindLua, Component_GetHealthArray),
+	lunamethod(Scene_BindLua, Component_GetArmorArray),
 
 	lunamethod(Scene_BindLua, Entity_GetNameArray),
 	lunamethod(Scene_BindLua, Entity_GetLayerArray),
@@ -607,6 +614,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 
 	//Crucible
 	lunamethod(Scene_BindLua, Entity_GetRelationshipArray),
+	lunamethod(Scene_BindLua, Entity_GetHealthArray),
+	lunamethod(Scene_BindLua, Entity_GetArmorArray),
 
 	lunamethod(Scene_BindLua, Component_RemoveName),
 	lunamethod(Scene_BindLua, Component_RemoveLayer),
@@ -635,6 +644,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 
 	//Crucible
 	lunamethod(Scene_BindLua, Component_RemoveRelationship),
+	lunamethod(Scene_BindLua, Component_RemoveHealth),
+	lunamethod(Scene_BindLua, Component_RemoveArmor),
 
 	lunamethod(Scene_BindLua, Component_Attach),
 	lunamethod(Scene_BindLua, Component_Detach),
@@ -6056,6 +6067,32 @@ Luna<RelationshipComponent_BindLua>::PropertyType RelationshipComponent_BindLua:
 	{ NULL, NULL }
 };
 
+Luna<HealthComponent_BindLua>::FunctionType HealthComponent_BindLua::methods[] = {
+	lunamethod(HealthComponent_BindLua, AddHealth),
+	lunamethod(HealthComponent_BindLua, GetHealth),
+	lunamethod(HealthComponent_BindLua, SetHealth),
+	lunamethod(HealthComponent_BindLua, GetMaxHealth),
+	lunamethod(HealthComponent_BindLua, SetMaxHealth),
+	{ NULL, NULL }
+};
+Luna<HealthComponent_BindLua>::PropertyType HealthComponent_BindLua::properties[] = {
+	//lunaproperty(RelationshipComponent_BindLua, Relationships),
+	{ NULL, NULL }
+};
+
+Luna<ArmorComponent_BindLua>::FunctionType ArmorComponent_BindLua::methods[] = {
+	lunamethod(ArmorComponent_BindLua, AddArmor),
+	lunamethod(ArmorComponent_BindLua, GetArmor),
+	lunamethod(ArmorComponent_BindLua, SetArmor),
+	lunamethod(ArmorComponent_BindLua, GetMaxArmor),
+	lunamethod(ArmorComponent_BindLua, SetMaxArmor),
+	{ NULL, NULL }
+};
+Luna<ArmorComponent_BindLua>::PropertyType ArmorComponent_BindLua::properties[] = {
+	//lunaproperty(RelationshipComponent_BindLua, Relationships),
+	{ NULL, NULL }
+};
+
 int Scene_BindLua::Component_CreateRelationship(lua_State* L)
 {
 	int argc = wi::lua::SGetArgCount(L);
@@ -6281,6 +6318,343 @@ int RelationshipComponent_BindLua::AddRelationship(lua_State* L)
 	else
 	{
 		wi::lua::SError(L, "AddRelationship(Entity entity, uint32 class, uint32 diposition, int priority) not enough arguments!");
+	}
+	return 0;
+}
+
+int Scene_BindLua::Component_CreateHealth(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		HealthComponent& component = scene->healths.Create(entity);
+		Luna<HealthComponent_BindLua>::push(L, &component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_CreateHealth(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+
+int Scene_BindLua::Component_GetHealth(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		HealthComponent* component = scene->healths.GetComponent(entity);
+		if (component == nullptr)
+		{
+			return 0;
+		}
+
+		Luna<HealthComponent_BindLua>::push(L, component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_GetHealth(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+
+int Scene_BindLua::Component_GetHealthArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->healths.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->healths.GetCount(); ++i)
+	{
+		Luna<HealthComponent_BindLua>::push(L, &scene->healths[i]);
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+
+int Scene_BindLua::Entity_GetHealthArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->healths.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->healths.GetCount(); ++i)
+	{
+		wi::lua::SSetLongLong(L, scene->healths.GetEntity(i));
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+
+int Scene_BindLua::Component_RemoveHealth(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+		if (scene->healths.Contains(entity))
+		{
+			scene->healths.Remove(entity);
+		}
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_RemoveHealth(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+
+int HealthComponent_BindLua::AddHealth(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int value = wi::lua::SGetInt(L, 1);
+
+
+		component->health += value;
+		return 0;
+
+	}
+	else
+	{
+		wi::lua::SError(L, "SetHealth (int value) not enough arguments!");
+	}
+	return 0;
+}
+
+int HealthComponent_BindLua::SetHealth(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int value = wi::lua::SGetInt(L, 1);
+
+
+		if (value < 0)
+		{
+			wi::lua::SError(L, "SetHealth can't be negative!");
+
+			return 0;
+		}
+
+		component->SetHealth(value);
+		return 0;
+
+	}
+	else
+	{
+		wi::lua::SError(L, "SetHealth (int value) not enough arguments!");
+	}
+	return 0;
+}
+
+
+int HealthComponent_BindLua::GetHealth(lua_State* L)
+{
+	wi::lua::SSetInt(L, component->health);
+	return 1;
+}
+
+int HealthComponent_BindLua::GetMaxHealth(lua_State* L)
+{
+	wi::lua::SSetInt(L, component->MaxHealth);
+	return 1;
+}
+
+int HealthComponent_BindLua::SetMaxHealth(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int value = wi::lua::SGetInt(L, 1);
+
+
+		if (value < 0)
+		{
+			wi::lua::SError(L, "SetMaxHealth can't be negative!");
+
+			return 0;
+		}
+
+		component->SetMaxHealth(value);
+		return 0;
+
+	}
+	else
+	{
+		wi::lua::SError(L, "SetMaxHealth (int value) not enough arguments!");
+	}
+	return 0;
+}
+
+
+
+
+int Scene_BindLua::Component_CreateArmor(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		ArmorComponent& component = scene->armors.Create(entity);
+		Luna<ArmorComponent_BindLua>::push(L, &component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_CreateHealth(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+
+int Scene_BindLua::Component_GetArmor(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		ArmorComponent* component = scene->armors.GetComponent(entity);
+		if (component == nullptr)
+		{
+			return 0;
+		}
+
+		Luna<ArmorComponent_BindLua>::push(L, component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_GetArmor(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+
+int Scene_BindLua::Component_GetArmorArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->armors.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->armors.GetCount(); ++i)
+	{
+		Luna<ArmorComponent_BindLua>::push(L, &scene->armors[i]);
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+
+int Scene_BindLua::Entity_GetArmorArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->armors.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->armors.GetCount(); ++i)
+	{
+		wi::lua::SSetLongLong(L, scene->armors.GetEntity(i));
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+
+int Scene_BindLua::Component_RemoveArmor(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+		if (scene->armors.Contains(entity))
+		{
+			scene->armors.Remove(entity);
+		}
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_RemoveArmor(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+
+int ArmorComponent_BindLua::AddArmor(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int value = wi::lua::SGetInt(L, 1);
+
+
+		component->armor += value;
+		return 0;
+
+	}
+	else
+	{
+		wi::lua::SError(L, "AddArmor (int value) not enough arguments!");
+	}
+	return 0;
+}
+
+int ArmorComponent_BindLua::SetArmor(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int value = wi::lua::SGetInt(L, 1);
+
+
+		if (value < 0)
+		{
+			wi::lua::SError(L, "SetArmor can't be negative!");
+
+			return 0;
+		}
+
+		component->SetArmor(value);
+		return 0;
+
+	}
+	else
+	{
+		wi::lua::SError(L, "SetArmor (int value) not enough arguments!");
+	}
+	return 0;
+}
+
+
+int ArmorComponent_BindLua::GetArmor(lua_State* L)
+{
+	wi::lua::SSetInt(L, component->armor);
+	return 1;
+}
+
+int ArmorComponent_BindLua::GetMaxArmor(lua_State* L)
+{
+	wi::lua::SSetInt(L, component->MaxArmor);
+	return 1;
+}
+
+int ArmorComponent_BindLua::SetMaxArmor(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		int value = wi::lua::SGetInt(L, 1);
+
+
+		if (value < 0)
+		{
+			wi::lua::SError(L, "SetMaxArmor can't be negative!");
+
+			return 0;
+		}
+
+		component->SetMaxArmor(value);
+		return 0;
+
+	}
+	else
+	{
+		wi::lua::SError(L, "SetMaxArmor (int value) not enough arguments!");
 	}
 	return 0;
 }

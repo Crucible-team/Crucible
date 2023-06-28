@@ -180,6 +180,7 @@ namespace wi::lua::scene
 
 		//crucible
 		int Component_CreateRelationship(lua_State* L);
+
 		int Component_GetRelationship(lua_State* L);
 		int Component_GetRelationshipArray(lua_State* L);
 
@@ -187,7 +188,61 @@ namespace wi::lua::scene
 
 		int Component_RemoveRelationship(lua_State* L);
 
+		int Component_CreateHealth(lua_State* L);
+		int Component_GetHealth(lua_State* L);
+		int Component_GetHealthArray(lua_State* L);
+		int Entity_GetHealthArray(lua_State* L);
+		int Component_RemoveHealth(lua_State* L);
 
+		int Component_CreateArmor(lua_State* L);
+		int Component_GetArmor(lua_State* L);
+		int Component_GetArmorArray(lua_State* L);
+		int Entity_GetArmorArray(lua_State* L);
+		int Component_RemoveArmor(lua_State* L);
+
+
+	};
+
+	class HealthComponent_BindLua
+	{
+	private:
+		wi::scene::HealthComponent owning;
+	public:
+		wi::scene::HealthComponent* component = nullptr;
+
+		inline static constexpr char className[] = "HealthComponent";
+		static Luna<HealthComponent_BindLua>::FunctionType methods[];
+		static Luna<HealthComponent_BindLua>::PropertyType properties[];
+
+		HealthComponent_BindLua(wi::scene::HealthComponent* component) :component(component) {}
+		HealthComponent_BindLua(lua_State* L) : component(&owning) {}
+
+		int AddHealth(lua_State* L);
+		int SetHealth(lua_State* L);
+		int GetHealth(lua_State* L);
+		int GetMaxHealth(lua_State* L);
+		int SetMaxHealth(lua_State* L);
+	};
+
+	class ArmorComponent_BindLua
+	{
+	private:
+		wi::scene::ArmorComponent owning;
+	public:
+		wi::scene::ArmorComponent* component = nullptr;
+
+		inline static constexpr char className[] = "ArmorComponent";
+		static Luna<ArmorComponent_BindLua>::FunctionType methods[];
+		static Luna<ArmorComponent_BindLua>::PropertyType properties[];
+
+		ArmorComponent_BindLua(wi::scene::ArmorComponent* component) :component(component) {}
+		ArmorComponent_BindLua(lua_State* L) : component(&owning) {}
+
+		int AddArmor(lua_State* L);
+		int SetArmor(lua_State* L);
+		int GetArmor(lua_State* L);
+		int GetMaxArmor(lua_State* L);
+		int SetMaxArmor(lua_State* L);
 	};
 
 	class RelationshipComponent_BindLua
