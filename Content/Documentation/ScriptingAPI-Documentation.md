@@ -1,7 +1,7 @@
-<img src="../logo_small.png" width="128px"/>
+<img src="../crucible.svg" width="128px"/>
 
-# Wicked Engine Scripting API Documentation
-This is a reference and explanation of Lua scripting features in Wicked Engine.
+# Crucible Engine Scripting API Documentation
+This is a reference and explanation of Lua scripting features in Crucible Engine.
 
 ## Contents
 1. [Introduction and usage](#introduction-and-usage)

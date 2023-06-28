@@ -1,6 +1,6 @@
-<img src="../logo_small.png" width="128px"/>
+<img src="../crucible.svg" width="128px"/>
 
-# WickedEngine Documentation
+# Crucible Documentation
 This is a reference for the C++ features of Wicked Engine
 
 ## Contents

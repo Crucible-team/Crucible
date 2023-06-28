@@ -1,21 +1,13 @@
-<img align="left" src="Content/logo_small.png" width="180px"/>
+<img align="left" src="Content/crucible.svg" width="180px"/>
 
-# Wicked Engine
-
-[![Github Build Status](https://github.com/turanszkij/WickedEngine/workflows/Build/badge.svg)](https://github.com/turanszkij/WickedEngine/actions)
-[![Discord chat](https://img.shields.io/discord/602811659224088577?logo=discord)](https://discord.gg/CFjRYmE)
-<a href="https://twitter.com/intent/follow?screen_name=turanszkij"><img src="https://img.shields.io/twitter/follow/turanszkij.svg?style=social" alt="follow on Twitter"></a>
-<br/>
-[![Steam](https://img.shields.io/badge/-Steam-383838.svg?style=for-the-badge&logo=steam)](https://store.steampowered.com/app/1967460/Wicked_Engine/)
-[![Store](https://img.shields.io/badge/-Microsoft_Store-748FB2.svg?style=for-the-badge&logo=microsoft)](https://www.microsoft.com/store/productId/9PPMV065W9QJ)
-
+# CrucibleEngine
 
 <br/>
 <img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/npc.gif" width="320px"/>
-Wicked Engine is an open-source C++ engine focusing on modern rendering techniques and performance. Use this as a framework for your graphics projects, or learning. Some programming skills are required for the best experience, but some simple tools like an Editor are also included. It is free to be used for anything good.<br/>
-This project is hosted on <a href="https://github.com/turanszkij/WickedEngine/">GitHub</a>.
+Crucible Engine is an engine focused on game development foundation using the <a href="https://github.com/turanszkij/WickedEngine">wicked engine</a> <br/>
+This project is hosted on <a href="https://github.com/Crucible-team/Crucible">GitHub</a>.
 
-- [Documentation](Content/Documentation/WickedEngine-Documentation.md)<br/>
+- [Documentation](Content/Documentation/CrucibleEngine-Documentation.md)<br/>
 - [Scripting API Documentation](Content/Documentation/ScriptingAPI-Documentation.md)<br/>
 - [Features](features.txt)<br/>
 - [Devblog](https://wickedengine.net/)<br/>
