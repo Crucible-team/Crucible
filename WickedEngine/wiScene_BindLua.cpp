@@ -3848,7 +3848,7 @@ int MaterialComponent_BindLua::SetSurfaceProperty(lua_State* L)
 	}
 	else
 	{
-		wi::lua::SError(L, "SetMaxArmor (int value) not enough arguments!");
+		wi::lua::SError(L, "SetSurfaceProperty (int value) not enough arguments!");
 	}
 	return 0;
 }

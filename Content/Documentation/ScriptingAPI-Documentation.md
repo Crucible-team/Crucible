@@ -787,6 +787,7 @@ Describes an orientation in 3D space.
 - TexAnimFrameRate : float
 - texAnimElapsedTime : float
 - customShaderID : int
+- surfacetype : int
 
 </br>
 
@@ -803,6 +804,86 @@ Describes an orientation in 3D space.
 - GetTexture(TextureSlot slot) : Texture
 - GetTextureName(TextureSlot slot) : string
 - GetTextureUVSet(TextureSlot slot) : int uvset
+- SetSurfaceProperty(int value)
+- GetSurfaceProperty() : int
+
+
+```enum SURFACEPROP
+	{
+		DEFUALT,
+		DEFAULT_SILENT,
+		ROCK,
+		BRICK,
+		CONCRETE,
+		CONCRETE_BLOCK,
+		CHAIN,
+		CHAINLINK,
+		GRENADE,
+		METAL,
+		METAL_BARREL,
+		METAL_BOX,
+		METALGRATE,
+		METALPANEL,
+		METALVENT,
+		METALVEHICLE,
+		PAINTCAN,
+		POPCAN,
+		SLIPPERYMETAL,
+		SOILDMETAL,
+		WEAPON,
+		WOOD,
+		WOOD_BOX,
+		WOOD_CRATE,
+		WOOD_FURNITURE,
+		WOOD_LOWDENSITY,
+		WOOD_PLANK,
+		WOOD_PANEL,
+		WOOD_SOILD,
+		DIRT,
+		GRASS,
+		GRAVEL,
+		MUD,
+		QUICKSAND,
+		SAND,
+		SLIPPERYSAND,
+		SLIME,
+		WATER,
+		WADE,
+		PUDDLE,
+		ICE,
+		SNOW,
+		ALIENFLESH,
+		ARMORFLESH,
+		BLOODYFLESH,
+		FLESH,
+		FOLIAGE,
+		WATERMELON,
+		ZOMBIEFLESH,
+		ASPHALT,
+		GLASS,
+		GLASSBOTTLE,
+		TILE,
+		PAPER,
+		PAPERCUP,
+		CARDBOARD,
+		PLASTER,
+		PLASTIC_BARREL,
+		PLASTIC_BARREL_BUOYANT,
+		PLASTIC_BOX,
+		PLASTIC,
+		PLASTIC_METAL,
+		RUBBER,
+		RUBBERTIRE,
+		SLIDINGRUBBERTIRE,
+		SLIDINGRUBBERTIRE_FRONT,
+		SLIDINGRUBBERTIRE_REAR,
+		JEEPTIRE,
+		BRAKINGRUBBERTIRE,
+		CARPET,
+		CEILING_TILE,
+		COMPUTER,
+		POTTERY,
+		SURFACEPROP_COUNT```
 
 ```lua
 TextureSlot = {

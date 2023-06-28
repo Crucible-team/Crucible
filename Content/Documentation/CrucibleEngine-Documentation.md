@@ -1,7 +1,7 @@
 <img src="../crucible.svg" width="128px"/>
 
 # Crucible Documentation
-This is a reference for the C++ features of Wicked Engine
+This is a reference for the C++ features of Crucible Engine
 
 ## Contents
 1. [High Level Interface](#high-level-interface)
