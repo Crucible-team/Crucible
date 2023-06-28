@@ -43,9 +43,14 @@ This is a reference and explanation of Lua scripting features in Wicked Engine.
 		17. [WeatherComponent](#weathercomponent)
 		18. [SoundComponent](#soundcomponent)
 		19. [ColliderComponent](#collidercomponent)
-		19. [ExpressionComponent](#expressioncomponent)
-		19. [HumanoidComponent](#humanoidcomponent)
-		19. [DecalComponent](#decalcomponent)
+		20. [ExpressionComponent](#expressioncomponent)
+		21. [HumanoidComponent](#humanoidcomponent)
+		22. [DecalComponent](#decalcomponent)
+		23. [RelationshipComponent](#relationshipcomponent)
+		24. [HealthComponent](#healthcomponent)
+		25. [ArmorComponent](#armorcomponent)
+		26. [ResponseComponent](#responsecomponent)
+		27. [InventoryComponent](#inventorycomponent)
 	10. [Canvas](#canvas)
 	11. [High Level Interface](#high-level-interface)
 		1. [MainComponent](#maincomponent)
@@ -100,7 +105,6 @@ This section describes the common tools for scripting which are not necessarily 
 - math.clamp(float x,min,max)  -- clamp x between min and max
 - math.saturate(float x)  -- clamp x between 0 and 1
 - math.round(float x)  -- round x to nearest integer
-- GetEntity() -- Only avaliable to scripts in a scripts component, returns the Entity ID for it's self.
 
 ## Engine Bindings
 The scripting API provides functions for the developer to manipulate engine behaviour or query it for information.
@@ -1195,6 +1199,38 @@ The decal component is a textured sticker that can be put down onto meshes. Most
 - SetSlopeBlendPower(float value)
 - GetSlopeBlendPower() : float
 
+#### RelationshipComponent
+The relationship component is a way to give entities a diposition to a group or single entity. 
+
+- AddRelationship(Entity entity, uint32 class, uint32 diposition, int priority)	-- Add a new relationship
+- SetRelationship(int Index, Entity entity, uint32 class, uint32 diposition, int priority) -- Set a relationship values.
+- GetPriority (int Index)
+- GetDiposition(int Index)
+- GetClass(int Index)
+
+#### HealthComponent
+The health component holds health and MaxHealth values for a entity. 
+
+- AddHealth (int value)	-- Add to the health.
+- SetHealth (int value) -- Set the health
+- GetHealth() : Int
+- GetMaxHealth() : Int
+- SetMaxHealth (int value)
+
+#### ArmorComponent
+The armor component holds health and MaxHealth values for a entity. 
+
+- AddArmor (int value)	-- Add to the health.
+- SetArmor (int value) -- Set the health
+- GetArmor() : Int
+- GetMaxArmor() : Int
+- SetMaxArmor (int value)
+
+#### ResponseComponent
+- No lua bindings yet.
+
+#### InventoryComponent
+- Unfinished.
 
 ## Canvas
 This is used to describe a drawable area

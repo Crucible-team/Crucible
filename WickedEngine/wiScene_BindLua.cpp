@@ -6201,6 +6201,8 @@ int RelationshipComponent_BindLua::GetClass(lua_State* L)
 
 		wi::lua::SSetLongLong(L, component->Relationships[index]._class);
 
+		return 1;
+
 	}
 	else
 	{
@@ -6233,6 +6235,8 @@ int RelationshipComponent_BindLua::GetDiposition(lua_State* L)
 		}
 
 		wi::lua::SSetLongLong(L, component->Relationships[index]._Diposition);
+
+		return 1;
 
 	}
 	else
@@ -6267,6 +6271,7 @@ int RelationshipComponent_BindLua::GetPriority(lua_State* L)
 
 		wi::lua::SSetInt(L, component->Relationships[index].priority);
 
+		return 1;
 	}
 	else
 	{
