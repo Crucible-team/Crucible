@@ -84,7 +84,7 @@ namespace wi::backlog
 	{
 		if (!locked)
 		{
-			if (wi::input::Press(wi::input::KEYBOARD_BUTTON_HOME))
+			if (wi::input::Press(wi::input::KEYBOARD_BUTTON_HOME) || wi::input::Press(wi::input::KEYBOARD_BUTTON_GRAVE))
 			{
 				Toggle();
 			}

@@ -44,6 +44,7 @@ namespace wi::input
 		KEYBOARD_BUTTON_BACKSPACE,
 		KEYBOARD_BUTTON_PAGEDOWN,
 		KEYBOARD_BUTTON_PAGEUP,
+		KEYBOARD_BUTTON_GRAVE = 96, // Yes, this is a grave ` and not a tilde ~, also gross no longer in nice order :c
 
 		CHARACTER_RANGE_START = 65, // letter A
 
