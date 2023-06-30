@@ -7,7 +7,7 @@ option(WICKED_EDITOR "Build WickedEngine editor" ON)
 option(WICKED_TESTS "Build WickedEngine tests" ON)
 option(WICKED_IMGUI_EXAMPLE "Build WickedEngine imgui example" ON)
 option(WICKED_LINUX_TEMPLATE "Build WickedEngine Linux template" ON)
-
+option(BIN_2_HEADER "Bin to Header Utility for Crucible Assets" OFF)
 
 # Configure CMake global variables
 set(CMAKE_CXX_STANDARD 17)
@@ -47,4 +47,8 @@ endif()
 
 if (WICKED_LINUX_TEMPLATE)
     add_subdirectory(Template_Linux)
+endif()
+
+if (BIN_2_HEADER)
+    add_subdirectory(Bin2H)
 endif()

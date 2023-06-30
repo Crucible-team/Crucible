@@ -17,7 +17,7 @@ bool DumpBin(const char* filepath, std::string header, const char* dataName, int
 using namespace std;
 int main( int argc, char *argv[])
 {
-	std::string help = "Not enough args usage:\nBin2H.exe filepath, header filepath, Dataname for byte array, amount of channels.";
+    std::string help = "Not enough arguments\nusage: Bin2H [Filepath] [Header filepath] [Dataname for byte array] [Amount of channels]";
     bool HasEnoughArgs = false;    // Default is not enough.
 
 
