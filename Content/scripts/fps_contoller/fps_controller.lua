@@ -1189,6 +1189,10 @@ runProcess(function()
 					application.SetTargetFrameRate(framerate_lock_target)
 				end
 			end
+            if input.Press(string.byte('F')) then
+                camera.Transform()
+                camera.Update()
+            end
 		end
 
 	end
@@ -1198,7 +1202,7 @@ end)
 -- Draw
 runProcess(function()
 
-	local help_text = "Wicked Engine Character demo (LUA)\n\n"
+	local help_text = "FPS Controller demo (LUA)\n\n"
 	help_text = help_text .. "Controls:\n"
 	help_text = help_text .. "#############\n"
 	help_text = help_text .. "WASD/arrows/left analog stick: walk\n"
@@ -1209,6 +1213,7 @@ runProcess(function()
 	help_text = help_text .. "Scoll middle mouse/Left-Right triggers: adjust camera distance\n"
 	help_text = help_text .. "ESCAPE key: quit\n"
 	help_text = help_text .. "ENTER key: interact\n"
+    help_text = help_text .. "F: Switch to Firstperson view\n"
 	help_text = help_text .. "R: reload script\n"
 	help_text = help_text .. "H: toggle debug draw\n"
 	help_text = help_text .. "L: toggle framerate lock\n"
