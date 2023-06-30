@@ -193,8 +193,6 @@ public:
 		config.Commit();
 	}
 
-private:
-	Editor() {}  // Private constructor to prevent external instantiation
 };
 
 // Additional localizations that are outside the GUI can be defined here:
