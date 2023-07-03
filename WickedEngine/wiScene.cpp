@@ -1523,7 +1523,7 @@ namespace wi::scene
 					CameraComponent* target_camera = nullptr;
 					ScriptComponent* target_script = nullptr;
 					MaterialComponent* target_material = nullptr;
-
+					
 					if (
 						channel.path == AnimationComponent::AnimationChannel::Path::TRANSLATION ||
 						channel.path == AnimationComponent::AnimationChannel::Path::ROTATION ||
@@ -1968,8 +1968,58 @@ namespace wi::scene
 									XMMatrixDecompose(&S, &R, &bT, localMatrix);
 								}
 							}
-							const XMVECTOR T = XMVectorLerp(aT, bT, t);
-							XMStoreFloat3(&target_transform->translation_local, T);
+
+							XMVECTOR S, RT,BT2; // matrix decompose destinations
+
+							XMMATRIX R = XMMatrixIdentity();
+
+							XMMATRIX D;
+							if (animation.IsAdditive())
+							{
+								
+								bool bone_found = false;
+								
+								for (size_t i = 0; i < armatures.GetCount() && !bone_found; ++i)
+								{
+									const ArmatureComponent& armature = armatures[i];
+									for (Entity bone : armature.boneCollection)
+									{
+										if (channel.target == bone)
+										{
+											bone_found = true;
+											TransformComponent* transform = transforms.GetComponent(i);
+											if (transform != nullptr)
+											{
+												R = XMMatrixInverse(nullptr, XMLoadFloat4x4(&transform->world));
+											}
+
+											D = XMMatrixInverse(nullptr, XMLoadFloat4x4(&armature.inverseBindMatrices[i] ))* R;
+											break;
+										}
+									}
+								}
+								
+								XMMatrixDecompose(&S, &RT, &BT2, D);
+								//input.position + (additive.position - additiveBase.position)
+
+							}
+						
+							if (animation.IsAdditive())
+							{
+								//Honestly am kinda lost atm lol- Anthonyh
+								const XMVECTOR T = XMVectorLerp(aT, bT, t);
+
+								//T + (bT - BT2);
+
+								XMStoreFloat3(&target_transform->translation_local, T);
+							}
+							else
+							{
+								const XMVECTOR T = XMVectorLerp(aT, bT, t);
+
+								XMStoreFloat3(&target_transform->translation_local, T);
+							}
+							
 						}
 						break;
 						case AnimationComponent::AnimationChannel::Path::ROTATION:
@@ -1992,6 +2042,8 @@ namespace wi::scene
 									XMMatrixDecompose(&S, &bR, &T, localMatrix);
 								}
 							}
+							//normalized(input.rotation* (inverse(additiveBase.rotation)* additive.rotation))
+								
 							const XMVECTOR R = XMQuaternionSlerp(aR, bR, t);
 							XMStoreFloat4(&target_transform->rotation_local, R);
 						}
@@ -2016,6 +2068,7 @@ namespace wi::scene
 									XMMatrixDecompose(&bS, &R, &T, localMatrix);
 								}
 							}
+							//input.scale + (additive.scale - additiveBase.scale)
 							const XMVECTOR S = XMVectorLerp(aS, bS, t);
 							XMStoreFloat3(&target_transform->scale_local, S);
 						}

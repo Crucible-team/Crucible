@@ -85,6 +85,20 @@ void AnimationWindow::Create(EditorComponent* _editor)
 	loopedCheckBox.SetCheckText(ICON_LOOP);
 	AddWidget(&loopedCheckBox);
 
+	additiveCheckBox.Create("Additive: ");
+	additiveCheckBox.SetTooltip("Does this animation get applied ontop of other animations?");
+	additiveCheckBox.SetSize(XMFLOAT2(hei, hei));
+	additiveCheckBox.SetPos(XMFLOAT2(x, y += step));
+	additiveCheckBox.OnClick([&](wi::gui::EventArgs args) {
+		AnimationComponent* animation = editor->GetCurrentScene().animations.GetComponent(entity);
+		if (animation != nullptr)
+		{
+			animation->additive = args.bValue;
+		}
+		});
+	additiveCheckBox.SetCheckText(ICON_FA_BONE);
+	AddWidget(&additiveCheckBox);
+
 	playButton.Create(ICON_PLAY);
 	playButton.SetSize(XMFLOAT2(100, hei));
 	playButton.SetPos(XMFLOAT2(loopedCheckBox.GetPos().x + loopedCheckBox.GetSize().x + 5, y));
@@ -985,6 +999,7 @@ void AnimationWindow::Update()
 	}
 
 	loopedCheckBox.SetCheck(animation.IsLooped());
+	additiveCheckBox.SetCheck(animation.IsAdditive());
 
 	timerSlider.SetRange(animation.start, animation.end);
 	timerSlider.SetValue(animation.timer);
@@ -1199,9 +1214,10 @@ void AnimationWindow::ResizeLayout()
 	const float l = loopedCheckBox.GetPos().x + loopedCheckBox.GetSize().x + padding;
 	const float r = width - margin_right - padding;
 	const float diff = r - l;
+	additiveCheckBox.SetPos(XMFLOAT2(loopedCheckBox.GetPos().x + loopedCheckBox.GetSize().x + padding, y));
 	playButton.SetSize(XMFLOAT2(diff * 0.5f, playButton.GetSize().y));
 	stopButton.SetSize(playButton.GetSize());
-	playButton.SetPos(XMFLOAT2(loopedCheckBox.GetPos().x + loopedCheckBox.GetSize().x + padding, y));
+	playButton.SetPos(XMFLOAT2(additiveCheckBox.GetPos().x + additiveCheckBox.GetSize().x + padding, y));
 	stopButton.SetPos(XMFLOAT2(playButton.GetPos().x + playButton.GetSize().x + padding, y));
 	y += stopButton.GetSize().y;
 	y += padding;

@@ -419,7 +419,7 @@ void EditorComponent::Load()
 
 	{
 		std::string ss;
-		ss += "Wicked Engine Editor v";
+		ss += "Crucible Engine Editor v";
 		ss += wi::version::GetVersionString();
 		ss += "\n\nWebsite: https://wickedengine.net/";
 		ss += "\nSource code: https://github.com/turanszkij/WickedEngine";

@@ -885,7 +885,7 @@ enum SURFACEPROP
 		COMPUTER,
 		POTTERY,
 		SURFACEPROP_COUNT```
-
+	}
 ```lua
 TextureSlot = {
 	BASECOLORMAP = 0,

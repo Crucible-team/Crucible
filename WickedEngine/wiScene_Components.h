@@ -1200,6 +1200,7 @@ namespace wi::scene
 		float timer = 0;
 		float amount = 1;	// blend amount
 		float speed = 1;
+		bool additive = 0;
 
 		struct AnimationChannel
 		{
@@ -1318,6 +1319,7 @@ namespace wi::scene
 		inline bool IsLooped() const { return _flags & LOOPED; }
 		inline float GetLength() const { return end - start; }
 		inline bool IsEnded() const { return timer >= end; }
+		inline bool IsAdditive() const { return additive; }
 
 		inline void Play() { _flags |= PLAYING; }
 		inline void Pause() { _flags &= ~PLAYING; }

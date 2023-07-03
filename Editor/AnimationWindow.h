@@ -13,6 +13,7 @@ public:
 	wi::gui::Label infoLabel;
 	wi::gui::ComboBox modeComboBox;
 	wi::gui::CheckBox loopedCheckBox;
+	wi::gui::CheckBox additiveCheckBox;
 	wi::gui::Button	playButton;
 	wi::gui::Button	stopButton;
 	wi::gui::Slider	timerSlider;

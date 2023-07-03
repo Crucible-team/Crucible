@@ -1022,6 +1022,10 @@ namespace wi::scene
 			archive >> start;
 			archive >> end;
 			archive >> timer;
+			if (archive.GetVersion() >= 151)
+			{
+				archive >> additive;
+			}
 
 			if (archive.GetVersion() >= 44)
 			{
@@ -1085,6 +1089,7 @@ namespace wi::scene
 			archive << start;
 			archive << end;
 			archive << timer;
+			archive << additive;
 
 			if (archive.GetVersion() >= 44)
 			{
