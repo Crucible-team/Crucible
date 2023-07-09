@@ -450,6 +450,7 @@ void EditorComponent::Load()
 		ss += "Rotate Toggle: 2\n";
 		ss += "Scale Toggle: 3\n";
 		ss += "Wireframe mode: Ctrl + W\n";
+		ss += "Depth of field refocus to point: C + left mouse button\n";
 		ss += "Color grading reference: Ctrl + G (color grading palette reference will be displayed in top left corner)\n";
 		ss += "Focus on selected: F button, this will make the camera jump to selection.\n";
 		ss += "Inspector mode: I button (hold), hovered entity information will be displayed near mouse position.\n";
@@ -833,17 +834,48 @@ void EditorComponent::Update(float dt)
 				for (size_t i = 0; i < scene.lights.GetCount(); ++i)
 				{
 					Entity entity = scene.lights.GetEntity(i);
-					if (!scene.transforms.Contains(entity))
-						continue;
-					const TransformComponent& transform = *scene.transforms.GetComponent(entity);
+					const LightComponent& light = scene.lights[i];
 
-					XMVECTOR disV = XMVector3LinePointDistance(XMLoadFloat3(&pickRay.origin), XMLoadFloat3(&pickRay.origin) + XMLoadFloat3(&pickRay.direction), transform.GetPositionV());
+					XMVECTOR disV = XMVector3LinePointDistance(XMLoadFloat3(&pickRay.origin), XMLoadFloat3(&pickRay.origin) + XMLoadFloat3(&pickRay.direction), XMLoadFloat3(&light.position));
 					float dis = XMVectorGetX(disV);
-					if (dis > 0.01f && dis < wi::math::Distance(transform.GetPosition(), pickRay.origin) * 0.05f && dis < hovered.distance)
+					if (dis > 0.01f && dis < wi::math::Distance(light.position, pickRay.origin) * 0.05f && dis < hovered.distance)
 					{
 						hovered = wi::scene::PickResult();
 						hovered.entity = entity;
 						hovered.distance = dis;
+					}
+					else
+					{
+						if (light.GetType() == LightComponent::DIRECTIONAL || light.GetType() == LightComponent::SPOT)
+						{
+							// Light direction visualizer picking:
+							const float dist = wi::math::Distance(light.position, camera.Eye);
+							float siz = 0.02f * dist;
+							const XMMATRIX M =
+								XMMatrixScaling(siz, siz, siz) *
+								XMMatrixRotationZ(-XM_PIDIV2) *
+								XMMatrixRotationQuaternion(XMLoadFloat4(&light.rotation)) *
+								XMMatrixTranslation(light.position.x, light.position.y, light.position.z)
+								;
+
+							const float origin_size = 0.4f * siz;
+							const float axis_length = 18;
+
+							XMFLOAT3 base;
+							XMFLOAT3 tip;
+							XMStoreFloat3(&base, XMVector3Transform(XMVectorSet(0, 0, 0, 1), M));
+							XMStoreFloat3(&tip, XMVector3Transform(XMVectorSet(axis_length, 0, 0, 1), M));
+							Capsule capsule = Capsule(base, tip, origin_size);
+							if (pickRay.intersects(capsule, dis))
+							{
+								if (dis < hovered.distance)
+								{
+									hovered = wi::scene::PickResult();
+									hovered.entity = entity;
+									hovered.distance = dis;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -1115,6 +1147,15 @@ void EditorComponent::Update(float dt)
 					hovered = wi::scene::Pick(pickRay, wi::enums::FILTER_OBJECT_ALL, ~0u, scene);
 				}
 			}
+		}
+
+		if (hovered.entity != INVALID_ENTITY &&
+			wi::input::Down((wi::input::BUTTON)'C') &&
+			wi::input::Down(wi::input::MOUSE_BUTTON_LEFT))
+		{
+			camera.focal_length = hovered.distance;
+			camera.SetDirty();
+			optionsWnd.cameraWnd.focalLengthSlider.SetValue(camera.focal_length);
 		}
 
 		// Interactions only when paint tool is disabled:
@@ -1482,6 +1523,7 @@ void EditorComponent::Update(float dt)
 		componentsWnd.meshWnd.SetEntity(INVALID_ENTITY, -1);
 		componentsWnd.materialWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.soundWnd.SetEntity(INVALID_ENTITY);
+		componentsWnd.lightWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.videoWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.decalWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.envProbeWnd.SetEntity(INVALID_ENTITY);
@@ -1996,6 +2038,11 @@ void EditorComponent::Render() const
 			cam.UpdateCamera();
 			const XMMATRIX VP = cam.GetViewProjection();
 
+			MiscCB sb;
+			XMStoreFloat4x4(&sb.g_xTransform, VP);
+			sb.g_xColor = XMFLOAT4(1, 1, 1, 1);
+			device->BindDynamicConstantBuffer(sb, CB_GETBINDSLOT(MiscCB), cmd);
+
 			const XMMATRIX R = XMLoadFloat3x3(&cam.rotationMatrix);
 
 			wi::font::Params fp;
@@ -2005,7 +2052,7 @@ void EditorComponent::Render() const
 			const float scaling = 0.0025f;
 			fp.h_align = wi::font::WIFALIGN_CENTER;
 			fp.v_align = wi::font::WIFALIGN_CENTER;
-			fp.shadowColor = wi::Color::Shadow();
+			fp.shadowColor = backgroundEntityColor;
 			fp.shadow_softness = 1;
 
 			if (has_flag(optionsWnd.filter, OptionsWindow::Filter::Light))
@@ -2016,10 +2063,11 @@ void EditorComponent::Render() const
 					Entity entity = scene.lights.GetEntity(i);
 					if (!scene.transforms.Contains(entity))
 						continue;
-					const TransformComponent& transform = *scene.transforms.GetComponent(entity);
 
-					fp.position = transform.GetPosition();
-					fp.scaling = scaling * wi::math::Distance(transform.GetPosition(), camera.Eye);
+					const float dist = wi::math::Distance(light.position, camera.Eye);
+
+					fp.position = light.position;
+					fp.scaling = scaling * dist;
 					fp.color = inactiveEntityColor;
 
 					if (hovered.entity == entity)
@@ -2048,6 +2096,109 @@ void EditorComponent::Render() const
 						break;
 					default:
 						break;
+					}
+
+					if (light.GetType() == LightComponent::DIRECTIONAL || light.GetType() == LightComponent::SPOT)
+					{
+						// Light direction visualizer:
+						device->EventBegin("LightDirectionVisualizer", cmd);
+						static PipelineState pso;
+						if (!pso.IsValid())
+						{
+							static auto LoadShaders = [] {
+								PipelineStateDesc desc;
+								desc.vs = wi::renderer::GetShader(wi::enums::VSTYPE_VERTEXCOLOR);
+								desc.ps = wi::renderer::GetShader(wi::enums::PSTYPE_VERTEXCOLOR);
+								desc.il = wi::renderer::GetInputLayout(wi::enums::ILTYPE_VERTEXCOLOR);
+								desc.dss = wi::renderer::GetDepthStencilState(wi::enums::DSSTYPE_DEFAULT);
+								desc.rs = wi::renderer::GetRasterizerState(wi::enums::RSTYPE_DOUBLESIDED);
+								desc.bs = wi::renderer::GetBlendState(wi::enums::BSTYPE_TRANSPARENT);
+								desc.pt = PrimitiveTopology::TRIANGLELIST;
+								wi::graphics::GetDevice()->CreatePipelineState(&desc, &pso);
+							};
+							static wi::eventhandler::Handle handle = wi::eventhandler::Subscribe(wi::eventhandler::EVENT_RELOAD_SHADERS, [](uint64_t userdata) { LoadShaders(); });
+							LoadShaders();
+						}
+						struct Vertex
+						{
+							XMFLOAT4 position;
+							XMFLOAT4 color;
+						};
+
+						device->BindPipelineState(&pso, cmd);
+
+						const uint32_t segmentCount = 6;
+						const uint32_t cylinder_triangleCount = segmentCount * 2;
+						const uint32_t cone_triangleCount = segmentCount;
+						const uint32_t vertexCount = (cylinder_triangleCount + cone_triangleCount) * 3;
+						auto mem = device->AllocateGPU(sizeof(Vertex) * vertexCount, cmd);
+
+						float siz = 0.02f * dist;
+						const XMMATRIX M =
+							XMMatrixScaling(siz, siz, siz) *
+							XMMatrixRotationZ(-XM_PIDIV2) *
+							XMMatrixRotationQuaternion(XMLoadFloat4(&light.rotation)) *
+							XMMatrixTranslation(light.position.x, light.position.y, light.position.z)
+							;
+
+						const XMFLOAT4 col = fp.color;
+						const XMFLOAT4 col_fade = XMFLOAT4(col.x, col.y, col.z, 0);
+						const float origin_size = 0.2f;
+						const float cone_length = 0.75f;
+						const float axis_length = 18;
+						float cylinder_length = axis_length;
+						cylinder_length -= cone_length;
+						uint8_t* dst = (uint8_t*)mem.data;
+						for (uint32_t i = 0; i < segmentCount; ++i)
+						{
+							const float angle0 = (float)i / (float)segmentCount * XM_2PI;
+							const float angle1 = (float)(i + 1) / (float)segmentCount * XM_2PI;
+							// cylinder base:
+							{
+								const float cylinder_radius = 0.075f;
+								Vertex verts[] = {
+									{XMFLOAT4(0, std::sin(angle0) * cylinder_radius, std::cos(angle0) * cylinder_radius, 1), col_fade},
+									{XMFLOAT4(0, std::sin(angle1) * cylinder_radius, std::cos(angle1) * cylinder_radius, 1), col_fade},
+									{XMFLOAT4(cylinder_length, std::sin(angle0) * cylinder_radius, std::cos(angle0) * cylinder_radius, 1), col},
+									{XMFLOAT4(cylinder_length, std::sin(angle0) * cylinder_radius, std::cos(angle0) * cylinder_radius, 1), col},
+									{XMFLOAT4(cylinder_length, std::sin(angle1) * cylinder_radius, std::cos(angle1) * cylinder_radius, 1), col},
+									{XMFLOAT4(0, std::sin(angle1) * cylinder_radius, std::cos(angle1) * cylinder_radius, 1), col_fade},
+								};
+								for (auto& vert : verts)
+								{
+									XMStoreFloat4(&vert.position, XMVector3Transform(XMLoadFloat4(&vert.position), M));
+								}
+								std::memcpy(dst, verts, sizeof(verts));
+								dst += sizeof(verts);
+							}
+							// cone cap:
+							{
+								const float cone_radius = origin_size;
+								Vertex verts[] = {
+									{XMFLOAT4(axis_length, 0, 0, 1), col},
+									{XMFLOAT4(cylinder_length, std::sin(angle0) * cone_radius, std::cos(angle0) * cone_radius, 1), col},
+									{XMFLOAT4(cylinder_length, std::sin(angle1) * cone_radius, std::cos(angle1) * cone_radius, 1), col},
+								};
+								for (auto& vert : verts)
+								{
+									XMStoreFloat4(&vert.position, XMVector3Transform(XMLoadFloat4(&vert.position), M));
+								}
+								std::memcpy(dst, verts, sizeof(verts));
+								dst += sizeof(verts);
+							}
+						}
+						const GPUBuffer* vbs[] = {
+							&mem.buffer,
+						};
+						const uint32_t strides[] = {
+							sizeof(Vertex),
+						};
+						const uint64_t offsets[] = {
+							mem.offset,
+						};
+						device->BindVertexBuffers(vbs, 0, arraysize(vbs), strides, offsets, cmd);
+						device->Draw(vertexCount, 0, cmd);
+						device->EventEnd(cmd);
 					}
 				}
 			}
@@ -2503,11 +2654,6 @@ void EditorComponent::Render() const
 					device->EventBegin("Bone capsules", cmd);
 					device->BindPipelineState(&pso, cmd);
 
-					MiscCB sb;
-					XMStoreFloat4x4(&sb.g_xTransform, camera.GetViewProjection());
-					sb.g_xColor = XMFLOAT4(1, 1, 1, 1);
-					device->BindDynamicConstantBuffer(sb, CB_GETBINDSLOT(MiscCB), cmd);
-
 					const GPUBuffer* vbs[] = {
 						&mem.buffer,
 					};
@@ -2699,7 +2845,6 @@ void EditorComponent::Compose(CommandList cmd) const
 		params.v_align = wi::font::WIFALIGN_CENTER;
 		params.size = 30;
 		params.shadow_softness = 1;
-		params.shadowColor.setA(100);
 		wi::font::Draw(save_text, params, cmd);
 	}
 
@@ -3467,8 +3612,9 @@ void EditorComponent::UpdateTopMenuAnimation()
 	saveButton.SetPos(XMFLOAT2(openButton.GetPos().x - saveButton.GetSize().x - padding, 0));
 
 
+	float static_pos = screenW - wid_idle * 11;
 	stopButton.SetSize(XMFLOAT2(wid_idle * 0.75f, hei));
-	stopButton.SetPos(XMFLOAT2(saveButton.GetPos().x - stopButton.GetSize().x - 20, 0));
+	stopButton.SetPos(XMFLOAT2(static_pos - stopButton.GetSize().x - 20, 0));
 	playButton.SetSize(XMFLOAT2(wid_idle * 0.75f, hei));
 	playButton.SetPos(XMFLOAT2(stopButton.GetPos().x - playButton.GetSize().x - padding, 0));
 

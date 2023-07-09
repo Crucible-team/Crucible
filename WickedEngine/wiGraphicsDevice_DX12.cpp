@@ -4209,6 +4209,7 @@ using namespace dx12_internal;
 		bvh->internal_state = internal_state;
 		bvh->type = GPUResource::Type::RAYTRACING_ACCELERATION_STRUCTURE;
 		bvh->desc = *desc;
+		bvh->size = 0;
 
 		if (desc->flags & RaytracingAccelerationStructureDesc::FLAG_ALLOW_UPDATE)
 		{
@@ -4333,6 +4334,8 @@ using namespace dx12_internal;
 
 		GPUBufferDesc scratch_desc;
 		scratch_desc.size = (uint32_t)std::max(internal_state->info.ScratchDataSizeInBytes, internal_state->info.UpdateScratchDataSizeInBytes);
+
+		bvh->size = alignedSize + scratch_desc.size;
 
 		return CreateBuffer(&scratch_desc, nullptr, &internal_state->scratch);
 	}
@@ -6553,7 +6556,7 @@ using namespace dx12_internal;
 		auto args_internal = to_internal(args);
 		auto count_internal = to_internal(count);
 		CommandList_DX12& commandlist = GetCommandList(cmd);
-		commandlist.GetGraphicsCommandList()->ExecuteIndirect(dispatchMeshIndirectCommandSignature.Get(), 1, args_internal->resource.Get(), args_offset, count_internal->resource.Get(), count_offset);
+		commandlist.GetGraphicsCommandList()->ExecuteIndirect(dispatchMeshIndirectCommandSignature.Get(), max_count, args_internal->resource.Get(), args_offset, count_internal->resource.Get(), count_offset);
 	}
 	void GraphicsDevice_DX12::CopyResource(const GPUResource* pDst, const GPUResource* pSrc, CommandList cmd)
 	{

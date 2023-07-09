@@ -5911,7 +5911,6 @@ void DrawDebugWorld(
 
 	if (debugPartitionTree)
 	{
-		// Actually, there is no SPTree any more, so this will just render all aabbs...
 		device->EventBegin("DebugPartitionTree", cmd);
 
 		device->BindPipelineState(&PSO_debug[DEBUGRENDERING_CUBE], cmd);
@@ -5929,6 +5928,22 @@ void DrawDebugWorld(
 
 		for (size_t i = 0; i < scene.aabb_objects.size(); ++i)
 		{
+			//const ObjectComponent& object = scene.objects[i];
+			//const MeshComponent* mesh = scene.meshes.GetComponent(object.meshID);
+			//if (mesh != nullptr && !mesh->bvh_leaf_aabbs.empty())
+			//{
+			//	const XMMATRIX objectMat = XMLoadFloat4x4(&scene.matrix_objects[i]);
+			//	for (const AABB& aabb : mesh->bvh_leaf_aabbs)
+			//	{
+			//		XMStoreFloat4x4(&sb.g_xTransform, aabb.getAsBoxMatrix() * objectMat * camera.GetViewProjection());
+			//		sb.g_xColor = XMFLOAT4(1, 1, 0, 1);
+
+			//		device->BindDynamicConstantBuffer(sb, CB_GETBINDSLOT(MiscCB), cmd);
+
+			//		device->DrawIndexed(24, 0, 0, cmd);
+			//	}
+			//}
+
 			const AABB& aabb = scene.aabb_objects[i];
 
 			XMStoreFloat4x4(&sb.g_xTransform, aabb.getAsBoxMatrix()*camera.GetViewProjection());
@@ -15529,6 +15544,65 @@ void Postprocess_Underwater(
 	postprocess.resolution.y = desc.height;
 	postprocess.resolution_rcp.x = 1.0f / postprocess.resolution.x;
 	postprocess.resolution_rcp.y = 1.0f / postprocess.resolution.y;
+	device->PushConstants(&postprocess, sizeof(postprocess), cmd);
+
+	device->BindResource(&input, 0, cmd);
+
+	const GPUResource* uavs[] = {
+		&output,
+	};
+	device->BindUAVs(uavs, 0, arraysize(uavs), cmd);
+
+	{
+		GPUBarrier barriers[] = {
+			GPUBarrier::Image(&output, output.desc.layout, ResourceState::UNORDERED_ACCESS),
+		};
+		device->Barrier(barriers, arraysize(barriers), cmd);
+	}
+
+	device->Dispatch(
+		(desc.width + POSTPROCESS_BLOCKSIZE - 1) / POSTPROCESS_BLOCKSIZE,
+		(desc.height + POSTPROCESS_BLOCKSIZE - 1) / POSTPROCESS_BLOCKSIZE,
+		1,
+		cmd
+	);
+
+	{
+		GPUBarrier barriers[] = {
+			GPUBarrier::Image(&output, ResourceState::UNORDERED_ACCESS, output.desc.layout),
+		};
+		device->Barrier(barriers, arraysize(barriers), cmd);
+	}
+
+	wi::profiler::EndRange(range);
+	device->EventEnd(cmd);
+}
+void Postprocess_Custom(
+	const Shader& computeshader,
+	const Texture& input,
+	const Texture& output,
+	CommandList cmd,
+	const XMFLOAT4& params0,
+	const XMFLOAT4& params1,
+	const char* debug_name
+)
+{
+	device->EventBegin(debug_name, cmd);
+	auto range = wi::profiler::BeginRangeGPU(debug_name, cmd);
+
+	device->BindComputeShader(&computeshader, cmd);
+
+	BindCommonResources(cmd);
+
+	const TextureDesc& desc = output.GetDesc();
+
+	PostProcess postprocess;
+	postprocess.resolution.x = desc.width;
+	postprocess.resolution.y = desc.height;
+	postprocess.resolution_rcp.x = 1.0f / postprocess.resolution.x;
+	postprocess.resolution_rcp.y = 1.0f / postprocess.resolution.y;
+	postprocess.params0 = params0;
+	postprocess.params1 = params1;
 	device->PushConstants(&postprocess, sizeof(postprocess), cmd);
 
 	device->BindResource(&input, 0, cmd);

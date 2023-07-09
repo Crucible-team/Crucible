@@ -12,6 +12,13 @@
 #include "wiUnorderedMap.h"
 #include "wiLua.h"
 
+#if __has_include("OpenImageDenoise/oidn.hpp")
+#define OPEN_IMAGE_DENOISE
+#include "OpenImageDenoise/oidn.hpp"
+#pragma comment(lib,"OpenImageDenoise.lib")
+// Also provide the required DLL files from OpenImageDenoise release near the exe!
+#endif // __has_include("OpenImageDenoise/oidn.hpp")
+
 using namespace wi::ecs;
 using namespace wi::enums;
 using namespace wi::graphics;
@@ -928,6 +935,36 @@ namespace wi::scene
 			device->SetName(&BLASes[lod], std::string("MeshComponent::BLAS[LOD" + std::to_string(lod) + "]").c_str());
 		}
 	}
+	void MeshComponent::BuildBVH()
+	{
+		bvh_leaf_aabbs.clear();
+		uint32_t first_subset = 0;
+		uint32_t last_subset = 0;
+		GetLODSubsetRange(0, first_subset, last_subset);
+		for (uint32_t subsetIndex = first_subset; subsetIndex < last_subset; ++subsetIndex)
+		{
+			assert(subsetIndex <= 0xFF); // must fit into 8 bits userdata packing
+			const MeshComponent::MeshSubset& subset = subsets[subsetIndex];
+			if (subset.indexCount == 0)
+				continue;
+			const uint32_t indexOffset = subset.indexOffset;
+			const uint32_t triangleCount = subset.indexCount / 3;
+			for (uint32_t triangleIndex = 0; triangleIndex < triangleCount; ++triangleIndex)
+			{
+				assert(triangleIndex <= 0xFFFFFF); // must fit into 24 bits userdata packing
+				const uint32_t i0 = indices[indexOffset + triangleIndex * 3 + 0];
+				const uint32_t i1 = indices[indexOffset + triangleIndex * 3 + 1];
+				const uint32_t i2 = indices[indexOffset + triangleIndex * 3 + 2];
+				const XMFLOAT3& p0 = vertex_positions[i0];
+				const XMFLOAT3& p1 = vertex_positions[i1];
+				const XMFLOAT3& p2 = vertex_positions[i2];
+				AABB aabb = wi::primitive::AABB(wi::math::Min(p0, wi::math::Min(p1, p2)), wi::math::Max(p0, wi::math::Max(p1, p2)));
+				aabb.userdata = (triangleIndex & 0xFFFFFF) | ((subsetIndex & 0xFF) << 24u);
+				bvh_leaf_aabbs.push_back(aabb);
+			}
+		}
+		bvh.Build(bvh_leaf_aabbs.data(), (uint32_t)bvh_leaf_aabbs.size());
+	}
 	void MeshComponent::ComputeNormals(COMPUTE_NORMALS compute)
 	{
 		// Start recalculating normals:
@@ -1300,6 +1337,44 @@ namespace wi::scene
 		sphere.radius = aabb.getRadius();
 		return sphere;
 	}
+	size_t MeshComponent::GetMemoryUsageCPU() const
+	{
+		size_t size = 
+			vertex_positions.size() * sizeof(XMFLOAT3) +
+			vertex_normals.size() * sizeof(XMFLOAT3) +
+			vertex_tangents.size() * sizeof(XMFLOAT4) +
+			vertex_uvset_0.size() * sizeof(XMFLOAT2) +
+			vertex_uvset_1.size() * sizeof(XMFLOAT2) +
+			vertex_boneindices.size() * sizeof(XMUINT4) +
+			vertex_boneweights.size() * sizeof(XMFLOAT4) +
+			vertex_atlas.size() * sizeof(XMFLOAT2) +
+			vertex_colors.size() * sizeof(uint32_t) +
+			vertex_windweights.size() * sizeof(uint8_t) +
+			indices.size() * sizeof(uint32_t);
+
+		for (const MorphTarget& morph : morph_targets)
+		{
+			size +=
+				morph.vertex_positions.size() * sizeof(XMFLOAT3) +
+				morph.vertex_normals.size() * sizeof(XMFLOAT3) +
+				morph.sparse_indices_positions.size() * sizeof(uint32_t) +
+				morph.sparse_indices_normals.size() * sizeof(uint32_t);
+		}
+
+		size += GetMemoryUsageBVH();
+
+		return size;
+	}
+	size_t MeshComponent::GetMemoryUsageGPU() const
+	{
+		return generalBuffer.desc.size + streamoutBuffer.desc.size;
+	}
+	size_t MeshComponent::GetMemoryUsageBVH() const
+	{
+		return
+			bvh.allocation.capacity() +
+			bvh_leaf_aabbs.size() * sizeof(wi::primitive::AABB);
+	}
 
 	void ObjectComponent::ClearLightmap()
 	{
@@ -1311,13 +1386,6 @@ namespace wi::scene
 		SetLightmapRenderRequest(false);
 	}
 
-#if __has_include("OpenImageDenoise/oidn.hpp")
-#define OPEN_IMAGE_DENOISE
-#include "OpenImageDenoise/oidn.hpp"
-#pragma comment(lib,"OpenImageDenoise.lib")
-#pragma comment(lib,"tbb.lib")
-	// Also provide OpenImageDenoise.dll and tbb.dll near the exe!
-#endif
 	void ObjectComponent::SaveLightmap()
 	{
 		if (lightmap.IsValid() && has_flag(lightmap.desc.bind_flags, BindFlag::RENDER_TARGET))
@@ -1346,10 +1414,15 @@ namespace wi::scene
 						init = true;
 					}
 
+					oidn::BufferRef lightmapTextureData_buffer = device.newBuffer(lightmapTextureData.size());
+					oidn::BufferRef texturedata_dst_buffer = device.newBuffer(texturedata_dst.size());
+
+					lightmapTextureData_buffer.write(0, lightmapTextureData.size(), lightmapTextureData.data());
+
 					// Create a denoising filter
 					oidn::FilterRef filter = device.newFilter("RTLightmap");
-					filter.setImage("color", lightmapTextureData.data(), oidn::Format::Float3, width, height, 0, sizeof(XMFLOAT4));
-					filter.setImage("output", texturedata_dst.data(), oidn::Format::Float3, width, height, 0, sizeof(XMFLOAT4));
+					filter.setImage("color", lightmapTextureData_buffer, oidn::Format::Float3, width, height, 0, sizeof(XMFLOAT4));
+					filter.setImage("output", texturedata_dst_buffer, oidn::Format::Float3, width, height, 0, sizeof(XMFLOAT4));
 					filter.commit();
 
 					// Filter the image
@@ -1361,6 +1434,10 @@ namespace wi::scene
 					if (error != oidn::Error::None && error != oidn::Error::Cancelled)
 					{
 						wi::backlog::post(std::string("[OpenImageDenoise error] ") + errorMessage);
+					}
+					else
+					{
+						texturedata_dst_buffer.read(0, texturedata_dst.size(), texturedata_dst.data());
 					}
 				}
 

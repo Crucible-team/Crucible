@@ -316,7 +316,8 @@ namespace wi
 							basist::transcoder_texture_format fmt = basist::transcoder_texture_format::cTFRGBA32;
 							desc.format = Format::R8G8B8A8_UNORM;
 
-							if (has_flag(flags, Flags::IMPORT_BLOCK_COMPRESSED))
+							bool import_compressed = has_flag(flags, Flags::IMPORT_BLOCK_COMPRESSED);
+							if (import_compressed)
 							{
 								// BC5 is disabled because it's missing green channel!
 								//if (has_flag(flags, Flags::IMPORT_NORMALMAP))
@@ -360,13 +361,16 @@ namespace wi
 											basist::ktx2_image_level_info level_info;
 											if (transcoder.get_image_level_info(level_info, mip, layer, face))
 											{
-												transcoded_data_size += level_info.m_total_blocks * bytes_per_block;
+												uint32_t pixel_or_block_count = (import_compressed
+													? level_info.m_total_blocks
+													: (level_info.m_orig_width * level_info.m_orig_height));
+												transcoded_data_size += bytes_per_block * pixel_or_block_count;
 											}
 										}
 									}
 								}
 								wi::vector<uint8_t> transcoded_data(transcoded_data_size);
-
+								
 								wi::vector<SubresourceData> InitData;
 								size_t transcoded_data_offset = 0;
 								for (uint32_t layer = 0; layer < layers; ++layer)
@@ -379,20 +383,23 @@ namespace wi
 											if (transcoder.get_image_level_info(level_info, mip, layer, face))
 											{
 												void* data_ptr = transcoded_data.data() + transcoded_data_offset;
-												transcoded_data_offset += level_info.m_total_blocks * bytes_per_block;
+												uint32_t pixel_or_block_count = (import_compressed
+													? level_info.m_total_blocks
+													: (level_info.m_orig_width * level_info.m_orig_height));
+												transcoded_data_offset += bytes_per_block * pixel_or_block_count;
 												if (transcoder.transcode_image_level(
 													mip,
 													layer,
 													face,
 													data_ptr,
-													level_info.m_total_blocks,
+													pixel_or_block_count,
 													fmt
 												))
 												{
 													SubresourceData subresourceData;
 													subresourceData.data_ptr = data_ptr;
-													subresourceData.row_pitch = level_info.m_num_blocks_x * bytes_per_block;
-													subresourceData.slice_pitch = subresourceData.row_pitch * level_info.m_num_blocks_y;
+													subresourceData.row_pitch = (import_compressed ? level_info.m_num_blocks_x : level_info.m_orig_width) * bytes_per_block;
+													subresourceData.slice_pitch = subresourceData.row_pitch * (import_compressed ? level_info.m_num_blocks_y : level_info.m_orig_height);
 													InitData.push_back(subresourceData);
 												}
 												else
@@ -453,7 +460,8 @@ namespace wi
 									basist::transcoder_texture_format fmt = basist::transcoder_texture_format::cTFRGBA32;
 									desc.format = Format::R8G8B8A8_UNORM;
 
-									if (has_flag(flags, Flags::IMPORT_BLOCK_COMPRESSED))
+									bool import_compressed = has_flag(flags, Flags::IMPORT_BLOCK_COMPRESSED);
+									if (import_compressed)
 									{
 										// BC5 is disabled because it's missing green channel!
 										//if (has_flag(flags, Flags::IMPORT_NORMALMAP))
@@ -490,7 +498,10 @@ namespace wi
 											basist::basisu_image_level_info level_info;
 											if (transcoder.get_image_level_info(filedata, (uint32_t)filesize, level_info, image_index, mip))
 											{
-												transcoded_data_size += level_info.m_total_blocks * bytes_per_block;
+												uint32_t pixel_or_block_count = (import_compressed
+													? level_info.m_total_blocks
+													: (level_info.m_orig_width * level_info.m_orig_height));
+												transcoded_data_size += bytes_per_block * pixel_or_block_count;
 											}
 										}
 										wi::vector<uint8_t> transcoded_data(transcoded_data_size);
@@ -503,21 +514,24 @@ namespace wi
 											if (transcoder.get_image_level_info(filedata, (uint32_t)filesize, level_info, 0, mip))
 											{
 												void* data_ptr = transcoded_data.data() + transcoded_data_offset;
-												transcoded_data_offset += level_info.m_total_blocks * bytes_per_block;
+												uint32_t pixel_or_block_count = (import_compressed
+													? level_info.m_total_blocks
+													: (level_info.m_orig_width * level_info.m_orig_height));
+												transcoded_data_offset += pixel_or_block_count * bytes_per_block;
 												if (transcoder.transcode_image_level(
 													filedata,
 													(uint32_t)filesize,
 													image_index,
 													mip,
 													data_ptr,
-													level_info.m_total_blocks,
+													pixel_or_block_count,
 													fmt
 												))
 												{
 													SubresourceData subresourceData;
 													subresourceData.data_ptr = data_ptr;
-													subresourceData.row_pitch = level_info.m_num_blocks_x * bytes_per_block;
-													subresourceData.slice_pitch = subresourceData.row_pitch * level_info.m_num_blocks_y;
+													subresourceData.row_pitch = (import_compressed ? level_info.m_num_blocks_x : level_info.m_orig_width) * bytes_per_block;
+													subresourceData.slice_pitch = subresourceData.row_pitch * (import_compressed ? level_info.m_num_blocks_y : level_info.m_orig_height);
 													InitData.push_back(subresourceData);
 												}
 												else
@@ -922,7 +936,7 @@ namespace wi
 									const uint32_t block_size = GetFormatBlockSize(desc.format);
 									desc.width = AlignTo(desc.width, block_size);
 									desc.height = AlignTo(desc.height, block_size);
-									desc.mip_levels = GetMipCount(desc.width, desc.height, desc.depth, block_size);
+									desc.mip_levels = GetMipCount(desc.width, desc.height, desc.depth, block_size, block_size);
 
 									success = device->CreateTexture(&desc, nullptr, &resource->texture);
 									device->SetName(&resource->texture, name.c_str());

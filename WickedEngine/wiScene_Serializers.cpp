@@ -460,6 +460,11 @@ namespace wi::scene
 
 			wi::jobsystem::Execute(seri.ctx, [&](wi::jobsystem::JobArgs args) {
 				CreateRenderData();
+
+				if (IsBVHEnabled())
+				{
+					BuildBVH();
+				}
 			});
 		}
 		else

@@ -1181,6 +1181,8 @@ namespace wi::graphics
 	{
 		RaytracingAccelerationStructureDesc desc;
 
+		size_t size = 0;
+
 		constexpr const RaytracingAccelerationStructureDesc& GetDesc() const { return desc; }
 	};
 
@@ -1684,6 +1686,41 @@ namespace wi::graphics
 		}
 	}
 
+	constexpr const char GetComponentSwizzleChar(ComponentSwizzle value)
+	{
+		switch (value)
+		{
+		default:
+		case wi::graphics::ComponentSwizzle::R:
+			return 'R';
+		case wi::graphics::ComponentSwizzle::G:
+			return 'G';
+		case wi::graphics::ComponentSwizzle::B:
+			return 'B';
+		case wi::graphics::ComponentSwizzle::A:
+			return 'A';
+		case wi::graphics::ComponentSwizzle::ZERO:
+			return '0';
+		case wi::graphics::ComponentSwizzle::ONE:
+			return '1';
+		}
+	}
+	struct SwizzleString
+	{
+		char chars[5] = {};
+		constexpr operator const char*() const { return chars; }
+	};
+	constexpr const SwizzleString GetSwizzleString(Swizzle swizzle)
+	{
+		SwizzleString ret;
+		ret.chars[0] = GetComponentSwizzleChar(swizzle.r);
+		ret.chars[1] = GetComponentSwizzleChar(swizzle.g);
+		ret.chars[2] = GetComponentSwizzleChar(swizzle.b);
+		ret.chars[3] = GetComponentSwizzleChar(swizzle.a);
+		ret.chars[4] = 0;
+		return ret;
+	}
+
 	constexpr uint32_t AlignTo(uint32_t value, uint32_t alignment)
 	{
 		return ((value + alignment - 1) / alignment) * alignment;
@@ -1692,7 +1729,7 @@ namespace wi::graphics
 	{
 		return ((value + alignment - 1) / alignment) * alignment;
 	}
-	constexpr uint32_t GetMipCount(uint32_t width, uint32_t height, uint32_t depth = 1u, uint32_t min_dimension = 1u)
+	constexpr uint32_t GetMipCount(uint32_t width, uint32_t height, uint32_t depth = 1u, uint32_t min_dimension = 1u, uint32_t required_alignment = 1u)
 	{
 		uint32_t mips = 1;
 		while (width > min_dimension || height > min_dimension || depth > min_dimension)
@@ -1700,6 +1737,12 @@ namespace wi::graphics
 			width = std::max(min_dimension, width >> 1u);
 			height = std::max(min_dimension, height >> 1u);
 			depth = std::max(min_dimension, depth >> 1u);
+			if (
+				AlignTo(width, required_alignment) != width ||
+				AlignTo(height, required_alignment) != height ||
+				AlignTo(depth, required_alignment) != depth
+				)
+				break;
 			mips++;
 		}
 		return mips;
