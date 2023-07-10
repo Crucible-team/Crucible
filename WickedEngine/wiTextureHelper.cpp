@@ -6,6 +6,7 @@
 #include "wiTimer.h"
 #include "wiUnorderedMap.h"
 #include "logo.h"
+#include "missing.h"
 
 using namespace wi::graphics;
 
@@ -24,6 +25,7 @@ namespace wi::texturehelper
 		HELPERTEXTURE_BLACKCUBEMAP,
 		HELPERTEXTURE_UINT4,
 		HELPERTEXTURE_BLUENOISE,
+		HELPERTEXTURE_MISSING,
 		HELPERTEXTURE_COUNT
 	};
 	wi::graphics::Texture helperTextures[HELPERTEXTURE_COUNT];
@@ -38,8 +40,14 @@ namespace wi::texturehelper
 
 		// Logo
 		{
-			CreateTexture(helperTextures[HELPERTEXTURE_LOGO], wicked_engine_logo, 256, 256);
+			CreateTexture(helperTextures[HELPERTEXTURE_LOGO], crucible_engine_logo, 256, 256);
 			device->SetName(&helperTextures[HELPERTEXTURE_LOGO], "HELPERTEXTURE_LOGO");
+		}
+
+		// missing
+		{
+			CreateTexture(helperTextures[HELPERTEXTURE_MISSING], crucible_engine_missing, 512, 512);
+			device->SetName(&helperTextures[HELPERTEXTURE_MISSING], "HELPERTEXTURE_Missing");
 		}
 
 		// Random64x64
@@ -166,6 +174,11 @@ namespace wi::texturehelper
 	const Texture* getLogo()
 	{
 		return &helperTextures[HELPERTEXTURE_LOGO];
+	}
+
+	const Texture* getMissing()
+	{
+		return &helperTextures[HELPERTEXTURE_MISSING];
 	}
 	const Texture* getRandom64x64()
 	{
