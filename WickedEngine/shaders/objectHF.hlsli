@@ -493,6 +493,25 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	{
 		surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, input.uvsets);
 	}
+	else if ((GetFrame().options & OPTION_BIT_DISABLE_ALBEDO_MAPS) == 0)
+	{
+		float4 color1 = float4(0, 0.5, 0, 1);
+		float4 color2 = float4(0, 0.0, 0, 1);
+		
+		float2 _Scale = float2(8, 8); // Size of each square in the checkerboard pattern
+		
+		float2 uv = input.uvsets.xy * _Scale; // scale this with uvs defaults to xy which might not be always right??
+
+		// We place them based of the position.
+		bool isEvenX = (floor(uv.x) % 2 == 0);
+		bool isEvenY = (floor(uv.y) % 2 == 0);
+		bool isEvenSquare = (isEvenX == isEvenY);
+	
+		// Replace the color with what we want depending if even or odd.
+		float4 color = isEvenSquare ? color1 : color2;
+		
+		surface.baseColor = color;
+	}
 #endif // OBJECTSHADER_USE_UVSETS
 
 
