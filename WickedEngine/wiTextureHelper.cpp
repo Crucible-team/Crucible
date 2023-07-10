@@ -47,7 +47,7 @@ namespace wi::texturehelper
 		// missing
 		{
 			CreateTexture(helperTextures[HELPERTEXTURE_MISSING], crucible_engine_missing, 512, 512);
-			device->SetName(&helperTextures[HELPERTEXTURE_MISSING], "HELPERTEXTURE_Missing");
+			device->SetName(&helperTextures[HELPERTEXTURE_MISSING], "HELPERTEXTURE_MISSING");
 		}
 
 		// Random64x64

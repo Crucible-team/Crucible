@@ -81,7 +81,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			if (scene.materials.Contains(pick.entity))
 			{
 				MaterialComponent* decal_material = scene.materials.GetComponent(pick.entity);
-				decal_material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getLogo());
+				decal_material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getMissing());
 			}
 			scene.transforms.GetComponent(pick.entity)->RotateRollPitchYaw(XMFLOAT3(XM_PIDIV2, 0, 0));
 			break;

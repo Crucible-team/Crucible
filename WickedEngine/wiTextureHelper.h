@@ -8,6 +8,7 @@ namespace wi::texturehelper
 	void Initialize();
 
 	const wi::graphics::Texture* getLogo();
+	const wi::graphics::Texture* getMissing();
 	const wi::graphics::Texture* getRandom64x64();
 	const wi::graphics::Texture* getColorGradeDefault();
 	const wi::graphics::Texture* getNormalMapDefault();
