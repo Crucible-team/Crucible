@@ -5508,6 +5508,57 @@ namespace wi::scene
 			return root;
 		}
 
+		// FIXME: this is absolutly horrible doing the same code twice -Anthonyh
+		{
+			wi::backlog::post("Couldn't load scene :" + fileName + " using default error scene!", wi::backlog::LogLevel::Error);
+			std::string error_model_path = wi::helper::GetCurrentPath() + "/Data/error.wiscene";
+			wi::Archive archive(error_model_path, true);
+			if (archive.IsOpen())
+			{
+				// Serialize it from file:
+				scene.Serialize(archive);
+
+				// First, create new root:
+				Entity root = CreateEntity();
+				scene.transforms.Create(root);
+				scene.layers.Create(root).layerMask = ~0;
+
+				{
+					// Apply the optional transformation matrix to the new scene:
+
+					// Parent all unparented transforms to new root entity
+					for (size_t i = 0; i < scene.transforms.GetCount() - 1; ++i) // GetCount() - 1 because the last added was the "root"
+					{
+						Entity entity = scene.transforms.GetEntity(i);
+						if (!scene.hierarchy.Contains(entity))
+						{
+							scene.Component_Attach(entity, root);
+						}
+					}
+
+					// The root component is transformed, scene is updated:
+					TransformComponent* root_transform = scene.transforms.GetComponent(root);
+					root_transform->MatrixTransform(transformMatrix);
+
+					scene.Update(0);
+				}
+
+				if (!attached)
+				{
+					// In this case, we don't care about the root anymore, so delete it. This will simplify overall hierarchy
+					scene.Component_DetachChildren(root);
+					scene.Entity_Remove(root);
+					root = INVALID_ENTITY;
+				}
+
+				return root;
+			}
+			else
+			{
+				wi::backlog::post("Couldn't load error scene!", wi::backlog::LogLevel::Error);
+			}
+		}
+		wi::backlog::post("Couldn't load scene :" + fileName + " or the error scene returning a invalid entity!", wi::backlog::LogLevel::Error);
 		return INVALID_ENTITY;
 	}
 
