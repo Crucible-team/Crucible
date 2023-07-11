@@ -24,13 +24,16 @@ set(LUA_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/lundump.h
     ${CMAKE_CURRENT_SOURCE_DIR}/lvm.h
     ${CMAKE_CURRENT_SOURCE_DIR}/lzio.h
+	${CMAKE_CURRENT_SOURCE_DIR}/ljumptab.h
+	${CMAKE_CURRENT_SOURCE_DIR}/lopnames.h
+	${CMAKE_CURRENT_SOURCE_DIR}/lua.hpp
 )
 
 add_library(LUA STATIC
     lapi.c
     lauxlib.c
     lbaselib.c
-    lbitlib.c
+    luac.c
     lcode.c
     lcorolib.c
     lctype.c
