@@ -251,6 +251,7 @@ wi::vector<ShaderEntry> shaders = {
 	{"oceanSurfaceSimplePS", wi::graphics::ShaderStage::PS },
 	{"objectPS_voxelizer", wi::graphics::ShaderStage::PS },
 	{"objectPS_hologram", wi::graphics::ShaderStage::PS },
+	{"objectPS_viewmodel", wi::graphics::ShaderStage::PS },
 	{"objectPS_paintradius", wi::graphics::ShaderStage::PS },
 	{"objectPS_simple", wi::graphics::ShaderStage::PS },
 	{"objectPS_debug", wi::graphics::ShaderStage::PS },

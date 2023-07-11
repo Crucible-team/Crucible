@@ -822,6 +822,7 @@ void LoadShaders()
 	wi::jobsystem::Execute(ctx, [](wi::jobsystem::JobArgs args) { LoadShader(ShaderStage::PS, shaders[PSTYPE_IMPOSTOR], "impostorPS.cso"); });
 
 	wi::jobsystem::Execute(ctx, [](wi::jobsystem::JobArgs args) { LoadShader(ShaderStage::PS, shaders[PSTYPE_OBJECT_HOLOGRAM], "objectPS_hologram.cso"); });
+	wi::jobsystem::Execute(ctx, [](wi::jobsystem::JobArgs args) { LoadShader(ShaderStage::PS, shaders[PSTYPE_OBJECT_VIEWMODEL], "objectPS_viewmodel.cso"); });
 
 	wi::jobsystem::Execute(ctx, [](wi::jobsystem::JobArgs args) { LoadShader(ShaderStage::PS, shaders[PSTYPE_OBJECT_DEBUG], "objectPS_debug.cso"); });
 	wi::jobsystem::Execute(ctx, [](wi::jobsystem::JobArgs args) { LoadShader(ShaderStage::PS, shaders[PSTYPE_OBJECT_PAINTRADIUS], "objectPS_paintradius.cso"); });
@@ -1174,6 +1175,22 @@ void LoadShaders()
 
 		CustomShader customShader;
 		customShader.name = "Hologram";
+		customShader.filterMask = FILTER_TRANSPARENT;
+		customShader.pso[RENDERPASS_MAIN] = pso;
+		RegisterCustomShader(customShader);
+
+
+		desc.vs = &shaders[realVS];
+		desc.ps = &shaders[PSTYPE_OBJECT_VIEWMODEL];
+
+		desc.bs = &blendStates[BSTYPE_TRANSPARENT];
+		desc.rs = &rasterizers[RSTYPE_FRONT];
+		desc.dss = &depthStencils[DSSTYPE_DEPTHDISABLED];
+		desc.pt = PrimitiveTopology::TRIANGLELIST;
+
+		device->CreatePipelineState(&desc, &pso);
+
+		customShader.name = "Viewmodel";
 		customShader.filterMask = FILTER_TRANSPARENT;
 		customShader.pso[RENDERPASS_MAIN] = pso;
 		RegisterCustomShader(customShader);

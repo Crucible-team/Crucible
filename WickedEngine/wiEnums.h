@@ -146,6 +146,8 @@ namespace wi::enums
 
 		PSTYPE_OBJECT_HOLOGRAM,
 
+		PSTYPE_OBJECT_VIEWMODEL,
+
 		PSTYPE_OBJECT_DEBUG,
 		PSTYPE_OBJECT_PAINTRADIUS,
 		PSTYPE_OBJECT_SIMPLE,
@@ -393,7 +395,6 @@ namespace wi::enums
 
 		// raytracing pipelines:
 		RTTYPE_RTREFLECTION,
-
 
 		SHADERTYPE_COUNT,
 	};
