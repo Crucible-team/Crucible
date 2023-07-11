@@ -49,6 +49,10 @@ endif()
 add_subdirectory(BULLET)
 add_subdirectory(LUA)
 add_subdirectory(Utility)
+add_subdirectory(Recast)
+add_subdirectory(Detour)
+add_subdirectory(DebugUtils)
+add_subdirectory(DetourTileCache)
 
 set(HEADER_FILES
 		WickedEngine.h
