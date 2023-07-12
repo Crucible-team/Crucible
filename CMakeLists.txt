@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
 
-include(CheckGit.cmake)
-
 option(WICKED_DYNAMIC_LIBRARY "Build WickedEngine as a dynamic library" OFF)
 
 option(WICKED_EDITOR "Build WickedEngine editor" ON)

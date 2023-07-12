@@ -13,6 +13,11 @@ else()
 	message(STATUS "Building WickedEngine as a static library")
 endif()
 
+if(CRUCIBLE_NIGHTLY_VERSIONING)
+message(STATUS "Nightly versioning scheme enabled")
+CheckGitVersion()
+endif()
+
 if (WIN32)
 	# TODO: Choose whether to use SDL2 on windows as well
 	set(TARGET_NAME WickedEngine_Windows)
@@ -294,6 +299,7 @@ add_custom_command(
 		COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/WickedEngine/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
 )
 
+target_link_libraries(${TARGET_NAME} PUBLIC cmake_genvars)
 
 # OFFLINE SHADER COMPILER
 add_executable(offlineshadercompiler
