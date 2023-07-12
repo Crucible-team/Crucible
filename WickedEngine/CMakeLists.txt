@@ -49,6 +49,7 @@ endif()
 add_subdirectory(BULLET)
 add_subdirectory(LUA)
 add_subdirectory(Utility)
+add_subdirectory(physx)
 
 set(HEADER_FILES
 		WickedEngine.h
