@@ -1,6 +1,7 @@
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+include(../CheckGit.cmake)
 set(INSTALL_LOCAL_CONFIGDIR "${CMAKE_BINARY_DIR}/cmake")
 set(INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/WickedEngine")
 

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
+include(CheckGit.cmake)
 
 option(WICKED_DYNAMIC_LIBRARY "Build WickedEngine as a dynamic library" OFF)
 
@@ -8,6 +9,7 @@ option(WICKED_TESTS "Build WickedEngine tests" ON)
 option(WICKED_IMGUI_EXAMPLE "Build WickedEngine imgui example" ON)
 option(WICKED_LINUX_TEMPLATE "Build WickedEngine Linux template" ON)
 option(BIN_2_HEADER "Bin to Header Utility for Crucible Assets" OFF)
+option(CRUCIBLE_NIGHTLY_VERSIONING "Nightly versioning scheme (timestamp - commit hash)" ON)
 
 # Configure CMake global variables
 set(CMAKE_CXX_STANDARD 17)
