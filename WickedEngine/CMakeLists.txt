@@ -49,7 +49,23 @@ endif()
 add_subdirectory(BULLET)
 add_subdirectory(LUA)
 add_subdirectory(Utility)
-add_subdirectory(physx)
+
+if (WIN32)
+	set(TARGET_BUILD_PLATFORM "windows") # has to match the TARGET_BUILD_PLATFORM in $ENV{PHYSX_PATH}/physix/buildtools/cmake_generate_projects.py
+else ()
+	set(TARGET_BUILD_PLATFORM "linux") # has to match the TARGET_BUILD_PLATFORM in $ENV{PHYSX_PATH}/physix/buildtools/cmake_generate_projects.py
+endif()
+
+set(PX_BUILDPUBLICSAMPLES OFF)
+set(PX_FLOAT_POINT_PRECISE_MATH OFF)
+set(PHYSX_ROOT_DIR ${CMAKE_SOURCE_DIR}/WickedEngine/physx)
+set(CMAKEMODULES_VERSION "1.27")
+set(PX_OUTPUT_LIB_DIR ${PHYSX_ROOT_DIR}/externals)
+set(PX_OUTPUT_BIN_DIR ${PHYSX_ROOT_DIR}/externals)
+set(CMAKEMODULES_PATH ${PHYSX_ROOT_DIR}/externals)
+
+include_directories(physx/include)
+add_subdirectory(physx/compiler/public)
 
 set(HEADER_FILES
 		WickedEngine.h

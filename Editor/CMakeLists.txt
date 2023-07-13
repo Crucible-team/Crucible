@@ -64,6 +64,14 @@ if (WIN32)
 	target_link_libraries(JOE PUBLIC
 		WickedEngine_Windows
 		meshoptimizer
+		PhysXVehicle2
+        PhysXCharacterKinematic
+        PhysXCooking
+        PhysXExtensions
+        PhysXVehicle
+        PhysX
+        PhysXCommon
+        PhysXFoundation
 	)
 
 	set_property(TARGET JOE PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -74,6 +82,14 @@ else ()
 	target_link_libraries(JOE PUBLIC
 		WickedEngine
 		meshoptimizer
+		PhysXVehicle2
+        PhysXCharacterKinematic
+        PhysXCooking
+        PhysXExtensions
+        PhysXVehicle
+        PhysX
+        PhysXCommon
+        PhysXFoundation
 	)
 	set(LIB_DXCOMPILER "libdxcompiler.so")
 
