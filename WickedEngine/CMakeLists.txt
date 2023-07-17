@@ -299,7 +299,7 @@ add_custom_command(
 		COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/WickedEngine/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
 )
 
-target_link_libraries(${TARGET_NAME} PUBLIC cmake_genvars)
+#target_link_libraries(${TARGET_NAME} PUBLIC cmake_genvars)
 
 # OFFLINE SHADER COMPILER
 add_executable(offlineshadercompiler

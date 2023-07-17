@@ -7,7 +7,7 @@ option(WICKED_TESTS "Build WickedEngine tests" ON)
 option(WICKED_IMGUI_EXAMPLE "Build WickedEngine imgui example" ON)
 option(WICKED_LINUX_TEMPLATE "Build WickedEngine Linux template" ON)
 option(BIN_2_HEADER "Bin to Header Utility for Crucible Assets" OFF)
-option(CRUCIBLE_NIGHTLY_VERSIONING "Nightly versioning scheme (timestamp - commit hash)" ON)
+option(CRUCIBLE_NIGHTLY_VERSIONING "Nightly versioning scheme (timestamp - commit hash)" OFF)
 
 # Configure CMake global variables
 set(CMAKE_CXX_STANDARD 17)
