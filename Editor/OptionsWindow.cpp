@@ -33,6 +33,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 	newCombo.AddItem("Camera " ICON_CAMERA, 12);
 	newCombo.AddItem("Cube " ICON_CUBE, 13);
 	newCombo.AddItem("Cylinder " ICON_FA_CIRCLE, 20);
+	newCombo.AddItem("Sphere " ICON_FA_CIRCLE, 21);
 	newCombo.AddItem("Plane " ICON_SQUARE, 14);
 	newCombo.AddItem("Animation " ICON_ANIMATION, 15);
 	newCombo.AddItem("Script " ICON_SCRIPT, 16);
@@ -162,6 +163,11 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			break;
 		case 20:
 			pick.entity = scene.Entity_CreateCylinder("cylinder");
+			pick.subsetIndex = 0;
+			break;
+
+		case 21:
+			pick.entity = scene.Entity_CreateSphere("sphere");
 			pick.subsetIndex = 0;
 			break;
 		case 14:

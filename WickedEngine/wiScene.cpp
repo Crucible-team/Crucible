@@ -1330,91 +1330,532 @@ namespace wi::scene
 
 		transforms.Create(entity);
 
-		/*ObjectComponent& object = objects.Create(entity);
+		ObjectComponent& object = objects.Create(entity);
 
 		MeshComponent& mesh = meshes.Create(entity);
 
 		// object references the mesh entity (there can be multiple objects referencing one mesh):
 		object.meshID = entity;
 
-		const uint32_t segmentCount = 6;
+		const uint32_t segmentCount = 12;
 		const uint32_t cylinder_triangleCount = segmentCount * 2;
 		const uint32_t cone_triangleCount = segmentCount;
 		const uint32_t vertexCount = (cylinder_triangleCount + cone_triangleCount) * 3;
 
 		const float origin_size = 0.2f;
 		const float cone_length = 0.75f;
-		const float axis_length = 18;
+		const float axis_length = 1;
 		float cylinder_length = axis_length;
-		
-		mesh.vertex_positions.resize(segmentCount *2 );
-		mesh.vertex_uvset_0.resize(segmentCount *2 );
-		mesh.vertex_normals.resize(234 );
-		for (uint32_t i = 0; i < segmentCount; i++)
+
+		const float PI = 3.1415926f;
+		float sectorStep = 2 * PI / segmentCount;
+		float sectorAngle;  // radian
+
+		std::vector<float> unitCircleVertices;
+		for (int i = 0; i <= segmentCount; ++i)
 		{
-			FLOAT theta = (2 * XM_2PI * i) / (segmentCount - 1);
-			const float cylinder_radius = 0.075f;
-
-			mesh.vertex_positions[2 * i + 0] = XMFLOAT3(cylinder_radius * sinf(theta), -cylinder_length, cylinder_radius * cosf(theta));
-
-			mesh.vertex_uvset_0[2 * i + 0] = XMFLOAT2(((FLOAT)i) / (segmentCount - 1),1.0f);
-
-
-			mesh.vertex_positions[2 * i + 1] = XMFLOAT3(cylinder_radius * sinf(theta), cylinder_length, cylinder_radius * cosf(theta));
-
-			mesh.vertex_uvset_0[2 * i + 1] = XMFLOAT2(((FLOAT)i) / (segmentCount - 1), 0.0f);
-
+			sectorAngle = i * sectorStep;
+			unitCircleVertices.push_back(cos(sectorAngle)); // x
+			unitCircleVertices.push_back(sin(sectorAngle)); // y
+			unitCircleVertices.push_back(0);                // z
 		}
 
-		// Generate indices for the top row
-		int baseIndex = 0;
-		for (int i = baseIndex + 1; i <= baseIndex + segmentCount; i++) {
-			mesh.indices.push_back(baseIndex);
-			mesh.indices.push_back(i);
-			mesh.indices.push_back(i + 1);
-		}
+		std::vector<float> vertices;
+		std::vector<float> normals;
+		std::vector<float> texCoords;
 
-		// Generate indices for the sides
-		for (int i = 0; i < segmentCount; i++) {
-			int baseIndex = i;
-			int nextBaseIndex = (i + 1) % segmentCount;
-			for (int j = baseIndex; j < baseIndex + segmentCount; j++) {
-				mesh.indices.push_back(j);
-				mesh.indices.push_back(j + 1);
-				mesh.indices.push_back(nextBaseIndex + j + 1);
+		// put side vertices to arrays
+		for (int i = 0; i < 2; ++i)
+		{
+			float h = -cylinder_length / 2.0f + i * cylinder_length;           // z value; -h/2 to h/2
+			float t = 1.0f - i;                              // vertical tex coord; 1 to 0
 
-				mesh.indices.push_back(j);
-				mesh.indices.push_back(nextBaseIndex + j + 1);
-				mesh.indices.push_back(nextBaseIndex + j);
+			for (int j = 0, k = 0; j <= segmentCount; ++j, k += 3)
+			{
+				float ux = unitCircleVertices[k];
+				float uy = unitCircleVertices[k + 1];
+				float uz = unitCircleVertices[k + 2];
+				// position vector
+				vertices.push_back(ux * origin_size);             // vx
+				vertices.push_back(uy * origin_size);             // vy
+				vertices.push_back(h);                       // vz
+				// normal vector
+				normals.push_back(ux);                       // nx
+				normals.push_back(uy);                       // ny
+				normals.push_back(uz);                       // nz
+				// texture coordinate
+				texCoords.push_back((float)j / segmentCount); // s
+				texCoords.push_back(t);                      // t
 			}
 		}
 
-		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_SMOOTH_FAST);*/
+		// the starting index for the base/top surface
+		//NOTE: it is used for generating indices later
+		int baseCenterIndex = (int)vertices.size() / 3;
+		int topCenterIndex = baseCenterIndex + segmentCount + 1; // include center vertex
+
+		// put base and top vertices to arrays
+		for (int i = 0; i < 2; ++i)
+		{
+			float h = -cylinder_length / 2.0f + i * cylinder_length;           // z value; -h/2 to h/2
+			float nz = -1 + i * 2;                           // z value of normal; -1 to 1
+
+			// center point
+			vertices.push_back(0);     vertices.push_back(0);     vertices.push_back(h);
+			normals.push_back(0);      normals.push_back(0);      normals.push_back(nz);
+			texCoords.push_back(0.5f); texCoords.push_back(0.5f);
+
+			for (int j = 0, k = 0; j < segmentCount; ++j, k += 3)
+			{
+				float ux = unitCircleVertices[k];
+				float uy = unitCircleVertices[k + 1];
+				// position vector
+				vertices.push_back(ux * origin_size);             // vx
+				vertices.push_back(uy * origin_size);             // vy
+				vertices.push_back(h);                       // vz
+				// normal vector
+				normals.push_back(0);                        // nx
+				normals.push_back(0);                        // ny
+				normals.push_back(nz);                       // nz
+				// texture coordinate
+				texCoords.push_back(-ux * 0.5f + 0.5f);      // s
+				texCoords.push_back(-uy * 0.5f + 0.5f);      // t
+			}
+		}
 
 
-		
+		// generate CCW index list of cylinder triangles
+		std::vector<int> indices;
+		int k1 = 0;                         // 1st vertex index at base
+		int k2 = segmentCount + 1;           // 1st vertex index at top
+
+		// indices for the side surface
+		for (int i = 0; i < segmentCount; ++i, ++k1, ++k2)
+		{
+			// 2 triangles per sector
+			// k1 => k1+1 => k2
+			indices.push_back(k1);
+			indices.push_back(k1 + 1);
+			indices.push_back(k2);
+
+			// k2 => k1+1 => k2+1
+			indices.push_back(k2);
+			indices.push_back(k1 + 1);
+			indices.push_back(k2 + 1);
+		}
+
+		// indices for the base surface
+		//NOTE: baseCenterIndex and topCenterIndices are pre-computed during vertex generation
+		//      please see the previous code snippet
+		for (int i = 0, k = baseCenterIndex + 1; i < segmentCount; ++i, ++k)
+		{
+			if (i < segmentCount - 1)
+			{
+				indices.push_back(baseCenterIndex);
+				indices.push_back(k + 1);
+				indices.push_back(k);
+			}
+			else // last triangle
+			{
+				indices.push_back(baseCenterIndex);
+				indices.push_back(baseCenterIndex + 1);
+				indices.push_back(k);
+			}
+		}
+
+		// indices for the top surface
+		for (int i = 0, k = topCenterIndex + 1; i < segmentCount; ++i, ++k)
+		{
+			if (i < segmentCount - 1)
+			{
+				indices.push_back(topCenterIndex);
+				indices.push_back(k);
+				indices.push_back(k + 1);
+			}
+			else // last triangle
+			{
+				indices.push_back(topCenterIndex);
+				indices.push_back(k);
+				indices.push_back(topCenterIndex + 1);
+			}
+		}
 
 
-		/*mesh.indices = {
-			0,			1,			2,			0,			2,			3,
-			0 + 4,		2 + 4,		1 + 4,		0 + 4,		3 + 4,		2 + 4,		// swapped winding
-			0 + 4 * 2,	1 + 4 * 2,	2 + 4 * 2,	0 + 4 * 2,	2 + 4 * 2,	3 + 4 * 2,
-			0 + 4 * 3,	2 + 4 * 3,	1 + 4 * 3,	0 + 4 * 3,	3 + 4 * 3,	2 + 4 * 3,	// swapped winding
-			0 + 4 * 4,	2 + 4 * 4,	1 + 4 * 4,	0 + 4 * 4,	3 + 4 * 4,	2 + 4 * 4,	// swapped winding
-			0 + 4 * 5,	1 + 4 * 5,	2 + 4 * 5,	0 + 4 * 5,	2 + 4 * 5,	3 + 4 * 5,
-		};*/
+		// initial transform matrix cols
+		float tx[] = { 1.0f, 0.0f, 0.0f };    // x-axis (left)
+		float ty[] = { 0.0f, 1.0f, 0.0f };    // y-axis (up)
+		float tz[] = { 0.0f, 0.0f, 1.0f };    // z-axis (forward)
+
+
+		int from = 3;
+		int to = 2;
+
+		// X -> Y
+		if (from == 1 && to == 2)
+		{
+			tx[0] = 0.0f; tx[1] = 1.0f;
+			ty[0] = -1.0f; ty[1] = 0.0f;
+		}
+		// X -> Z
+		else if (from == 1 && to == 3)
+		{
+			tx[0] = 0.0f; tx[2] = 1.0f;
+			tz[0] = -1.0f; tz[2] = 0.0f;
+		}
+		// Y -> X
+		else if (from == 2 && to == 1)
+		{
+			tx[0] = 0.0f; tx[1] = -1.0f;
+			ty[0] = 1.0f; ty[1] = 0.0f;
+		}
+		// Y -> Z
+		else if (from == 2 && to == 3)
+		{
+			ty[1] = 0.0f; ty[2] = 1.0f;
+			tz[1] = -1.0f; tz[2] = 0.0f;
+		}
+		//  Z -> X
+		else if (from == 3 && to == 1)
+		{
+			tx[0] = 0.0f; tx[2] = -1.0f;
+			tz[0] = 1.0f; tz[2] = 0.0f;
+		}
+		// Z -> Y
+		else
+		{
+			ty[1] = 0.0f; ty[2] = -1.0f;
+			tz[1] = 1.0f; tz[2] = 0.0f;
+		}
+
+		int count = vertices.size();
+		float vx, vy, vz;
+		float nx, ny, nz;
+		for (std::size_t i = 0, j = 0; i < count; i += 3, j += 8)
+		{
+			// transform vertices
+			vx = vertices[i];
+			vy = vertices[i + 1];
+			vz = vertices[i + 2];
+			vertices[i] = tx[0] * vx + ty[0] * vy + tz[0] * vz;   // x
+			vertices[i + 1] = tx[1] * vx + ty[1] * vy + tz[1] * vz;   // y
+			vertices[i + 2] = tx[2] * vx + ty[2] * vy + tz[2] * vz;   // z
+
+			// transform normals
+			nx = normals[i];
+			ny = normals[i + 1];
+			nz = normals[i + 2];
+			normals[i] = tx[0] * nx + ty[0] * ny + tz[0] * nz;   // nx
+			normals[i + 1] = tx[1] * nx + ty[1] * ny + tz[1] * nz;   // ny
+			normals[i + 2] = tx[2] * nx + ty[2] * ny + tz[2] * nz;   // nz
+
+		}
+
+		//revrse the normals,
+		count = normals.size();
+		for (size_t i = 0, j = 3; i < count; i += 3, j += 8)
+		{
+			normals[i] *= -1;
+			normals[i + 1] *= -1;
+			normals[i + 2] *= -1;
+		}
+
+		// also reverse triangle windings
+		unsigned int tmp;
+		count = indices.size();
+		for (size_t i = 0; i < count; i += 3)
+		{
+			tmp = indices[i];
+			indices[i] = indices[i + 2];
+			indices[i + 2] = tmp;
+		}
+
+		for (int j = 0; j < vertices.size(); j += 3)
+		{
+			
+			mesh.vertex_positions.push_back(XMFLOAT3(vertices[j],vertices[j + 1],vertices[j + 2]));
+			
+		}
+
+		for (int j = 0; j < normals.size(); j += 3)
+		{
+			
+			mesh.vertex_normals.push_back(XMFLOAT3(normals[j], normals[j + 1], normals[j + 2]));
+
+			
+		}
+
+		for (int i = 0; i < texCoords.size(); i += 2)
+		{
+			
+			// texture coordinate
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(texCoords[i], texCoords[i + 1]));
+		}
+
+		for (int i = 0; i < indices.size(); i++)
+		{
+			mesh.indices.push_back(indices[i]);
+		}
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_SMOOTH_FAST);
 
 		// Subset maps a part of the mesh to a material:
-		/*MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
 		subset.indexCount = uint32_t(mesh.indices.size());
 		materials.Create(entity);
 		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
 
 		// vertex buffer GPU data will be packed and uploaded here:
-		mesh.CreateRenderData();*/
+		mesh.CreateRenderData();
 
 		return entity;
 	}
+
+	Entity Scene::Entity_CreateSphere(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		const uint32_t segmentCount = 32;
+		const uint32_t stackCount = 16;
+		const uint32_t cylinder_triangleCount = segmentCount * 2;
+		const uint32_t cone_triangleCount = segmentCount;
+		const uint32_t vertexCount = (cylinder_triangleCount + cone_triangleCount) * 3;
+
+		const float origin_size = 0.2f;
+		const float cone_length = 0.75f;
+		const float axis_length = 1;
+		float cylinder_length = axis_length;
+
+		const float PI = 3.1415926f;
+
+		std::vector<float> vertices;
+		std::vector<float> normals;
+		std::vector<float> texCoords;
+
+		float x, y, z, xy;                              // vertex position
+		float nx, ny, nz, lengthInv = 1.0f / origin_size;    // vertex normal
+		float s, t;                                     // vertex texCoord
+
+		float sectorStep = 2 * PI / segmentCount;
+		float stackStep = PI / stackCount;
+		float sectorAngle, stackAngle;
+
+		for (int i = 0; i <= stackCount; ++i)
+		{
+			stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+			xy = origin_size * cosf(stackAngle);             // r * cos(u)
+			z = origin_size * sinf(stackAngle);              // r * sin(u)
+
+			// add (sectorCount+1) vertices per stack
+			// first and last vertices have same position and normal, but different tex coords
+			for (int j = 0; j <= segmentCount; ++j)
+			{
+				sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+
+				// vertex position (x, y, z)
+				x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
+				y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
+				vertices.push_back(x);
+				vertices.push_back(y);
+				vertices.push_back(z);
+
+				// normalized vertex normal (nx, ny, nz)
+				nx = x * lengthInv;
+				ny = y * lengthInv;
+				nz = z * lengthInv;
+				normals.push_back(nx);
+				normals.push_back(ny);
+				normals.push_back(nz);
+
+				// vertex tex coord (s, t) range between [0, 1]
+				s = (float)j / segmentCount;
+				t = (float)i / stackCount;
+				texCoords.push_back(s);
+				texCoords.push_back(t);
+			}
+		}
+
+		// generate CCW index list of sphere triangles
+// k1--k1+1
+// |  / |
+// | /  |
+// k2--k2+1
+		std::vector<int> indices;
+		int k1, k2;
+		for (int i = 0; i < stackCount; ++i)
+		{
+			k1 = i * (segmentCount + 1);     // beginning of current stack
+			k2 = k1 + segmentCount + 1;      // beginning of next stack
+
+			for (int j = 0; j < segmentCount; ++j, ++k1, ++k2)
+			{
+				// 2 triangles per sector excluding first and last stacks
+				// k1 => k2 => k1+1
+				if (i != 0)
+				{
+					indices.push_back(k1);
+					indices.push_back(k2);
+					indices.push_back(k1 + 1);
+				}
+
+				// k1+1 => k2 => k2+1
+				if (i != (stackCount - 1))
+				{
+					indices.push_back(k1 + 1);
+					indices.push_back(k2);
+					indices.push_back(k2 + 1);
+				}
+
+			}
+		}
+
+
+		// initial transform matrix cols
+		float tx[] = { 1.0f, 0.0f, 0.0f };    // x-axis (left)
+		float ty[] = { 0.0f, 1.0f, 0.0f };    // y-axis (up)
+		float tz[] = { 0.0f, 0.0f, 1.0f };    // z-axis (forward)
+
+
+		int from = 3;
+		int to = 2;
+
+		// X -> Y
+		if (from == 1 && to == 2)
+		{
+			tx[0] = 0.0f; tx[1] = 1.0f;
+			ty[0] = -1.0f; ty[1] = 0.0f;
+		}
+		// X -> Z
+		else if (from == 1 && to == 3)
+		{
+			tx[0] = 0.0f; tx[2] = 1.0f;
+			tz[0] = -1.0f; tz[2] = 0.0f;
+		}
+		// Y -> X
+		else if (from == 2 && to == 1)
+		{
+			tx[0] = 0.0f; tx[1] = -1.0f;
+			ty[0] = 1.0f; ty[1] = 0.0f;
+		}
+		// Y -> Z
+		else if (from == 2 && to == 3)
+		{
+			ty[1] = 0.0f; ty[2] = 1.0f;
+			tz[1] = -1.0f; tz[2] = 0.0f;
+		}
+		//  Z -> X
+		else if (from == 3 && to == 1)
+		{
+			tx[0] = 0.0f; tx[2] = -1.0f;
+			tz[0] = 1.0f; tz[2] = 0.0f;
+		}
+		// Z -> Y
+		else
+		{
+			ty[1] = 0.0f; ty[2] = -1.0f;
+			tz[1] = 1.0f; tz[2] = 0.0f;
+		}
+
+		int count = vertices.size();
+		float vx, vy, vz;
+		for (std::size_t i = 0, j = 0; i < count; i += 3, j += 8)
+		{
+			// transform vertices
+			vx = vertices[i];
+			vy = vertices[i + 1];
+			vz = vertices[i + 2];
+			vertices[i] = tx[0] * vx + ty[0] * vy + tz[0] * vz;   // x
+			vertices[i + 1] = tx[1] * vx + ty[1] * vy + tz[1] * vz;   // y
+			vertices[i + 2] = tx[2] * vx + ty[2] * vy + tz[2] * vz;   // z
+
+			// transform normals
+			nx = normals[i];
+			ny = normals[i + 1];
+			nz = normals[i + 2];
+			normals[i] = tx[0] * nx + ty[0] * ny + tz[0] * nz;   // nx
+			normals[i + 1] = tx[1] * nx + ty[1] * ny + tz[1] * nz;   // ny
+			normals[i + 2] = tx[2] * nx + ty[2] * ny + tz[2] * nz;   // nz
+
+		}
+
+
+		//revrse the normals,
+		count = normals.size();
+		for (size_t i = 0, j = 3; i < count; i += 3, j += 8)
+		{
+			normals[i] *= -1;
+			normals[i + 1] *= -1;
+			normals[i + 2] *= -1;
+		}
+
+		// also reverse triangle windings
+		unsigned int tmp;
+		count = indices.size();
+		for (size_t i = 0; i < count; i += 3)
+		{
+			tmp = indices[i];
+			indices[i] = indices[i + 2];
+			indices[i + 2] = tmp;
+		}
+
+		for (int j = 0; j < vertices.size(); j += 3)
+		{
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vertices[j], vertices[j + 1], vertices[j + 2]));
+
+		}
+
+		for (int j = 0; j < normals.size(); j += 3)
+		{
+
+			mesh.vertex_normals.push_back(XMFLOAT3(normals[j], normals[j + 1], normals[j + 2]));
+
+
+		}
+
+		for (int i = 0; i < texCoords.size(); i += 2)
+		{
+
+			// texture coordinate
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(texCoords[i], texCoords[i + 1]));
+		}
+
+		for (int i = 0; i < indices.size(); i++)
+		{
+			mesh.indices.push_back(indices[i]);
+		}
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_SMOOTH_FAST);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
 	Entity Scene::Entity_CreatePlane(
 		const std::string& name
 	)
