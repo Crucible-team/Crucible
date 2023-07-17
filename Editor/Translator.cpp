@@ -20,7 +20,7 @@ namespace Translator_Internal
 	const float plane_min = 0.5f;
 	const float plane_max = 1.5f;
 	const float circle_radius = axis_length;
-	const float circle_width = 1;
+	const float circle_width = 0.5;
 	const float circle2_radius = circle_radius + 0.7f;
 	const float circle2_width = 0.3f;
 

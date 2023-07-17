@@ -1314,6 +1314,107 @@ namespace wi::scene
 
 		return entity;
 	}
+
+	Entity Scene::Entity_CreateCylinder(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		/*ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		const uint32_t segmentCount = 6;
+		const uint32_t cylinder_triangleCount = segmentCount * 2;
+		const uint32_t cone_triangleCount = segmentCount;
+		const uint32_t vertexCount = (cylinder_triangleCount + cone_triangleCount) * 3;
+
+		const float origin_size = 0.2f;
+		const float cone_length = 0.75f;
+		const float axis_length = 18;
+		float cylinder_length = axis_length;
+		
+		mesh.vertex_positions.resize(segmentCount *2 );
+		mesh.vertex_uvset_0.resize(segmentCount *2 );
+		mesh.vertex_normals.resize(234 );
+		for (uint32_t i = 0; i < segmentCount; i++)
+		{
+			FLOAT theta = (2 * XM_2PI * i) / (segmentCount - 1);
+			const float cylinder_radius = 0.075f;
+
+			mesh.vertex_positions[2 * i + 0] = XMFLOAT3(cylinder_radius * sinf(theta), -cylinder_length, cylinder_radius * cosf(theta));
+
+			mesh.vertex_uvset_0[2 * i + 0] = XMFLOAT2(((FLOAT)i) / (segmentCount - 1),1.0f);
+
+
+			mesh.vertex_positions[2 * i + 1] = XMFLOAT3(cylinder_radius * sinf(theta), cylinder_length, cylinder_radius * cosf(theta));
+
+			mesh.vertex_uvset_0[2 * i + 1] = XMFLOAT2(((FLOAT)i) / (segmentCount - 1), 0.0f);
+
+		}
+
+		// Generate indices for the top row
+		int baseIndex = 0;
+		for (int i = baseIndex + 1; i <= baseIndex + segmentCount; i++) {
+			mesh.indices.push_back(baseIndex);
+			mesh.indices.push_back(i);
+			mesh.indices.push_back(i + 1);
+		}
+
+		// Generate indices for the sides
+		for (int i = 0; i < segmentCount; i++) {
+			int baseIndex = i;
+			int nextBaseIndex = (i + 1) % segmentCount;
+			for (int j = baseIndex; j < baseIndex + segmentCount; j++) {
+				mesh.indices.push_back(j);
+				mesh.indices.push_back(j + 1);
+				mesh.indices.push_back(nextBaseIndex + j + 1);
+
+				mesh.indices.push_back(j);
+				mesh.indices.push_back(nextBaseIndex + j + 1);
+				mesh.indices.push_back(nextBaseIndex + j);
+			}
+		}
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_SMOOTH_FAST);*/
+
+
+		
+
+
+		/*mesh.indices = {
+			0,			1,			2,			0,			2,			3,
+			0 + 4,		2 + 4,		1 + 4,		0 + 4,		3 + 4,		2 + 4,		// swapped winding
+			0 + 4 * 2,	1 + 4 * 2,	2 + 4 * 2,	0 + 4 * 2,	2 + 4 * 2,	3 + 4 * 2,
+			0 + 4 * 3,	2 + 4 * 3,	1 + 4 * 3,	0 + 4 * 3,	3 + 4 * 3,	2 + 4 * 3,	// swapped winding
+			0 + 4 * 4,	2 + 4 * 4,	1 + 4 * 4,	0 + 4 * 4,	3 + 4 * 4,	2 + 4 * 4,	// swapped winding
+			0 + 4 * 5,	1 + 4 * 5,	2 + 4 * 5,	0 + 4 * 5,	2 + 4 * 5,	3 + 4 * 5,
+		};*/
+
+		// Subset maps a part of the mesh to a material:
+		/*MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();*/
+
+		return entity;
+	}
 	Entity Scene::Entity_CreatePlane(
 		const std::string& name
 	)

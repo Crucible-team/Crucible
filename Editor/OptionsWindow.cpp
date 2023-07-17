@@ -32,6 +32,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 	newCombo.AddItem("HairParticle " ICON_HAIR, 11);
 	newCombo.AddItem("Camera " ICON_CAMERA, 12);
 	newCombo.AddItem("Cube " ICON_CUBE, 13);
+	newCombo.AddItem("Cylinder " ICON_FA_CIRCLE, 20);
 	newCombo.AddItem("Plane " ICON_SQUARE, 14);
 	newCombo.AddItem("Animation " ICON_ANIMATION, 15);
 	newCombo.AddItem("Script " ICON_SCRIPT, 16);
@@ -159,6 +160,10 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			pick.entity = scene.Entity_CreateCube("cube");
 			pick.subsetIndex = 0;
 			break;
+		case 20:
+			pick.entity = scene.Entity_CreateCylinder("cylinder");
+			pick.subsetIndex = 0;
+			break;
 		case 14:
 			pick.entity = scene.Entity_CreatePlane("plane");
 			pick.subsetIndex = 0;
@@ -185,6 +190,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			scene.terrains.Create(pick.entity) = editor->componentsWnd.terrainWnd.terrain_preset;
 			scene.names.Create(pick.entity) = "terrain";
 			break;
+		
 		default:
 			break;
 		}

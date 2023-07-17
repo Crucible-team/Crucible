@@ -15724,6 +15724,32 @@ Ray GetPickRay(long cursorX, long cursorY, const wi::Canvas& canvas, const Camer
 	return Ray(lineStart, rayDirection);
 }
 
+XMFLOAT2 Project_Pos(XMFLOAT3 pos,const wi::Canvas& canvas, const CameraComponent& camera)
+{
+
+	XMFLOAT2 screen;
+	screen.x = canvas.GetLogicalWidth();
+	screen.y = canvas.GetLogicalHeight();
+	
+
+	XMVECTOR vectorpos = XMVectorSet(pos.x, pos.y, pos.z, 1);
+
+	XMVECTOR ProjPos = XMVector3Project(vectorpos, 0, 0, 1, 1, 1, 0, camera.GetProjection(), camera.GetView(), XMMatrixIdentity());
+
+	XMFLOAT3 screenspace3;
+	XMStoreFloat3(&screenspace3, ProjPos);
+
+	XMFLOAT2 clipspace;
+
+	clipspace.x = (screenspace3.x - (float)0.5) * (float)2;
+	clipspace.y = (screenspace3.y - (float)0.5) * (float)-2;
+
+	XMFLOAT2 screenSpace;
+	screenSpace.x = screen.x * screenspace3.x;
+	screenSpace.y = screen.y * screenspace3.y;
+	return screenSpace;
+}
+
 void DrawBox(const XMFLOAT4X4& boxMatrix, const XMFLOAT4& color)
 {
 	renderableBoxes.push_back(std::make_pair(boxMatrix,color));
