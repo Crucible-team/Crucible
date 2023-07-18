@@ -402,6 +402,25 @@ namespace wi::scene
 		wi::ecs::Entity Entity_CreateSphere(
 			const std::string& name
 		);
+
+		wi::ecs::Entity Entity_CreateRussainElpisoid(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateTorus(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateTetrahedron(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateOctahedron(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateDodecahedron(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateIcosahedron(
+			const std::string& name
+		);
 		wi::ecs::Entity Entity_CreateCone(
 			const std::string& name
 		);

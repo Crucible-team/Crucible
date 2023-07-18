@@ -34,6 +34,12 @@ void OptionsWindow::Create(EditorComponent* _editor)
 	newCombo.AddItem("Cube " ICON_CUBE, 13);
 	newCombo.AddItem("Cylinder " ICON_FA_CIRCLE, 20);
 	newCombo.AddItem("Sphere " ICON_FA_CIRCLE, 21);
+	newCombo.AddItem("Torus " ICON_FA_CIRCLE, 22);
+	newCombo.AddItem("Tetrahedron " ICON_FA_CIRCLE, 23);
+	//newCombo.AddItem("Cone " ICON_FA_CIRCLE, 24);
+	newCombo.AddItem("Octahedron " ICON_FA_CIRCLE, 25);
+	newCombo.AddItem("Dodecahedro " ICON_FA_CIRCLE, 26);
+	newCombo.AddItem("Icosahedron " ICON_FA_CIRCLE, 27);
 	newCombo.AddItem("Plane " ICON_SQUARE, 14);
 	newCombo.AddItem("Animation " ICON_ANIMATION, 15);
 	newCombo.AddItem("Script " ICON_SCRIPT, 16);
@@ -168,6 +174,30 @@ void OptionsWindow::Create(EditorComponent* _editor)
 
 		case 21:
 			pick.entity = scene.Entity_CreateSphere("sphere");
+			pick.subsetIndex = 0;
+			break;
+		case 22:
+			pick.entity = scene.Entity_CreateTorus("torus");
+			pick.subsetIndex = 0;
+			break;
+		case 23:
+			pick.entity = scene.Entity_CreateTetrahedron("tetrahedron");
+			pick.subsetIndex = 0;
+			break;
+		/*case 24:
+			pick.entity = scene.Entity_CreateCone("cone");
+			pick.subsetIndex = 0;
+			break;*/
+		case 25:
+			pick.entity = scene.Entity_CreateOctahedron("octahedron");
+			pick.subsetIndex = 0;
+			break;
+		case 26:
+			pick.entity = scene.Entity_CreateDodecahedron("Dodecahedron");
+			pick.subsetIndex = 0;
+			break;
+		case 27:
+			pick.entity = scene.Entity_CreateIcosahedron("Icosahedron");
 			pick.subsetIndex = 0;
 			break;
 		case 14:
