@@ -89,8 +89,6 @@ namespace wi
 		{
 			GPUBufferDesc bd;
 			bd.usage = Usage::DEFAULT;
-			bd.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
-			bd.misc_flags = ResourceMiscFlag::BUFFER_STRUCTURED;
 			bd.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS | BindFlag::INDEX_BUFFER;
 			bd.misc_flags = ResourceMiscFlag::BUFFER_RAW | ResourceMiscFlag::INDIRECT_ARGS;
 			if (device->CheckCapability(GraphicsDeviceCapability::RAYTRACING))
@@ -109,61 +107,69 @@ namespace wi
 			indirect_view.size = sizeof(IndirectDrawArgsIndexedInstanced);
 
 			bd.size =
-				AlignTo(simulation_view.size, alignment) +
+				AlignTo(AlignTo(indirect_view.size, alignment), sizeof(IndirectDrawArgsIndexedInstanced)) + // additional structured buffer alignment
+				AlignTo(AlignTo(simulation_view.size, alignment), sizeof(PatchSimulationData)) + // additional structured buffer alignment
 				AlignTo(vb_pos[0].size, alignment) +
 				AlignTo(vb_pos[1].size, alignment) +
 				AlignTo(vb_uvs.size, alignment) +
-				AlignTo(ib_culled.size, alignment) +
-				AlignTo(indirect_view.size, alignment)
+				AlignTo(ib_culled.size, alignment)
 			;
 			device->CreateBuffer(&bd, nullptr, &generalBuffer);
 			device->SetName(&generalBuffer, "HairParticleSystem::generalBuffer");
 
 			uint64_t buffer_offset = 0ull;
 
-			const uint32_t simulation_stride = sizeof(PatchSimulationData);
-			simulation_view.offset = buffer_offset;
-			buffer_offset += AlignTo(simulation_view.size, alignment);
-			simulation_view.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, simulation_view.offset, simulation_view.size, nullptr, &simulation_stride);
-			simulation_view.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, simulation_view.offset, simulation_view.size, nullptr, &simulation_stride);
-			simulation_view.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, simulation_view.subresource_srv);
-			simulation_view.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, simulation_view.subresource_uav);
-
-			vb_pos[0].offset = buffer_offset;
-			buffer_offset += AlignTo(vb_pos[0].size, alignment);
-			vb_pos[0].subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_pos[0].offset, vb_pos[0].size);
-			vb_pos[0].subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_pos[0].offset, vb_pos[0].size);
-			vb_pos[0].descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_pos[0].subresource_srv);
-			vb_pos[0].descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_pos[0].subresource_uav);
-
-			vb_pos[1].offset = buffer_offset;
-			buffer_offset += AlignTo(vb_pos[1].size, alignment);
-			vb_pos[1].subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_pos[1].offset, vb_pos[1].size);
-			vb_pos[1].subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_pos[1].offset, vb_pos[1].size);
-			vb_pos[1].descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_pos[1].subresource_srv);
-			vb_pos[1].descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_pos[1].subresource_uav);
-
-			vb_uvs.offset = buffer_offset;
-			buffer_offset += AlignTo(vb_uvs.size, alignment);
-			vb_uvs.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_uvs.offset, vb_uvs.size);
-			vb_uvs.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_uvs.offset, vb_uvs.size);
-			vb_uvs.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_uvs.subresource_srv);
-			vb_uvs.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_uvs.subresource_uav);
-
-			ib_culled.offset = buffer_offset;
-			buffer_offset += AlignTo(ib_culled.size, alignment);
-			ib_culled.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, ib_culled.offset, ib_culled.size, &ib_format);
-			ib_culled.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, ib_culled.offset, ib_culled.size, &ib_format);
-			ib_culled.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, ib_culled.subresource_srv);
-			ib_culled.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, ib_culled.subresource_uav);
-
 			const uint32_t indirect_stride = sizeof(IndirectDrawArgsIndexedInstanced);
+			buffer_offset = AlignTo(buffer_offset, sizeof(IndirectDrawArgsIndexedInstanced)); // additional structured buffer alignment
+			buffer_offset = AlignTo(buffer_offset, alignment);
 			indirect_view.offset = buffer_offset;
-			buffer_offset += AlignTo(indirect_view.size, alignment);
 			indirect_view.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, indirect_view.offset, indirect_view.size, nullptr, &indirect_stride);
 			indirect_view.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, indirect_view.offset, indirect_view.size, nullptr, &indirect_stride);
 			indirect_view.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, indirect_view.subresource_srv);
 			indirect_view.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, indirect_view.subresource_uav);
+			buffer_offset += indirect_view.size;
+
+			const uint32_t simulation_stride = sizeof(PatchSimulationData);
+			buffer_offset = AlignTo(buffer_offset, sizeof(PatchSimulationData)); // additional structured buffer alignment
+			buffer_offset = AlignTo(buffer_offset, alignment);
+			simulation_view.offset = buffer_offset;
+			simulation_view.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, simulation_view.offset, simulation_view.size, nullptr, &simulation_stride);
+			simulation_view.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, simulation_view.offset, simulation_view.size, nullptr, &simulation_stride);
+			simulation_view.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, simulation_view.subresource_srv);
+			simulation_view.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, simulation_view.subresource_uav);
+			buffer_offset += simulation_view.size;
+
+			buffer_offset = AlignTo(buffer_offset, alignment);
+			vb_pos[0].offset = buffer_offset;
+			vb_pos[0].subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_pos[0].offset, vb_pos[0].size);
+			vb_pos[0].subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_pos[0].offset, vb_pos[0].size);
+			vb_pos[0].descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_pos[0].subresource_srv);
+			vb_pos[0].descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_pos[0].subresource_uav);
+			buffer_offset += vb_pos[0].size;
+
+			buffer_offset = AlignTo(buffer_offset, alignment);
+			vb_pos[1].offset = buffer_offset;
+			vb_pos[1].subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_pos[1].offset, vb_pos[1].size);
+			vb_pos[1].subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_pos[1].offset, vb_pos[1].size);
+			vb_pos[1].descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_pos[1].subresource_srv);
+			vb_pos[1].descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_pos[1].subresource_uav);
+			buffer_offset += vb_pos[1].size;
+
+			buffer_offset = AlignTo(buffer_offset, alignment);
+			vb_uvs.offset = buffer_offset;
+			vb_uvs.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_uvs.offset, vb_uvs.size);
+			vb_uvs.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_uvs.offset, vb_uvs.size);
+			vb_uvs.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_uvs.subresource_srv);
+			vb_uvs.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_uvs.subresource_uav);
+			buffer_offset += vb_uvs.size;
+
+			buffer_offset = AlignTo(buffer_offset, alignment);
+			ib_culled.offset = buffer_offset;
+			ib_culled.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, ib_culled.offset, ib_culled.size, &ib_format);
+			ib_culled.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, ib_culled.offset, ib_culled.size, &ib_format);
+			ib_culled.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, ib_culled.subresource_srv);
+			ib_culled.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, ib_culled.subresource_uav);
+			buffer_offset += ib_culled.size;
 
 			primitiveBuffer = wi::renderer::GetIndexBufferForQuads(particleCount);
 		}
