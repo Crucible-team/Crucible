@@ -1708,6 +1708,34 @@ namespace wi::scene
 		script.clear(); // will be created on first Update()
 	}
 
+	XMFLOAT3 SplineComponent::GetSplinePoint(wi::vector<XMFLOAT3> path, float t)
+	{
+
+		int p1, p2, p3, p4;
+		p2 = (int)t + 1;
+		p3 = p2 + 1;
+		p4 = p3 + 1;
+		p1 = p2 - 1;
+
+		t = t - (int)t;
+
+		float tt = t * t;
+		float ttt = tt * t;
+
+		float q1 = -ttt + 2.0f * tt - t;
+		float q2 = 3.0f * ttt - 5.0f * tt + 2.0f;
+		float q3 = -3.0f * ttt + 4.0f * tt + t;
+		float q4 = ttt - tt;
+
+		float tx = path[p1].x * q1 + path[p2].x * q2 + path[p3].x * q3 + path[p4].x * q4;
+		float ty = path[p1].y * q1 + path[p2].y * q2 + path[p3].y * q3 + path[p4].y * q4;
+		float tz = path[p1].z * q1 + path[p2].z * q2 + path[p3].z * q3 + path[p4].z * q4;
+
+		//dest = XMFLOAT3(tx, ty, tz);
+		return { tx,ty,tz };
+
+	}
+
 	void ResponseComponent::CreateFromFile(const std::string& filename)
 	{
 		this->filename = filename;

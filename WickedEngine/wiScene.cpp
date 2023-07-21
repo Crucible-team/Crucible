@@ -1693,6 +1693,8 @@ namespace wi::scene
 		return entity;
 	}
 
+
+
 	Entity Scene::Entity_CreateSphere(
 		const std::string& name
 	)

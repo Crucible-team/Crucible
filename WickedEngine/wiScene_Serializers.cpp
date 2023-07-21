@@ -2096,6 +2096,39 @@ namespace wi::scene
 		}
 	}
 
+	void SplineComponent::Serialize(wi::Archive& archive, EntitySerializer& seri)
+	{
+
+		if (archive.IsReadMode())
+		{
+			size_t size_count = 0;
+			archive >> size_count;
+			
+
+			for (size_t size_index = 0; size_index < size_count; size_index++)
+			{
+				std::string name;
+				XMFLOAT3 vector = {};
+
+				archive >> name;
+				archive >> vector;
+				path[name] = vector;
+			}
+		}
+		else
+		{
+			archive << path.size();
+
+			for (auto i = path.begin(); i != path.end(); i++)
+			{
+				archive << i->first;
+				archive << i->second;
+
+			}
+
+		}
+	}
+
 	void Scene::Serialize(wi::Archive& archive)
 	{
 		wi::Timer timer;

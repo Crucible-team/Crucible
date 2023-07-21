@@ -50,6 +50,7 @@ set (SOURCE_FILES
 	#ModelImporter_VMF.cpp
 	HealthWindow.cpp
 	ArmorWindow.cpp
+	SplineWindow.cpp
 )
 
 add_subdirectory(meshoptimizer)

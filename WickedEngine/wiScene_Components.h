@@ -2370,4 +2370,15 @@ namespace wi::scene
 		int MaxArmor = 1000;
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 	};
+
+	struct SplineComponent
+	{
+		std::map<std::string,XMFLOAT3> path;
+
+		//void CreateFromFile(const std::string& filename);
+
+		XMFLOAT3 GetSplinePoint(wi::vector<XMFLOAT3> path, float t);
+
+		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
 }

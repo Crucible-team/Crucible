@@ -1600,6 +1600,7 @@ void EditorComponent::Update(float dt)
 
 		componentsWnd.healthWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.armorWnd.SetEntity(INVALID_ENTITY);
+		componentsWnd.splineWnd.SetEntity(INVALID_ENTITY);
 	}
 	else
 	{
@@ -1637,6 +1638,7 @@ void EditorComponent::Update(float dt)
 
 		componentsWnd.healthWnd.SetEntity(picked.entity);
 		componentsWnd.armorWnd.SetEntity(picked.entity);
+		componentsWnd.splineWnd.SetEntity(picked.entity);
 
 		if (picked.subsetIndex >= 0)
 		{
@@ -2651,6 +2653,83 @@ void EditorComponent::Render() const
 					wi::font::Draw(ICON_VIDEO, fp, cmd);
 				}
 			}
+
+			size_t spline_points_count = 0;
+			for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+			{
+				const SplineComponent& spline = scene.splines[i];
+				spline_points_count += spline.path.size();
+			}
+
+			if (spline_points_count > 0)
+			{
+				wi::renderer::RenderablePoint point;
+				wi::renderer::RenderableLine line;
+
+				for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+				{
+					const SplineComponent& spline = scene.splines[i];
+
+					for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+					{
+						point.position = i->second;
+
+						point.size = 0.5f;
+
+						point.color = XMFLOAT4(1,1, 1, 1);
+
+						wi::renderer::DrawPoint(point);
+
+					}
+
+
+				}
+
+				if (spline_points_count >= 4)
+				{
+					for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+					{
+						SplineComponent& spline = scene.splines[i];
+
+						wi::vector<XMFLOAT3> path;
+
+						for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+						{
+							path.push_back(i->second);
+						}
+
+						for (float i = 0; i < spline.path.size() - 3.0f; i+=0.01)
+						{
+							//XMFLOAT3 start = GetSplinePoint();
+							//XMFLOAT3 end = GetSplinePoint();
+
+							
+
+							point.position = spline.GetSplinePoint(path, i);
+
+							point.size = 0.01f;
+
+							point.color = XMFLOAT4(1, 1, 1, 1);
+
+							/*line.start = i->second;
+
+							line.end;
+
+							line.color_start = XMFLOAT4(1, 1, 1, 1);
+							line.color_end = XMFLOAT4(1, 1, 1, 1);*/
+
+							wi::renderer::DrawPoint(point);
+						}
+
+
+					}
+				}
+				
+
+			
+
+			}
+
 			if (bone_picking)
 			{
 				static PipelineState pso;
@@ -2670,6 +2749,8 @@ void EditorComponent::Render() const
 					static wi::eventhandler::Handle handle = wi::eventhandler::Subscribe(wi::eventhandler::EVENT_RELOAD_SHADERS, [](uint64_t userdata) { LoadShaders(); });
 					LoadShaders();
 				}
+
+				
 
 				size_t bone_count = 0;
 				for (size_t i = 0; i < scene.armatures.GetCount(); ++i)
@@ -3960,6 +4041,7 @@ void EditorComponent::RefreshSceneList()
 
 			componentsWnd.healthWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 			componentsWnd.armorWnd.SetEntity(wi::ecs::INVALID_ENTITY);
+			componentsWnd.splineWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 
 			optionsWnd.RefreshEntityTree();
 			ResetHistory();
