@@ -41,6 +41,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 	newCombo.AddItem("Dodecahedro " ICON_FA_CIRCLE, 26);
 	newCombo.AddItem("Icosahedron " ICON_FA_CIRCLE, 27);
 	newCombo.AddItem("Plane " ICON_SQUARE, 14);
+	newCombo.AddItem("Circle " ICON_FA_CIRCLE, 28);
 	newCombo.AddItem("Animation " ICON_ANIMATION, 15);
 	newCombo.AddItem("Script " ICON_SCRIPT, 16);
 	newCombo.AddItem("Collider " ICON_COLLIDER, 17);
@@ -193,11 +194,15 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			pick.subsetIndex = 0;
 			break;
 		case 26:
-			pick.entity = scene.Entity_CreateDodecahedron("Dodecahedron");
+			pick.entity = scene.Entity_CreateDodecahedron("dodecahedron");
 			pick.subsetIndex = 0;
 			break;
 		case 27:
-			pick.entity = scene.Entity_CreateIcosahedron("Icosahedron");
+			pick.entity = scene.Entity_CreateIcosahedron("icosahedron");
+			pick.subsetIndex = 0;
+			break;
+		case 28:
+			pick.entity = scene.Entity_CreatePipe("circle");
 			pick.subsetIndex = 0;
 			break;
 		case 14:
@@ -338,6 +343,9 @@ void OptionsWindow::Create(EditorComponent* _editor)
 		//	We don't delete here, because this callback will execute once for each item
 		editor->deleting = true;
 	});
+	/*entityTree.OnDragStart[this](wi::gui::EventArgs args) {
+	}*/
+
 	AddWidget(&entityTree);
 
 	graphicsWnd.Create(editor);

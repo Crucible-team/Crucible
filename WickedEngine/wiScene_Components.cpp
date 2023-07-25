@@ -1708,7 +1708,7 @@ namespace wi::scene
 		script.clear(); // will be created on first Update()
 	}
 
-	XMFLOAT3 SplineComponent::GetSplinePoint(wi::vector<XMFLOAT3> path, float t)
+	XMFLOAT3 SplineComponent::GetSplinePointCat(wi::vector<XMFLOAT3> path, float t)
 	{
 
 		int p1, p2, p3, p4;
@@ -1716,23 +1716,126 @@ namespace wi::scene
 		p3 = p2 + 1;
 		p4 = p3 + 1;
 		p1 = p2 - 1;
-
 		t = t - (int)t;
+		XMVECTOR spline_p = XMVectorCatmullRom(
+			XMLoadFloat3(&path[p1]),
+			XMLoadFloat3(&path[p2]),
+			XMLoadFloat3(&path[p3]),
+			XMLoadFloat3(&path[p4]),
+			t
+		);
 
-		float tt = t * t;
-		float ttt = tt * t;
 
-		float q1 = -ttt + 2.0f * tt - t;
-		float q2 = 3.0f * ttt - 5.0f * tt + 2.0f;
-		float q3 = -3.0f * ttt + 4.0f * tt + t;
-		float q4 = ttt - tt;
-
-		float tx = path[p1].x * q1 + path[p2].x * q2 + path[p3].x * q3 + path[p4].x * q4;
-		float ty = path[p1].y * q1 + path[p2].y * q2 + path[p3].y * q3 + path[p4].y * q4;
-		float tz = path[p1].z * q1 + path[p2].z * q2 + path[p3].z * q3 + path[p4].z * q4;
-
+		XMFLOAT3 sp;
+		XMStoreFloat3(&sp, spline_p);
 		//dest = XMFLOAT3(tx, ty, tz);
-		return { tx,ty,tz };
+		return sp;//{ tx,ty,tz };
+
+	}
+
+	XMFLOAT3 SplineComponent::GetTangent(wi::vector<XMFLOAT3> path, float t)
+	{
+		
+		float omt = 1.0f - t;
+		float omt2 = omt * omt;
+		float t2 = t * t;
+
+		int p1, p2, p3, p4;
+		p2 = (int)t + 1;
+		p3 = p2 + 1;
+		p4 = p3 + 1;
+		p1 = p2 - 1;
+		
+
+		XMVECTOR tag0 = XMLoadFloat3(&path[p1]);
+
+		tag0 = tag0 * (-omt2);
+
+		XMVECTOR tag1 = XMLoadFloat3(&path[p2]);
+
+		tag1 = tag1 * (3* omt2 - 2 *omt);
+
+		XMVECTOR tag2 = XMLoadFloat3(&path[p3]);
+
+		tag2 = tag2 * (-3 * t2 + 2 * t);
+
+		XMVECTOR tag3 = XMLoadFloat3(&path[p4]);
+
+		tag3 = tag3* (t2);
+
+		XMVECTOR tagsum1 = XMVectorAdd(tag0, tag1);
+		XMVECTOR tagsum2 = XMVectorAdd(tagsum1, tag2);
+		XMVECTOR tagsum3 = XMVectorAdd(tagsum2, tag3);
+
+		XMVECTOR normalized = XMVector3Normalize(tagsum3);
+
+
+		XMFLOAT3 result;
+
+		XMStoreFloat3(&result, normalized);
+
+		return result;
+	}
+
+	XMFLOAT3 SplineComponent::GetNormal(wi::vector<XMFLOAT3> path, float t, XMVECTOR up)
+	{
+
+
+		XMFLOAT3 tng = GetTangent(path, t);
+		XMVECTOR binormal = XMVector3Cross(up, XMLoadFloat3(&tng));
+
+		binormal = XMVector3Normalize(binormal);
+
+		XMVECTOR result = XMVector3Cross(XMLoadFloat3(&tng), binormal);
+		
+		XMFLOAT3 normal;
+
+		XMStoreFloat3(&normal, result);
+
+		return normal;
+	}
+
+	XMVECTOR SplineComponent::GetOrintation(wi::vector<XMFLOAT3> path, float t)
+	{
+
+		XMFLOAT3 tng = GetTangent(path, t);
+
+		XMFLOAT3 up = { 0, 1, 0 };
+		XMFLOAT3 nrm = GetNormal(path, t, XMLoadFloat3(&up));
+
+		XMVECTOR zDir = XMVector3Cross(XMLoadFloat3(&tng), XMLoadFloat3(&up));
+
+		XMVECTOR yDir = XMVector3Cross(zDir, XMLoadFloat3(&tng));
+
+		XMMATRIX _V = XMMatrixLookToLH(XMLoadFloat3(&tng), yDir, zDir);
+
+		XMVECTOR quat = XMQuaternionRotationMatrix(_V);
+
+
+		return quat;
+	}
+
+	XMFLOAT3 SplineComponent::GetSplinePointLinear(wi::vector<XMFLOAT3> path, float t)
+	{
+
+		int p1, p2;//, p3, p4;
+		p2 = (int)t + 1;
+		//p3 = p2 + 1;
+		//p4 = p3 + 1;
+		p1 = p2 - 1;
+
+		if (path.size() > 2)
+		{
+			t = t - (int)t;
+		}
+		
+
+		XMVECTOR spline_p = XMVectorLerp(XMLoadFloat3(&path[p1]), XMLoadFloat3(&path[p2]),t);
+
+		XMFLOAT3 sp;
+		XMStoreFloat3(&sp, spline_p);
+		//dest = XMFLOAT3(tx, ty, tz);
+		return sp;//{ tx,ty,tz };
 
 	}
 

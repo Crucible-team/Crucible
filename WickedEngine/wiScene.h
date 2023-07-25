@@ -400,6 +400,12 @@ namespace wi::scene
 		wi::ecs::Entity Entity_CreateCylinder(
 			const std::string& name
 		);
+		wi::ecs::Entity Entity_CreateCircle(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreatePipe(
+			const std::string& name
+		);
 		wi::ecs::Entity Entity_CreateSphere(
 			const std::string& name
 		);

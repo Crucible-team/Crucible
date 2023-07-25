@@ -49,6 +49,11 @@ namespace wi::scene
 		return v;
 	}
 
+	inline XMFLOAT2 GetUnitVectorAngle(float angle)
+	{
+		return XMFLOAT2(cos(angle), sin(angle));
+	}
+
 
 	// Helper creates a triangle fan to close the end of a cylinder / cone
 	void CreateCylinderCap(wi::vector<XMFLOAT3>& vertices, wi::vector<XMFLOAT3>& normals, wi::vector<XMFLOAT2>& texture, wi::vector<uint32_t>& indices, size_t tessellation, float height, float radius, bool isTop)
@@ -1693,6 +1698,230 @@ namespace wi::scene
 		return entity;
 	}
 
+	Entity Scene::Entity_CreateCircle(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		float radiusInner = 0.0;
+
+		float thickness = 0.5;
+
+		int angularSegments = 12;
+
+		float RadiusOuter = radiusInner + thickness;
+
+		int VertexCount = angularSegments * 2;
+		
+		int vCount = VertexCount;
+
+
+		std::vector<XMFLOAT3> vertices;
+		std::vector<XMFLOAT3> normals;
+		std::vector<float> texCoords;
+		std::vector<uint32_t> indicies;
+
+		for (int i = 0; i < angularSegments + 1; i++)
+		{
+			float t = i / (float)angularSegments;
+			float angRad = t * 6.28318530718f;
+
+			XMFLOAT2 dir = GetUnitVectorAngle(angRad);
+
+			vertices.emplace_back(XMFLOAT3(dir.x * RadiusOuter, dir.y * RadiusOuter, 0.0f));
+			vertices.emplace_back(XMFLOAT3(dir.x * radiusInner, dir.y * radiusInner, 0.0f));
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(t, 1));
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(t, 0));
+		}
+
+		for (int i = 0; i < angularSegments; i++)
+		{
+			int Rootindex = i * 2;
+
+			int indexInnerRoot = Rootindex + 1;
+			int indexOuterNext = Rootindex + 2;
+			int indexInnerNext = Rootindex + 3;
+
+			indicies.emplace_back(Rootindex);
+			indicies.emplace_back(indexOuterNext);
+			indicies.emplace_back(indexInnerNext);
+
+			indicies.emplace_back(Rootindex);
+			indicies.emplace_back(indexInnerNext);
+			indicies.emplace_back(indexInnerRoot);
+
+		}
+
+		mesh.vertex_positions = vertices;
+
+		mesh.indices = indicies;
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_HARD);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+
+	Entity Scene::Entity_CreatePipe(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		SplineComponent& spline = splines.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		float radiusInner = 0.0;
+
+		float thickness = 0.5;
+
+		int edgeRIngcount = 8;
+
+		float RadiusOuter = radiusInner + thickness;
+
+		int VertexCount = edgeRIngcount * 2;
+
+		int vCount = VertexCount;
+
+
+		
+
+		
+
+
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(3,0), XMFLOAT2(0,1), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(3,0), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,1), XMFLOAT2(1.0f ,0.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(1.0f ,0.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(0.0f ,-1.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(0.0f ,1.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(-1.0f ,0.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(-1.0f ,0.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-4,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-4,1), XMFLOAT2(0.70710678118f ,0.70710678118f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-3,0), XMFLOAT2(0.70710678118f ,0.70710678118f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-3,0), XMFLOAT2(0.0f ,1.0f), 0 });
+
+
+		spline.lineIndices.push_back(15);
+		spline.lineIndices.push_back(0);
+		spline.lineIndices.push_back(1);
+		spline.lineIndices.push_back(2);
+		spline.lineIndices.push_back(3);
+		spline.lineIndices.push_back(4);
+		spline.lineIndices.push_back(5);
+		spline.lineIndices.push_back(6);
+		spline.lineIndices.push_back(7);
+		spline.lineIndices.push_back(8);
+		spline.lineIndices.push_back(9);
+		spline.lineIndices.push_back(10);
+		spline.lineIndices.push_back(11);
+		spline.lineIndices.push_back(12);
+		spline.lineIndices.push_back(13);
+		spline.lineIndices.push_back(14);
+
+
+
+		std::vector<XMFLOAT3> vertices;
+		std::vector<XMFLOAT3> normals;
+		std::vector<float> texCoords;
+		std::vector<uint32_t> indicies;
+
+		for (int i = 0; i < edgeRIngcount + 1; i++)
+		{
+			float t = i / (float)edgeRIngcount;
+			float angRad = t * 6.28318530718f;
+
+			XMFLOAT2 dir = GetUnitVectorAngle(angRad);
+
+			vertices.emplace_back(XMFLOAT3(dir.x * RadiusOuter, dir.y * RadiusOuter, 0.0f));
+			vertices.emplace_back(XMFLOAT3(dir.x * radiusInner, dir.y * radiusInner, 0.0f));
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(t, 1));
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(t, 0));
+		}
+
+		for (int i = 0; i < edgeRIngcount; i++)
+		{
+			int Rootindex = i * 2;
+
+			int indexInnerRoot = Rootindex + 1;
+			int indexOuterNext = Rootindex + 2;
+			int indexInnerNext = Rootindex + 3;
+
+			indicies.emplace_back(Rootindex);
+			indicies.emplace_back(indexOuterNext);
+			indicies.emplace_back(indexInnerNext);
+
+			indicies.emplace_back(Rootindex);
+			indicies.emplace_back(indexInnerNext);
+			indicies.emplace_back(indexInnerRoot);
+
+		}
+
+		mesh.vertex_positions = vertices;
+
+		mesh.indices = indicies;
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_HARD);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
 
 
 	Entity Scene::Entity_CreateSphere(

@@ -10,6 +10,9 @@ public:
 	wi::ecs::Entity entity;
 
 	wi::gui::Button AddPoint;
+	wi::gui::Button testENt;
+
+	wi::gui::Slider TtestSlider;
 
 	void SetEntity(wi::ecs::Entity entity);
 

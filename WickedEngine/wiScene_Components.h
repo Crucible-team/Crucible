@@ -2371,13 +2371,35 @@ namespace wi::scene
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 	};
 
+
 	struct SplineComponent
 	{
 		std::map<std::string,XMFLOAT3> path;
 
+		wi::ecs::Entity prevtarget = wi::ecs::INVALID_ENTITY; // previous entity in the spline.
+		wi::ecs::Entity nexttarget = wi::ecs::INVALID_ENTITY; // next entity in the spline.
+
+		
+		struct vtex
+		{
+			vtex(const XMFLOAT2& P, const XMFLOAT2& N, const float& U) :
+				point(P), normal(N), u(U) {}
+			XMFLOAT2 point;
+			XMFLOAT2 normal;
+			float u;
+		};
+
+		std::vector <vtex> mesh2dvtex;
+		std::vector<int> lineIndices;
+
+		float T;
 		//void CreateFromFile(const std::string& filename);
 
-		XMFLOAT3 GetSplinePoint(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetSplinePointCat(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetTangent(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetNormal(wi::vector<XMFLOAT3> path, float t, XMVECTOR up);
+		XMVECTOR GetOrintation(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetSplinePointLinear(wi::vector<XMFLOAT3> path, float t);
 
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 	};

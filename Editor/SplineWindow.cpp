@@ -30,6 +30,8 @@ void SplineWindow::Create(EditorComponent* _editor)
 	float step = hei + 2;
 	float wid = 220;
 
+	float siz = 140;
+
 	AddPoint.Create("Add Point");
 	AddPoint.SetTooltip("Add a new point.");
 	AddPoint.SetSize(XMFLOAT2(wid, hei));
@@ -41,6 +43,27 @@ void SplineWindow::Create(EditorComponent* _editor)
 		spline->path.emplace(std::to_string(spline->path.size() + 1 ), XMFLOAT3(wi::random::GetRandom(XM_PI), wi::random::GetRandom(XM_PI), wi::random::GetRandom(XM_PI)));
 		});
 	AddWidget(&AddPoint);
+
+	testENt.Create("Test entity");
+	testENt.SetTooltip("use a test entity");
+	testENt.SetSize(XMFLOAT2(wid, hei));
+	testENt.OnClick([=](wi::gui::EventArgs args) {
+		wi::scene::Scene& scene = editor->GetCurrentScene();
+		SplineComponent* spline = scene.splines.GetComponent(entity);
+		if (spline == nullptr)
+			return;
+		spline->nexttarget = scene.Entity_CreateCylinder("spline test ent");
+		});
+	AddWidget(&testENt);
+
+	TtestSlider.Create(0, 1, 0.1f, 100000, "T test: ");
+	TtestSlider.SetTooltip("T for spline point.");
+	TtestSlider.SetPos(XMFLOAT2(x, y += step));
+	TtestSlider.SetSize(XMFLOAT2(siz, hei));
+	TtestSlider.OnSlide([&](wi::gui::EventArgs args) {
+		editor->GetCurrentScene().splines.GetComponent(entity)->T = args.fValue;
+		});
+	AddWidget(&TtestSlider);
 
 	
 
@@ -91,4 +114,6 @@ void SplineWindow::ResizeLayout()
 	};
 
 	add(AddPoint);
+	add(testENt);
+	add(TtestSlider);
 }
