@@ -33,11 +33,11 @@ You can get the full source code by using Git version control and cloning https:
 ### How to build: 
 
 #### Windows
-To build Crucible Engine for Windows 10, use the latest version of Visual Studio and the provided `CrucibleEngine.sln` solution file. By simply pressing F5, the Editor application will be built. There are other example projects that you can build as well within the solution.
+To build Crucible Engine for Windows 10, use the cmake build, and then open the .sln in build/, the Editor application will be built. There are other example projects that you can build as well within the solution.
 
 <img align="right" src="https://github.com/turanszkij/Wickedengine-gifs/raw/main/fighting_game.gif" width="320px"/>
 
-If you want to develop a C++ application that uses Crucible Engine, you can build the CrucibleEngine static library project for the appropriate platform, such as `CrucibleEngine_Windows` and link against it. Including the `"CrucibleEngine.h"` header will attempt to link the binaries for the appropriate platform, but search directories should be set up beforehand. For example, you can set additional library directories to `$(SolutionDir)BUILD\$(Platform)\$(Configuration)` by default. For examples, see the `Template`, `Tests`, and `Editor` projects. 
+If you want to develop a C++ application that uses Crucible Engine, you can build the CrucibleEngine static library project for the appropriate platform, such as `CrucibleEngine_Windows` and link against it. Including the `"WickedEngine.h"` header will attempt to link the binaries for the appropriate platform, but search directories should be set up beforehand. For example, you can set additional library directories to `$(SolutionDir)BUILD\$(Platform)\$(Configuration)` by default. For examples, see the `Template`, `Tests`, and `Editor` projects. 
 
 If you have questions or stuck, please use the `windows` communication channel on Discord: [![Discord chat](https://img.shields.io/discord/602811659224088577?logo=discord)](https://discord.gg/CFjRYmE)
 
@@ -61,7 +61,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 ```
 
-If you want to develop an application that uses Crucible Engine, you will have to link to libCrucibleEngine.a and `#include "CrucibleEngine.h"` into the source code. For examples, look at the Cmake files, or the Tests and the Editor applications.
+If you want to develop an application that uses Crucible Engine, you will have to link to libWickedEngine.a and `#include "WickedEngine.h"` into the source code. For examples, look at the Cmake files, or the Tests and the Editor applications.
 
 You can also download prebuilt and packaged versions of the Editor and Tests here (requires Github sign in): [![Github Build Status](https://github.com/turanszkij/CrucibleEngine/workflows/Build/badge.svg)](https://github.com/turanszkij/CrucibleEngine/actions)
 
@@ -76,7 +76,7 @@ If you have questions or stuck, please use the `linux` communication channel on 
 
 ```cpp
 // Include engine headers:
-#include "CrucibleEngine.h"
+#include "WickedEngine.h"
 
 // Create the Crucible Engine application:
 wi::Application application;
@@ -99,12 +99,12 @@ wi::initializer::InitializeComponentsImmediate(); // (Optional) allows to initia
 wi::RenderPath3D myGame; // Declare a game screen component, aka "RenderPath" (you could also override its Update(), Render() etc. functions). 
 application.ActivatePath(&myGame); // Register your game to the application. It will call Start(), Update(), Render(), etc. from now on...
 
-wi::scene::LoadModel("myModel.wiscene"); // Simply load a model into the current global scene
-wi::scene::GetScene(); // Get the current global scene
+wi::scene::LoadScene("myModel.wiscene"); // Simply load a model into the current global scene
+wi::scene::GetGlobalScene(); // Get the current global scene
 
 wi::scene::Scene scene2; // create a separate scene
-wi::scene::LoadModel(scene2, "myModel2.wiscene"); // Load model into a separate scene
-wi::scene::GetScene().Merge(scene2); // Combine separate scene with global scene
+wi::scene::LoadScene(scene2, "myModel2.wiscene"); // Load model into a separate scene
+wi::scene::GetGlobalScene().Merge(scene2); // Combine separate scene with global scene
 
 myGame.setFXAAEnabled(true); // You can enable post process effects this way...
 
@@ -133,17 +133,17 @@ path = RenderPath3D;
 application.SetActivePath(path);    -- "application" is created automatically by wi::Application
 
 -- Load a model entity into the global scene:
-entity = LoadModel("myModel.wiscene");
+entity = LoadScene("myModel.wiscene");
 
 -- Load a model entity into a separate scene:
 scene2 = Scene()
-entity2 = LoadModel(scene2, "myModel2.wiscene");
+entity2 = LoadScene(scene2, "myModel2.wiscene");
 
 -- Combine the separate scene with the global scene:
 scene.Merge(scene2);
 
 -- Get the current global scene:
-scene = GetScene();
+scene = GetGlobalScene();
 
 -- Move model to the right using the entity-component system:
 transform = scene.Component_GetTransform(entity);
