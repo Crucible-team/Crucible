@@ -2663,26 +2663,7 @@ void EditorComponent::Render() const
 				spline_shape_count += spline.mesh2dvtex.size();
 			}
 
-			if (spline_shape_count > 0)
-			{
-				wi::renderer::RenderableLine line;
-
-				for (size_t i = 0; i < scene.splines.GetCount(); ++i)
-				{
-					const SplineComponent& spline = scene.splines[i];
-
-					wi::renderer::RenderableLine line;
-
-					for (size_t i = 0; i < spline.lineIndices.size(); i+=2)
-					{
-						XMFLOAT3 a = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i]].point.x, spline.mesh2dvtex[spline.lineIndices[i]].point.y, 0);
-						XMFLOAT3 b = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i+1]].point.x, spline.mesh2dvtex[spline.lineIndices[i+1]].point.y, 0);
-						line.start = a;
-						line.end = b;
-						wi::renderer::DrawLine(line);
-					}
-				}
-			}
+			
 
 			if (spline_points_count > 0)
 			{
@@ -2694,7 +2675,7 @@ void EditorComponent::Render() const
 				{
 					const SplineComponent& spline = scene.splines[i];
 
-					/*for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+					for (auto i = spline.path.begin(); i != spline.path.end(); i++)
 					{
 						point.position = i->second;
 
@@ -2704,7 +2685,7 @@ void EditorComponent::Render() const
 
 						wi::renderer::DrawPoint(point);
 
-					}*/
+					}
 
 
 				}
@@ -2729,11 +2710,20 @@ void EditorComponent::Render() const
 
 							
 
-							point.position = spline.GetSplinePointCat(path, i);
+							//point.position = spline.GetSplinePointCat(path, i);
 
-							point.size = 0.01f;
+							//point.size = 0.01f;
 
-							point.color = XMFLOAT4(1, 1, 1, 1);
+							//point.color = XMFLOAT4(1, 1, 1, 1);
+
+							XMFLOAT3 a = spline.GetSplinePointCat(path, i);
+							XMFLOAT3 b = spline.GetSplinePointCat(path, std::clamp(i + 0.01f,0.0f,spline.path.size() - 3.0f));
+
+							line.color_start = XMFLOAT4(1, 1, 1, 1);
+							line.color_end = XMFLOAT4(0, 0, 1, 1);
+							line.start = a;
+							line.end = b;
+							wi::renderer::DrawLine(line);
 
 							/*line.start = i->second;
 
@@ -2746,7 +2736,7 @@ void EditorComponent::Render() const
 							point2.size = 0.75f;
 							point2.color = XMFLOAT4(1, 0, 0, 1);
 
-							wi::renderer::DrawPoint(point);
+							//wi::renderer::DrawPoint(point);
 							wi::renderer::DrawPoint(point2);
 
 							if (spline.nexttarget != INVALID_ENTITY)
@@ -2764,6 +2754,34 @@ void EditorComponent::Render() const
 								XMStoreFloat4(&rot, spline.GetOrintation(path, spline.T));
 								entTransform->rotation_local = rot;
 								//entTransform->Rotate(spline.GetOrintation(path, spline.T));
+							}
+
+							if (spline_shape_count > 0)
+							{
+
+								for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+								{
+									const SplineComponent& spline = scene.splines[i];
+
+									wi::renderer::RenderableLine line;
+
+
+									for (size_t i = 0; i < spline.lineIndices.size(); i += 2)
+									{
+										/*XMFLOAT4 rot;
+										XMStoreFloat4(&rot, spline.GetOrintation(path, spline.T));
+										XMVECTOR R_local = XMLoadFloat4(&rotation_local);
+										XMVECTOR T_local = XMLoadFloat3(&spline.GetSplinePointCat(path, spline.T));*/
+
+										//XMMATRIX world = XMMatrixRotationQuaternion(R_local) * XMMatrixTranslationFromVector(T_local);
+											
+										XMFLOAT3 a = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i]].point.x, spline.mesh2dvtex[spline.lineIndices[i]].point.y, 0);
+										XMFLOAT3 b = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i + 1]].point.x, spline.mesh2dvtex[spline.lineIndices[i + 1]].point.y, 0);
+										line.start = a;
+										line.end = b;
+										wi::renderer::DrawLine(line);
+									}
+								}
 							}
 							
 						}

@@ -65,8 +65,6 @@ void SplineWindow::Create(EditorComponent* _editor)
 		});
 	AddWidget(&TtestSlider);
 
-	
-
 
 	SetMinimized(true);
 	SetVisible(false);
