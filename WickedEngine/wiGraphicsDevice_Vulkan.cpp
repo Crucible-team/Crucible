@@ -363,9 +363,9 @@ namespace vulkan_internal
 		switch (value)
 		{
 		case ShaderStage::MS:
-			return VK_SHADER_STAGE_MESH_BIT_NV;
+			return VK_SHADER_STAGE_MESH_BIT_EXT;
 		case ShaderStage::AS:
-			return VK_SHADER_STAGE_TASK_BIT_NV;
+			return VK_SHADER_STAGE_TASK_BIT_EXT;
 		case ShaderStage::VS:
 			return VK_SHADER_STAGE_VERTEX_BIT;
 		case ShaderStage::HS:
@@ -3293,8 +3293,12 @@ using namespace vulkan_internal;
 		pso_dynamicStates.push_back(VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE);
 
 		dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicStateInfo.dynamicStateCount = (uint32_t)pso_dynamicStates.size();
 		dynamicStateInfo.pDynamicStates = pso_dynamicStates.data();
+		dynamicStateInfo.dynamicStateCount = (uint32_t)pso_dynamicStates.size();
+
+		dynamicStateInfo_MeshShader.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicStateInfo_MeshShader.pDynamicStates = pso_dynamicStates.data();
+		dynamicStateInfo_MeshShader.dynamicStateCount = (uint32_t)pso_dynamicStates.size() - 1; // don't include VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE for mesh shader
 
 		// Note: limiting descriptors by constant amount is needed, because the bindless sets are bound to multiple slots to match DX12 layout
 		//	And binding to multiple slot adds up towards limits, so the limits will be quickly reached for some descriptor types
@@ -4173,6 +4177,8 @@ using namespace vulkan_internal;
 
 			if (texture->desc.usage == Usage::READBACK || texture->desc.usage == Usage::UPLOAD)
 			{
+				// Note: we are creating a buffer instead of linear image because linear image cannot have mips
+				//	With a buffer, we can tightly pack mips linearly into a buffer so it won't have that limitation
 				VkBufferCreateInfo bufferInfo = {};
 				bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 				bufferInfo.size = 0;
@@ -4208,32 +4214,6 @@ using namespace vulkan_internal;
 				res = vmaCreateBuffer(allocationhandler->allocator, &bufferInfo, &allocInfo, &internal_state->staging_resource, &internal_state->allocation, nullptr);
 				assert(res == VK_SUCCESS);
 
-				imageInfo.tiling = VK_IMAGE_TILING_LINEAR;
-				imageInfo.mipLevels = 1; // set miplevels to 1 for linear tiling resource (this resource is just temporary)
-				VkImage image;
-				res = vkCreateImage(device, &imageInfo, nullptr, &image);
-				assert(res == VK_SUCCESS);
-
-				VkSubresourceLayout subresourcelayout = {};
-
-				if (texture->desc.usage == Usage::UPLOAD)
-				{
-					const uint32_t block_size = GetFormatBlockSize(desc->format);
-					const uint32_t num_blocks_x = std::max(1u, desc->width / block_size);
-					const uint32_t num_blocks_y = std::max(1u, desc->height / block_size);
-					const uint32_t rowpitch = num_blocks_x * GetFormatStride(desc->format);
-					const uint32_t slicepitch = rowpitch * num_blocks_y;
-					subresourcelayout.rowPitch = (VkDeviceSize)rowpitch;
-					subresourcelayout.depthPitch = (VkDeviceSize)slicepitch;
-					subresourcelayout.arrayPitch = (VkDeviceSize)slicepitch;
-				}
-				else
-				{
-					VkImageSubresource subresource = {};
-					subresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-					vkGetImageSubresourceLayout(device, image, &subresource, &subresourcelayout);
-				}
-
 				if (texture->desc.usage == Usage::READBACK || texture->desc.usage == Usage::UPLOAD)
 				{
 					texture->mapped_data = internal_state->allocation->GetMappedData();
@@ -4244,8 +4224,8 @@ using namespace vulkan_internal;
 					size_t subresourceDataOffset = 0;
 					for (uint32_t layer = 0; layer < texture->desc.array_size; ++layer)
 					{
-						uint32_t rowpitch = (uint32_t)subresourcelayout.rowPitch;
-						uint32_t slicepitch = (uint32_t)subresourcelayout.depthPitch;
+						uint32_t rowpitch = (uint32_t)num_blocks_x * GetFormatStride(desc->format); // the buffer is tightly packed, no padding in row pitch
+						uint32_t slicepitch = (uint32_t)rowpitch * num_blocks_y;
 						uint32_t mip_width = num_blocks_x;
 						for (uint32_t mip = 0; mip < texture->desc.mip_levels; ++mip)
 						{
@@ -4262,16 +4242,13 @@ using namespace vulkan_internal;
 					texture->mapped_subresources = internal_state->mapped_subresources.data();
 					texture->mapped_subresource_count = internal_state->mapped_subresources.size();
 				}
-
-				vkDestroyImage(device, image, nullptr);
-				return res == VK_SUCCESS;
 			}
 			else
 			{
 				res = vmaCreateImage(allocationhandler->allocator, &imageInfo, &allocInfo, &internal_state->resource, &internal_state->allocation, nullptr);
+				assert(res == VK_SUCCESS);
 			}
 		}
-		assert(res == VK_SUCCESS);
 
 		// Issue data copy on request:
 		if (initial_data != nullptr)
@@ -4396,7 +4373,7 @@ using namespace vulkan_internal;
 				copyAllocator.submit(cmd);
 			}
 		}
-		else if(texture->desc.layout != ResourceState::UNDEFINED)
+		else if(texture->desc.layout != ResourceState::UNDEFINED && internal_state->resource != VK_NULL_HANDLE)
 		{
 			VkImageMemoryBarrier2 barrier = {};
 			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -4501,10 +4478,10 @@ using namespace vulkan_internal;
 		switch (stage)
 		{
 		case ShaderStage::MS:
-			internal_state->stageInfo.stage = VK_SHADER_STAGE_MESH_BIT_NV;
+			internal_state->stageInfo.stage = VK_SHADER_STAGE_MESH_BIT_EXT;
 			break;
 		case ShaderStage::AS:
-			internal_state->stageInfo.stage = VK_SHADER_STAGE_TASK_BIT_NV;
+			internal_state->stageInfo.stage = VK_SHADER_STAGE_TASK_BIT_EXT;
 			break;
 		case ShaderStage::VS:
 			internal_state->stageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -4565,6 +4542,8 @@ using namespace vulkan_internal;
 
 			for (auto& x : bindings)
 			{
+				if (x->accessed == 0)
+					continue;
 				const bool bindless = x->set > 0;
 
 				if (bindless)
@@ -4581,9 +4560,7 @@ using namespace vulkan_internal;
 				descriptor.descriptorType = (VkDescriptorType)x->descriptor_type;
 
 				if (bindless)
-				{
 					continue;
-				}
 
 				auto& imageViewType = internal_state->imageViewTypes.emplace_back();
 				imageViewType = VK_IMAGE_VIEW_TYPE_MAX_ENUM;
@@ -5531,7 +5508,14 @@ using namespace vulkan_internal;
 
 		pipelineInfo.pTessellationState = &tessellationInfo;
 
-		pipelineInfo.pDynamicState = &dynamicStateInfo;
+		if (pso->desc.ms == nullptr)
+		{
+			pipelineInfo.pDynamicState = &dynamicStateInfo;
+		}
+		else
+		{
+			pipelineInfo.pDynamicState = &dynamicStateInfo_MeshShader;
+		}
 
 		if (renderpass_info != nullptr)
 		{
