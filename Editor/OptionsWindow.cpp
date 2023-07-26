@@ -202,7 +202,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			pick.subsetIndex = 0;
 			break;
 		case 28:
-			pick.entity = scene.Entity_CreatePipe("circle");
+			pick.entity = scene.Entity_CreateCircle("circle");
 			pick.subsetIndex = 0;
 			break;
 		case 14:
