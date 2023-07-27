@@ -1810,15 +1810,27 @@ namespace wi::scene
 		XMFLOAT3 tng = GetTangent(path, t);
 
 		XMFLOAT3 up = { 0, 1, 0 };
-		XMFLOAT3 nrm = GetNormal(path, t, XMLoadFloat3(&up));
+		//XMFLOAT3 nrm = GetNormal(path, t, XMLoadFloat3(&up));
 
-		XMVECTOR zDir = XMVector3Cross(XMLoadFloat3(&tng), XMLoadFloat3(&up));
+		XMVECTOR binormal = XMVector3Cross(XMLoadFloat3(&up), XMLoadFloat3(&tng));
 
-		XMVECTOR yDir = XMVector3Cross(zDir, XMLoadFloat3(&tng));
+		binormal = XMVector3Normalize(binormal);
 
-		XMMATRIX _V = XMMatrixLookToLH(XMLoadFloat3(&tng), yDir, zDir);
+		XMVECTOR straightCross = XMVector3Cross(XMLoadFloat3(&tng), XMLoadFloat3(&up));
 
-		XMVECTOR quat = XMQuaternionRotationMatrix(_V);
+		XMVECTOR straightCross2 = XMVector3Cross(straightCross, XMLoadFloat3(&tng));
+
+		XMFLOAT3 point =  GetSplinePointCat(path, t);
+
+		XMMATRIX matrix(XMLoadFloat3(&tng), binormal, straightCross, XMLoadFloat3(&point));
+		//XMVECTOR nonNormalizedQuat = 
+		//float3 straightCross = (math.cross(up, direction));
+		//quaternion nonNormalizedQuat = math.quaternion(math.float3x3(straightCross, math.cross(direction, straightCross), direction));
+
+
+		//XMMATRIX _V = XMMatrixLookToLH(XMLoadFloat3(&tng), yDir, zDir);
+
+		XMVECTOR quat = XMQuaternionRotationMatrix(matrix);
 
 
 		return quat;

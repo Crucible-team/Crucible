@@ -2767,6 +2767,8 @@ void EditorComponent::Render() const
 
 								XMStoreFloat4(&rot, spline.GetOrintation(path, spline.T));
 								entTransform->rotation_local = rot;
+
+								
 								//entTransform->Rotate(spline.GetOrintation(path, spline.T));
 							}
 
@@ -2775,22 +2777,34 @@ void EditorComponent::Render() const
 
 								for (size_t i = 0; i < scene.splines.GetCount(); ++i)
 								{
-									const SplineComponent& spline = scene.splines[i];
+									SplineComponent& spline = scene.splines[i];
 
 									wi::renderer::RenderableLine line;
+
+									
 
 
 									for (size_t i = 0; i < spline.lineIndices.size(); i += 2)
 									{
-										/*XMFLOAT4 rot;
+										XMFLOAT3 scal = { 1,1,1 };
+										XMFLOAT3 tan;
+										XMFLOAT4 rot;
 										XMStoreFloat4(&rot, spline.GetOrintation(path, spline.T));
-										XMVECTOR R_local = XMLoadFloat4(&rotation_local);
-										XMVECTOR T_local = XMLoadFloat3(&spline.GetSplinePointCat(path, spline.T));*/
+										XMVECTOR S_local = XMLoadFloat3(&scal);
+										XMVECTOR R_local = XMLoadFloat4(&rot);
+										XMVECTOR T_local = XMLoadFloat3(&spline.GetSplinePointCat(path, spline.T));
 
-										//XMMATRIX world = XMMatrixRotationQuaternion(R_local) * XMMatrixTranslationFromVector(T_local);
+										XMMATRIX world = XMMatrixScalingFromVector(S_local) * XMMatrixRotationQuaternion(R_local) * XMMatrixTranslationFromVector(T_local);
+
+										XMVECTOR S, R, T;
+										XMMatrixDecompose(&S, &R, &T, world);
+
+										XMFLOAT3 TT;
+
+										XMStoreFloat3(&TT, T);
 											
-										XMFLOAT3 a = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i]].point.x, spline.mesh2dvtex[spline.lineIndices[i]].point.y, 0);
-										XMFLOAT3 b = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i + 1]].point.x, spline.mesh2dvtex[spline.lineIndices[i + 1]].point.y, 0);
+										XMFLOAT3 a = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i]].point.x + TT.x, spline.mesh2dvtex[spline.lineIndices[i]].point.y + TT.y, TT.z);
+										XMFLOAT3 b = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i + 1]].point.x + TT.x, spline.mesh2dvtex[spline.lineIndices[i + 1]].point.y + TT.y, TT.z);
 										line.start = a;
 										line.end = b;
 										wi::renderer::DrawLine(line);

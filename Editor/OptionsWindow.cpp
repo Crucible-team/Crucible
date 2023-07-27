@@ -42,6 +42,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 	newCombo.AddItem("Icosahedron " ICON_FA_CIRCLE, 27);
 	newCombo.AddItem("Plane " ICON_SQUARE, 14);
 	newCombo.AddItem("Circle " ICON_FA_CIRCLE, 28);
+	newCombo.AddItem("Pipe " ICON_FA_CIRCLE, 29);
 	newCombo.AddItem("Animation " ICON_ANIMATION, 15);
 	newCombo.AddItem("Script " ICON_SCRIPT, 16);
 	newCombo.AddItem("Collider " ICON_COLLIDER, 17);
@@ -203,6 +204,10 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			break;
 		case 28:
 			pick.entity = scene.Entity_CreateCircle("circle");
+			pick.subsetIndex = 0;
+			break;
+		case 29:
+			pick.entity = scene.Entity_CreatePipe("pipe");
 			pick.subsetIndex = 0;
 			break;
 		case 14:

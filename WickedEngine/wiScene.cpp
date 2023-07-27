@@ -1690,6 +1690,8 @@ namespace wi::scene
 		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
 		subset.indexCount = uint32_t(mesh.indices.size());
 		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
 		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
 
 		// vertex buffer GPU data will be packed and uploaded here:
@@ -1780,6 +1782,8 @@ namespace wi::scene
 		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
 		subset.indexCount = uint32_t(mesh.indices.size());
 		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
 		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
 
 		// vertex buffer GPU data will be packed and uploaded here:
@@ -1817,7 +1821,9 @@ namespace wi::scene
 
 		float thickness = 0.5;
 
-		int edgeRIngcount = 8;
+		int edgeRIngcount = 24;
+
+		int angularSegments = 24;
 
 		float RadiusOuter = radiusInner + thickness;
 
@@ -1829,9 +1835,9 @@ namespace wi::scene
 		
 
 		
+		//Road shape
 
-
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(3,0), XMFLOAT2(0,1), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{XMFLOAT2(3,0), XMFLOAT2(0,1), 0});
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(3,0), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(0.0f ,1.0f), 0 });
@@ -1839,7 +1845,7 @@ namespace wi::scene
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,1), XMFLOAT2(1.0f ,0.0f), 0 });
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(1.0f ,0.0f), 0 });
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(0.0f ,-1.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(0.0f ,1.0f), 0 });
+		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(0.0f ,-1.0f), 0 });
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(-1.0f ,0.0f), 0 });
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(-1.0f ,0.0f), 0 });
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(0.0f ,1.0f), 0 });
@@ -1867,13 +1873,120 @@ namespace wi::scene
 		spline.lineIndices.push_back(14);
 
 
+		//Circle shape
 
+		/*for (int i = 0; i < angularSegments + 1; i++)
+		{
+			float t = i / (float)edgeRIngcount;
+			float angRad = t * 6.28318530718f;
+
+			XMFLOAT2 dir = GetUnitVectorAngle(angRad);
+
+			spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(dir.x * RadiusOuter,dir.y * RadiusOuter), XMFLOAT2(0.0f ,1.0f), 0 });
+			//spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(dir.x * radiusInner,dir.y * radiusInner), XMFLOAT2(0.0f ,1.0f), 0 });
+
+		}
+		for (int i = 0; i < angularSegments; i++)
+		{
+			int Rootindex = i * 1;
+
+			int indexInnerRoot = Rootindex + 1;
+			int indexOuterNext = Rootindex + 1;
+			int indexInnerNext = Rootindex + 3;
+
+			spline.lineIndices.push_back(Rootindex);
+			spline.lineIndices.push_back(indexOuterNext);
+			//indicies.emplace_back(indexInnerNext);
+
+			//indicies.emplace_back(Rootindex);
+			//indicies.emplace_back(indexInnerNext);
+			//indicies.emplace_back(indexInnerRoot);
+
+		}*/
+
+		
+
+		for (size_t i = 0; i < 8; i++)
+		{
+			spline.path.emplace(std::to_string(spline.path.size() + 1), XMFLOAT3(wi::random::GetRandom(20.0f, 200.0f), wi::random::GetRandom(20.0f,200.0f), wi::random::GetRandom(20.0f, 200.0f)));
+		}
+		
 		std::vector<XMFLOAT3> vertices;
 		std::vector<XMFLOAT3> normals;
 		std::vector<float> texCoords;
 		std::vector<uint32_t> indicies;
 
-		for (int i = 0; i < edgeRIngcount + 1; i++)
+		std::vector<XMFLOAT3> splineverts;
+		for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+		{
+			splineverts.push_back(i->second);
+		}
+
+
+		for (int ring = 0; ring < edgeRIngcount; ring++)
+		{
+			float t =( ring/  (edgeRIngcount - 3.0f) )* splineverts.size();
+
+			XMVECTOR op = spline.GetOrintation(splineverts, t);
+			for (int i = 0; i < spline.mesh2dvtex.size(); i++)
+			{
+
+				XMFLOAT3 scal = {1,1,1};
+				XMFLOAT3 tan;
+				XMFLOAT4 rot;
+				XMStoreFloat4(&rot, spline.GetOrintation(splineverts, t));
+				XMVECTOR S_local = XMLoadFloat3(&scal);
+				XMVECTOR R_local = XMLoadFloat4(&rot);
+				XMVECTOR T_local = XMLoadFloat3(&spline.GetSplinePointCat(splineverts, t));
+				//XMFLOAT3 T_local2 = spline.GetSplinePointCat(splineverts, t);
+
+				XMMATRIX world = XMMatrixScalingFromVector(S_local) * XMMatrixRotationQuaternion(R_local) * XMMatrixTranslationFromVector(T_local);
+
+				XMVECTOR S, R, T;
+				XMMatrixDecompose(&S, &R, &T, world);
+
+				XMFLOAT3 TT;
+
+				XMStoreFloat3(&TT, T);
+
+				XMFLOAT3 a = XMFLOAT3(spline.mesh2dvtex[i].point.x + TT.x, spline.mesh2dvtex[i].point.y + TT.y, TT.z);
+
+				//XMVECTOR norm = XMVectorMultiply(XMLoadFloat4(&rot), spline.mesh2dvtex[i].normal)
+
+				vertices.push_back(a);
+			}
+		}
+
+		//triangles
+
+		for (int ring = 0; ring < edgeRIngcount - 1; ring++)
+		{
+			int RootIndex = ring * spline.mesh2dvtex.size();
+			int RootIndexNext = (ring +1 ) * spline.mesh2dvtex.size();
+
+			for (int line= 0; line < spline.lineIndices.size(); line +=2)
+			{
+				int LineIndexA = spline.lineIndices[line];
+				int LineIndexB = spline.lineIndices[line +1];
+
+				int currentA = RootIndex + LineIndexA;
+				int currentB = RootIndex + LineIndexB;
+				int nextA = RootIndexNext + LineIndexA;
+				int nextB = RootIndexNext + LineIndexB;
+
+				indicies.emplace_back(currentA);
+				indicies.emplace_back(nextA);
+				indicies.emplace_back(nextB);
+
+				indicies.emplace_back(currentA);
+				indicies.emplace_back(nextB);
+				indicies.emplace_back(currentB);
+
+			}
+		}
+
+
+		/*for (int i = 0; i < edgeRIngcount + 1; i++)
 		{
 			float t = i / (float)edgeRIngcount;
 			float angRad = t * 6.28318530718f;
@@ -1903,7 +2016,7 @@ namespace wi::scene
 			indicies.emplace_back(indexInnerNext);
 			indicies.emplace_back(indexInnerRoot);
 
-		}
+		}*/
 
 		mesh.vertex_positions = vertices;
 
