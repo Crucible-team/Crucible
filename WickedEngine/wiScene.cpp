@@ -1837,7 +1837,7 @@ namespace wi::scene
 		
 		//Road shape
 
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{XMFLOAT2(3,0), XMFLOAT2(0,1), 0});
+		/*spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{XMFLOAT2(3,0), XMFLOAT2(0,1), 0});
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(3,0), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
 		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(0.0f ,1.0f), 0 });
@@ -1870,12 +1870,12 @@ namespace wi::scene
 		spline.lineIndices.push_back(11);
 		spline.lineIndices.push_back(12);
 		spline.lineIndices.push_back(13);
-		spline.lineIndices.push_back(14);
+		spline.lineIndices.push_back(14);*/
 
 
 		//Circle shape
 
-		/*for (int i = 0; i < angularSegments + 1; i++)
+		for (int i = 0; i < angularSegments + 1; i++)
 		{
 			float t = i / (float)edgeRIngcount;
 			float angRad = t * 6.28318530718f;
@@ -1902,7 +1902,7 @@ namespace wi::scene
 			//indicies.emplace_back(indexInnerNext);
 			//indicies.emplace_back(indexInnerRoot);
 
-		}*/
+		}
 
 		
 
