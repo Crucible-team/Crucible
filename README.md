@@ -11,7 +11,8 @@
 
 <br/>
 <img align="right" src="https://github.com/turanszkij/Wickedengine-gifs/raw/main/videoprojectors.gif" width="320px"/>
-Crucible Engine is an open-source 3D engine with modern graphics. Use this as a C++ framework for your graphics projects, a standalone 3D editor, LUA scripting or just for learning.<br/>
+Crucible Engine is an open-source 3D engine with modern graphics. Intended to be a game foundation.<br/>
+Powered by the <a href="https://github.com/turanszkij/WickedEngine">wicked engine</a> as the base.
 This project is hosted on <a href="https://github.com/Crucible-team/Crucible/">GitHub</a>.
 
 - [Documentation](Content/Documentation/CrucibleEngine-Documentation.md)<br/>
