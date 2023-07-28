@@ -2674,7 +2674,12 @@ void EditorComponent::Render() const
 			{
 				const SplineComponent& spline = scene.splines[i];
 				spline_points_count += spline.path.size();
-				spline_shape_count += spline.mesh2dvtex.size();
+			}
+
+			for (size_t i = 0; i < scene.shapes.GetCount(); ++i)
+			{
+				const ShapeComponent& shape = scene.shapes[i];
+				spline_shape_count += shape.mesh2dvtex.size();
 			}
 
 			
@@ -2772,7 +2777,7 @@ void EditorComponent::Render() const
 								//entTransform->Rotate(spline.GetOrintation(path, spline.T));
 							}
 
-							if (spline_shape_count > 0)
+							/*if (spline_shape_count > 0)
 							{
 
 								for (size_t i = 0; i < scene.splines.GetCount(); ++i)
@@ -2810,7 +2815,7 @@ void EditorComponent::Render() const
 										wi::renderer::DrawLine(line);
 									}
 								}
-							}
+							}*/
 							
 						}
 
@@ -2874,6 +2879,38 @@ void EditorComponent::Render() const
 
 			
 
+			}
+
+			if (spline_shape_count > 0)
+			{
+
+				for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+				{
+					ShapeComponent& shape = scene.shapes[i];
+
+					wi::renderer::RenderableLine line;
+
+					for (size_t i = 0; i < shape.lineIndices.size(); i += 2)
+					{
+
+						/*if (!scene.transforms.Contains(entity))
+							continue;
+						const TransformComponent& transform = *scene.transforms.GetComponent(entity);
+						XMVECTOR a = transform.GetPositionV();
+						XMVECTOR b = a + XMVectorSet(0, 0.1f, 0, 0);
+
+						XMFLOAT3 TT;
+
+						XMStoreFloat3(&TT, T);
+						*/
+
+						XMFLOAT3 a = XMFLOAT3(shape.mesh2dvtex[shape.lineIndices[i]].point.x /* + TT.x*/, shape.mesh2dvtex[shape.lineIndices[i]].point.y /*+  TT.y*/, 0);
+						XMFLOAT3 b = XMFLOAT3(shape.mesh2dvtex[shape.lineIndices[i + 1]].point.x /* + TT.x */ , shape.mesh2dvtex[shape.lineIndices[i + 1]].point.y /* + TT.y*/, 0);
+						line.start = a;
+						line.end = b;
+						wi::renderer::DrawLine(line);
+					}
+				}
 			}
 
 			if (bone_picking)

@@ -2381,6 +2381,21 @@ namespace wi::scene
 		wi::ecs::Entity nexttarget = wi::ecs::INVALID_ENTITY; // next entity in the spline.
 
 		
+
+		float T;
+		//void CreateFromFile(const std::string& filename);
+
+		XMFLOAT3 GetSplinePointCat(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetTangent(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetNormal(wi::vector<XMFLOAT3> path, float t, XMVECTOR up);
+		XMVECTOR GetOrintation(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetSplinePointLinear(wi::vector<XMFLOAT3> path, float t);
+
+		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
+
+	struct ShapeComponent
+	{
 		struct vtex
 		{
 			vtex(const XMFLOAT2& P, const XMFLOAT2& N, const float& U) :
@@ -2392,15 +2407,6 @@ namespace wi::scene
 
 		std::vector <vtex> mesh2dvtex;
 		std::vector<int> lineIndices;
-
-		float T;
-		//void CreateFromFile(const std::string& filename);
-
-		XMFLOAT3 GetSplinePointCat(wi::vector<XMFLOAT3> path, float t);
-		XMFLOAT3 GetTangent(wi::vector<XMFLOAT3> path, float t);
-		XMFLOAT3 GetNormal(wi::vector<XMFLOAT3> path, float t, XMVECTOR up);
-		XMVECTOR GetOrintation(wi::vector<XMFLOAT3> path, float t);
-		XMFLOAT3 GetSplinePointLinear(wi::vector<XMFLOAT3> path, float t);
 
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 	};

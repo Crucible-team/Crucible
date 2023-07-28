@@ -1814,6 +1814,8 @@ namespace wi::scene
 
 		SplineComponent& spline = splines.Create(entity);
 
+		ShapeComponent& shape = shapes.Create(entity);
+
 		// object references the mesh entity (there can be multiple objects referencing one mesh):
 		object.meshID = entity;
 
@@ -1837,40 +1839,40 @@ namespace wi::scene
 		
 		//Road shape
 
-		/*spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{XMFLOAT2(3,0), XMFLOAT2(0,1), 0});
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(3,0), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(0.0f ,1.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,1), XMFLOAT2(0.0f ,1.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,1), XMFLOAT2(1.0f ,0.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(1.0f ,0.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(0.0f ,-1.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(0.0f ,-1.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(-1.0f ,0.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(-1.0f ,0.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(0.0f ,1.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-4,1), XMFLOAT2(0.0f ,1.0f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-4,1), XMFLOAT2(0.70710678118f ,0.70710678118f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-3,0), XMFLOAT2(0.70710678118f ,0.70710678118f), 0 });
-		spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(-3,0), XMFLOAT2(0.0f ,1.0f), 0 });
+		/*shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{XMFLOAT2(3,0), XMFLOAT2(0,1), 0});
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(3,0), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(5,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(5,1), XMFLOAT2(1.0f ,0.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(1.0f ,0.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(0.0f ,-1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(0.0f ,-1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(-1.0f ,0.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(-1.0f ,0.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-4,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-4,1), XMFLOAT2(0.70710678118f ,0.70710678118f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-3,0), XMFLOAT2(0.70710678118f ,0.70710678118f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent:vtex{ XMFLOAT2(-3,0), XMFLOAT2(0.0f ,1.0f), 0 });
 
 
-		spline.lineIndices.push_back(15);
-		spline.lineIndices.push_back(0);
-		spline.lineIndices.push_back(1);
-		spline.lineIndices.push_back(2);
-		spline.lineIndices.push_back(3);
-		spline.lineIndices.push_back(4);
-		spline.lineIndices.push_back(5);
-		spline.lineIndices.push_back(6);
-		spline.lineIndices.push_back(7);
-		spline.lineIndices.push_back(8);
-		spline.lineIndices.push_back(9);
-		spline.lineIndices.push_back(10);
-		spline.lineIndices.push_back(11);
-		spline.lineIndices.push_back(12);
-		spline.lineIndices.push_back(13);
-		spline.lineIndices.push_back(14);*/
+		shape.lineIndices.push_back(15);
+		shape.lineIndices.push_back(0);
+		shape.lineIndices.push_back(1);
+		shape.lineIndices.push_back(2);
+		shape.lineIndices.push_back(3);
+		shape.lineIndices.push_back(4);
+		shape.lineIndices.push_back(5);
+		shape.lineIndices.push_back(6);
+		shape.lineIndices.push_back(7);
+		shape.lineIndices.push_back(8);
+		shape.lineIndices.push_back(9);
+		shape.lineIndices.push_back(10);
+		shape.lineIndices.push_back(11);
+		shape.lineIndices.push_back(12);
+		shape.lineIndices.push_back(13);
+		shape.lineIndices.push_back(14);*/
 
 
 		//Circle shape
@@ -1882,7 +1884,7 @@ namespace wi::scene
 
 			XMFLOAT2 dir = GetUnitVectorAngle(angRad);
 
-			spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(dir.x * RadiusOuter,dir.y * RadiusOuter), XMFLOAT2(0.0f ,1.0f), 0 });
+			shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(dir.x * RadiusOuter,dir.y * RadiusOuter), XMFLOAT2(0.0f ,1.0f), 0 });
 			//spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(dir.x * radiusInner,dir.y * radiusInner), XMFLOAT2(0.0f ,1.0f), 0 });
 
 		}
@@ -1894,8 +1896,8 @@ namespace wi::scene
 			int indexOuterNext = Rootindex + 1;
 			int indexInnerNext = Rootindex + 3;
 
-			spline.lineIndices.push_back(Rootindex);
-			spline.lineIndices.push_back(indexOuterNext);
+			shape.lineIndices.push_back(Rootindex);
+			shape.lineIndices.push_back(indexOuterNext);
 			//indicies.emplace_back(indexInnerNext);
 
 			//indicies.emplace_back(Rootindex);
@@ -1927,8 +1929,7 @@ namespace wi::scene
 		{
 			float t =( ring/  (edgeRIngcount - 3.0f) )* splineverts.size();
 
-			XMVECTOR op = spline.GetOrintation(splineverts, t);
-			for (int i = 0; i < spline.mesh2dvtex.size(); i++)
+			for (int i = 0; i < shape.mesh2dvtex.size(); i++)
 			{
 
 				XMFLOAT3 scal = {1,1,1};
@@ -1949,7 +1950,7 @@ namespace wi::scene
 
 				XMStoreFloat3(&TT, T);
 
-				XMFLOAT3 a = XMFLOAT3(spline.mesh2dvtex[i].point.x + TT.x, spline.mesh2dvtex[i].point.y + TT.y, TT.z);
+				XMFLOAT3 a = XMFLOAT3(shape.mesh2dvtex[i].point.x + TT.x, shape.mesh2dvtex[i].point.y + TT.y, TT.z);
 
 				//XMVECTOR norm = XMVectorMultiply(XMLoadFloat4(&rot), spline.mesh2dvtex[i].normal)
 
@@ -1961,13 +1962,13 @@ namespace wi::scene
 
 		for (int ring = 0; ring < edgeRIngcount - 1; ring++)
 		{
-			int RootIndex = ring * spline.mesh2dvtex.size();
-			int RootIndexNext = (ring +1 ) * spline.mesh2dvtex.size();
+			int RootIndex = ring * shape.mesh2dvtex.size();
+			int RootIndexNext = (ring +1 ) * shape.mesh2dvtex.size();
 
-			for (int line= 0; line < spline.lineIndices.size(); line +=2)
+			for (int line= 0; line < shape.lineIndices.size(); line +=2)
 			{
-				int LineIndexA = spline.lineIndices[line];
-				int LineIndexB = spline.lineIndices[line +1];
+				int LineIndexA = shape.lineIndices[line];
+				int LineIndexB = shape.lineIndices[line +1];
 
 				int currentA = RootIndex + LineIndexA;
 				int currentB = RootIndex + LineIndexB;

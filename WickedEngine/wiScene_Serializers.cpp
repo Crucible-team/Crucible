@@ -2096,6 +2096,62 @@ namespace wi::scene
 		}
 	}
 
+	void ShapeComponent::Serialize(wi::Archive& archive, EntitySerializer& seri)
+	{
+		if (archive.IsReadMode())
+		{
+			size_t mesh2dvtex_size_count = 0;
+			archive >> mesh2dvtex_size_count;
+
+
+			for (size_t size_index = 0; size_index < mesh2dvtex_size_count; size_index++)
+			{
+				XMFLOAT2 point = {};
+				XMFLOAT2 normal = {};
+				float U;
+
+				archive >> point;
+				archive >> normal;
+				archive >> U;
+
+				vtex data(point, normal, U);
+				mesh2dvtex.emplace_back(data);
+			}
+
+			size_t lineIndices_size_count = 0;
+			archive >> lineIndices_size_count;
+
+			for (size_t i = 0; i < lineIndices_size_count; i++)
+			{
+				int indici;
+				archive >> indici;
+				lineIndices.emplace_back(indici);
+			}
+
+
+			
+		}
+		else
+		{
+			archive << mesh2dvtex.size();
+
+			for (size_t i = 0; i < mesh2dvtex.size(); i++)
+			{
+				archive << mesh2dvtex[i].point;
+				archive << mesh2dvtex[i].normal;
+				archive << mesh2dvtex[i].u;
+			}
+
+			archive << lineIndices.size();
+
+			for (size_t i = 0; i < lineIndices.size(); i++)
+			{
+				archive << lineIndices[i];
+			}
+
+		}
+	}
+
 	void SplineComponent::Serialize(wi::Archive& archive, EntitySerializer& seri)
 	{
 

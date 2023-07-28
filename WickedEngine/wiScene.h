@@ -71,6 +71,7 @@ namespace wi::scene
 		wi::ecs::ComponentManager<HealthComponent>& healths = componentLibrary.Register<HealthComponent>("wi::scene::Scene::healths");
 		wi::ecs::ComponentManager<ArmorComponent>& armors = componentLibrary.Register<ArmorComponent>("wi::scene::Scene::armors");
 		wi::ecs::ComponentManager<SplineComponent>& splines = componentLibrary.Register<SplineComponent>("wi::scene::Scene::splines");
+		wi::ecs::ComponentManager<ShapeComponent>& shapes = componentLibrary.Register<ShapeComponent>("wi::scene::Scene::shapes");
 
 		// Non-serialized attributes:
 		float dt = 0;
