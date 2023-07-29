@@ -40,7 +40,19 @@ void SplineWindow::Create(EditorComponent* _editor)
 		SplineComponent* spline = scene.splines.GetComponent(entity);
 		if (spline == nullptr)
 			return;
-		spline->path.emplace(std::to_string(spline->path.size() + 1 ), XMFLOAT3(wi::random::GetRandom(XM_PI), wi::random::GetRandom(XM_PI), wi::random::GetRandom(XM_PI)));
+		Entity entity = CreateEntity();
+
+		scene.names.Create(entity) = "path_node: " + std::to_string(5);
+
+		scene.layers.Create(entity);
+
+		TransformComponent& tfent = scene.transforms.Create(entity);
+
+
+		tfent.translation_local = XMFLOAT3(wi::random::GetRandom(20.0f, 200.0f), wi::random::GetRandom(20.0f, 200.0f), wi::random::GetRandom(20.0f, 200.0f));
+		tfent.UpdateTransform();
+
+		spline->path.emplace("path_node: " +std::to_string(wi::random::GetRandom(0.0f, 20000000.0f)), entity);
 		});
 	AddWidget(&AddPoint);
 

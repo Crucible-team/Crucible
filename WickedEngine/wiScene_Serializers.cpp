@@ -2164,7 +2164,7 @@ namespace wi::scene
 			for (size_t size_index = 0; size_index < size_count; size_index++)
 			{
 				std::string name;
-				XMFLOAT3 vector = {};
+				wi::ecs::Entity vector;
 
 				archive >> name;
 				archive >> vector;

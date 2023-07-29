@@ -1908,10 +1908,10 @@ namespace wi::scene
 
 		
 
-		for (size_t i = 0; i < 8; i++)
+		/*for (size_t i = 0; i < 8; i++)
 		{
 			spline.path.emplace(std::to_string(spline.path.size() + 1), XMFLOAT3(wi::random::GetRandom(20.0f, 200.0f), wi::random::GetRandom(20.0f,200.0f), wi::random::GetRandom(20.0f, 200.0f)));
-		}
+		}*/
 		
 		std::vector<XMFLOAT3> vertices;
 		std::vector<XMFLOAT3> normals;
@@ -1919,15 +1919,40 @@ namespace wi::scene
 		std::vector<uint32_t> indicies;
 
 		std::vector<XMFLOAT3> splineverts;
-		for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+
+		for (size_t i = 0; i < 8; i++)
 		{
-			splineverts.push_back(i->second);
+			Entity entity = CreateEntity();
+
+			names.Create(entity) = "path_node: " + std::to_string(i);
+
+			layers.Create(entity);
+
+			TransformComponent& tfent = transforms.Create(entity);
+
+
+			tfent.translation_local = XMFLOAT3(wi::random::GetRandom(20.0f, 200.0f), wi::random::GetRandom(20.0f, 200.0f), wi::random::GetRandom(20.0f, 200.0f));
+			tfent.UpdateTransform();
+
+			spline.path.emplace("path_node: " + i, entity);
+
 		}
+		/*for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+		{
+			TransformComponent* tfent = transforms.GetComponent(i->second);
+
+			if (tfent != nullptr)
+			{
+				spline.points.push_back(wi::scene::SplineComponent::point(tfent->GetPosition(),0.0f));
+			}
+		}*/
+
 
 
 		for (int ring = 0; ring < edgeRIngcount; ring++)
 		{
-			float t =( ring/  (edgeRIngcount - 3.0f) )* splineverts.size();
+			//float size = spline.CalculateSegmentLength(splineverts);
+			float t = ring / (edgeRIngcount - 1.0f);// * (size - 3.0f);
 
 			for (int i = 0; i < shape.mesh2dvtex.size(); i++)
 			{

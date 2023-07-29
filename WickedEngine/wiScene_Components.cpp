@@ -1726,6 +1726,7 @@ namespace wi::scene
 		p4 = p3 + 1;
 		p1 = p2 - 1;
 		t = t - (int)t;
+
 		XMVECTOR spline_p = XMVectorCatmullRom(
 			XMLoadFloat3(&path[p1]),
 			XMLoadFloat3(&path[p2]),
@@ -1742,6 +1743,41 @@ namespace wi::scene
 
 	}
 
+
+	/*float SplineComponent::CalculateSegmentLength(wi::vector<XMFLOAT3> path, float t)
+	{
+		float fLength = 0.0f;
+		float fStepSize = 0.005;
+
+		XMFLOAT3 old_point, new_point;
+		old_point = GetSplinePointCat(path,t);
+
+		for (float t = 0; t < 1.0f; t += fStepSize)
+		{
+			new_point = GetSplinePointCat(path, t + t);
+			fLength += sqrtf((new_point.x - old_point.x) * (new_point.x - old_point.x)
+				+ (new_point.y - old_point.y) * (new_point.y - old_point.y));
+			old_point = new_point;
+		}
+
+		return fLength;
+	}*/
+
+
+	/*float SplineComponent::GetNormalisedOffset((wi::vector<XMFLOAT3> path, float p)
+	{
+		// Which node is the base?
+		int i = 0;
+		while (p > path[i].length)
+		{
+			p -= path[i].length;
+			i++;
+		}
+
+		// The fractional is the offset 
+		return (float)i + (p / path[i].length);
+	}*/
+
 	XMFLOAT3 SplineComponent::GetTangent(wi::vector<XMFLOAT3> path, float t)
 	{
 		
@@ -1754,7 +1790,7 @@ namespace wi::scene
 		p3 = p2 + 1;
 		p4 = p3 + 1;
 		p1 = p2 - 1;
-		
+
 
 		XMVECTOR tag0 = XMLoadFloat3(&path[p1]);
 

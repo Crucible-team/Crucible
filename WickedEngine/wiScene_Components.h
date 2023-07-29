@@ -2375,12 +2375,22 @@ namespace wi::scene
 
 	struct SplineComponent
 	{
-		std::map<std::string,XMFLOAT3> path;
+		std::map<std::string,wi::ecs::Entity> path;
+
+		struct point
+		{
+			point(const XMFLOAT3& P,const float& L) :
+				position(P), length(L) {}
+			XMFLOAT3 position;
+			float length;
+		};
+
+		std::vector <point> points;
 
 		wi::ecs::Entity prevtarget = wi::ecs::INVALID_ENTITY; // previous entity in the spline.
 		wi::ecs::Entity nexttarget = wi::ecs::INVALID_ENTITY; // next entity in the spline.
 
-		
+		float fTotalLength;
 
 		float T;
 		//void CreateFromFile(const std::string& filename);
@@ -2390,6 +2400,8 @@ namespace wi::scene
 		XMFLOAT3 GetNormal(wi::vector<XMFLOAT3> path, float t, XMVECTOR up);
 		XMVECTOR GetOrintation(wi::vector<XMFLOAT3> path, float t);
 		XMFLOAT3 GetSplinePointLinear(wi::vector<XMFLOAT3> path, float t);
+
+		//float CalculateSegmentLength(wi::vector<XMFLOAT3> path);
 
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 	};
