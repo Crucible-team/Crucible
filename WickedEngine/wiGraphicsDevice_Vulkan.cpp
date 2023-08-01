@@ -1299,7 +1299,7 @@ using namespace vulkan_internal;
 	{
 		if (queue == VK_NULL_HANDLE)
 			return;
-		std::scoped_lock lock(locker);
+		std::scoped_lock lock(*locker);
 
 		VkSubmitInfo2 submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
@@ -1489,7 +1489,7 @@ using namespace vulkan_internal;
 			submitInfo.signalSemaphoreInfoCount = 1;
 			submitInfo.pSignalSemaphoreInfos = signalSemaphoreInfos;
 
-			std::scoped_lock lock(device->queues[QUEUE_COPY].locker);
+			std::scoped_lock lock(*device->queues[QUEUE_COPY].locker);
 			res = vkQueueSubmit2(device->queues[QUEUE_COPY].queue, 1, &submitInfo, VK_NULL_HANDLE);
 			assert(res == VK_SUCCESS);
 		}
@@ -1518,7 +1518,7 @@ using namespace vulkan_internal;
 			}
 			submitInfo.pSignalSemaphoreInfos = signalSemaphoreInfos;
 
-			std::scoped_lock lock(device->queues[QUEUE_GRAPHICS].locker);
+			std::scoped_lock lock(*device->queues[QUEUE_GRAPHICS].locker);
 			res = vkQueueSubmit2(device->queues[QUEUE_GRAPHICS].queue, 1, &submitInfo, VK_NULL_HANDLE);
 			assert(res == VK_SUCCESS);
 		}
@@ -1535,7 +1535,7 @@ using namespace vulkan_internal;
 			submitInfo.signalSemaphoreInfoCount = 0;
 			submitInfo.pSignalSemaphoreInfos = nullptr;
 
-			std::scoped_lock lock(device->queues[QUEUE_VIDEO_DECODE].locker);
+			std::scoped_lock lock(*device->queues[QUEUE_VIDEO_DECODE].locker);
 			res = vkQueueSubmit2(device->queues[QUEUE_VIDEO_DECODE].queue, 1, &submitInfo, VK_NULL_HANDLE);
 			assert(res == VK_SUCCESS);
 		}
@@ -1552,7 +1552,7 @@ using namespace vulkan_internal;
 			submitInfo.signalSemaphoreInfoCount = 0;
 			submitInfo.pSignalSemaphoreInfos = nullptr;
 
-			std::scoped_lock lock(device->queues[QUEUE_COMPUTE].locker);
+			std::scoped_lock lock(*device->queues[QUEUE_COMPUTE].locker);
 			res = vkQueueSubmit2(device->queues[QUEUE_COMPUTE].queue, 1, &submitInfo, cmd.fence); // final submit also signals fence!
 			assert(res == VK_SUCCESS);
 		}
@@ -2326,6 +2326,8 @@ using namespace vulkan_internal;
 	{
 		wi::Timer timer;
 
+		wi::unordered_map<uint32_t, std::shared_ptr<std::mutex>> queue_lockers;
+
 		TOPLEVEL_ACCELERATION_STRUCTURE_INSTANCE_SIZE = sizeof(VkAccelerationStructureInstanceKHR);
 
 		validationMode = validationMode_;
@@ -2505,10 +2507,11 @@ using namespace vulkan_internal;
 			wi::vector<const char*> enabled_deviceExtensions;
 
 			bool h264_decode_extension = false;
+			bool suitable = false;
 
-			for (const auto& dev : devices)
-			{
-				bool suitable = true;
+
+			auto checkPhysicalDeviceAndFillProperties2 = [&](VkPhysicalDevice dev) {
+				suitable = true;
 
 				uint32_t extensionCount;
 				VkResult res = vkEnumerateDeviceExtensionProperties(dev, nullptr, &extensionCount, nullptr);
@@ -2525,7 +2528,7 @@ using namespace vulkan_internal;
 					}
 				}
 				if (!suitable)
-					continue;
+					return;
 
 				h264_decode_extension = false;
 
@@ -2649,7 +2652,21 @@ using namespace vulkan_internal;
 					h264_decode_extension = true;
 				}
 
+				*properties_chain = nullptr;
+				*features_chain = nullptr;
 				vkGetPhysicalDeviceProperties2(dev, &properties2);
+
+			};
+
+			bool properties2_matches_physical_device = false;
+
+			for (const auto& dev : devices)
+			{
+				properties2_matches_physical_device = false;
+				checkPhysicalDeviceAndFillProperties2(dev);
+
+				if (!suitable)
+					continue;
 
 				bool priority = properties2.properties.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 				if (preference == GPUPreference::Integrated)
@@ -2659,6 +2676,7 @@ using namespace vulkan_internal;
 				if (priority || physicalDevice == VK_NULL_HANDLE)
 				{
 					physicalDevice = dev;
+					properties2_matches_physical_device = true;
 					if (priority)
 					{
 						break; // if this is prioritized GPU type, look no further
@@ -2671,6 +2689,12 @@ using namespace vulkan_internal;
 				assert(0);
 				wi::helper::messageBox("Failed to find a suitable GPU!");
 				wi::platform::Exit();
+			}
+
+			if (!properties2_matches_physical_device) {
+				// this redoes a few checks, but since this code path is only
+				// executed once, it doesn't affect execution time all that much
+				checkPhysicalDeviceAndFillProperties2(physicalDevice);
 			}
 
 			assert(properties2.properties.limits.timestampComputeAndGraphics == VK_TRUE);
@@ -2947,6 +2971,7 @@ using namespace vulkan_internal;
 			float queuePriority = 1.0f;
 			for (uint32_t queueFamily : uniqueQueueFamilies)
 			{
+				queue_lockers.emplace(queueFamily, std::make_shared<std::mutex>());
 				VkDeviceQueueCreateInfo queueCreateInfo = {};
 				queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 				queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -2987,9 +3012,15 @@ using namespace vulkan_internal;
 			}
 
 			queues[QUEUE_GRAPHICS].queue = graphicsQueue;
+			queues[QUEUE_GRAPHICS].locker = queue_lockers[graphicsFamily];
 			queues[QUEUE_COMPUTE].queue = computeQueue;
+			queues[QUEUE_COMPUTE].locker = queue_lockers[computeFamily];
 			queues[QUEUE_COPY].queue = copyQueue;
+			queues[QUEUE_COPY].locker = queue_lockers[copyFamily];
 			queues[QUEUE_VIDEO_DECODE].queue = videoQueue;
+			if (videoFamily != VK_QUEUE_FAMILY_IGNORED) {
+			    queues[QUEUE_VIDEO_DECODE].locker = queue_lockers[videoFamily];
+			}
 
 			VkSemaphoreTypeCreateInfo timelineCreateInfo = {};
 			timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
@@ -3542,6 +3573,7 @@ using namespace vulkan_internal;
 		for (auto& queue : queues)
 		{
 			vkDestroySemaphore(device, queue.semaphore, nullptr);
+			queue.locker.reset();
 		}
 
 		for (uint32_t fr = 0; fr < BUFFERCOUNT; ++fr)
@@ -3957,13 +3989,16 @@ using namespace vulkan_internal;
 		}
 
 		// Create resource views if needed
-		if (has_flag(desc->bind_flags, BindFlag::SHADER_RESOURCE))
+		if (!has_flag(desc->misc_flags, ResourceMiscFlag::NO_DEFAULT_DESCRIPTORS))
 		{
-			CreateSubresource(buffer, SubresourceType::SRV, 0);
-		}
-		if (has_flag(desc->bind_flags, BindFlag::UNORDERED_ACCESS))
-		{
-			CreateSubresource(buffer, SubresourceType::UAV, 0);
+			if (has_flag(desc->bind_flags, BindFlag::SHADER_RESOURCE))
+			{
+				CreateSubresource(buffer, SubresourceType::SRV, 0);
+			}
+			if (has_flag(desc->bind_flags, BindFlag::UNORDERED_ACCESS))
+			{
+				CreateSubresource(buffer, SubresourceType::UAV, 0);
+			}
 		}
 
 		return res == VK_SUCCESS;
@@ -4414,21 +4449,24 @@ using namespace vulkan_internal;
 			copyAllocator.submit(cmd);
 		}
 
-		if (has_flag(texture->desc.bind_flags, BindFlag::RENDER_TARGET))
+		if (!has_flag(desc->misc_flags, ResourceMiscFlag::NO_DEFAULT_DESCRIPTORS))
 		{
-			CreateSubresource(texture, SubresourceType::RTV, 0, -1, 0, -1);
-		}
-		if (has_flag(texture->desc.bind_flags, BindFlag::DEPTH_STENCIL))
-		{
-			CreateSubresource(texture, SubresourceType::DSV, 0, -1, 0, -1);
-		}
-		if (has_flag(texture->desc.bind_flags, BindFlag::SHADER_RESOURCE))
-		{
-			CreateSubresource(texture, SubresourceType::SRV, 0, -1, 0, -1);
-		}
-		if (has_flag(texture->desc.bind_flags, BindFlag::UNORDERED_ACCESS))
-		{
-			CreateSubresource(texture, SubresourceType::UAV, 0, -1, 0, -1);
+			if (has_flag(texture->desc.bind_flags, BindFlag::RENDER_TARGET))
+			{
+				CreateSubresource(texture, SubresourceType::RTV, 0, -1, 0, -1);
+			}
+			if (has_flag(texture->desc.bind_flags, BindFlag::DEPTH_STENCIL))
+			{
+				CreateSubresource(texture, SubresourceType::DSV, 0, -1, 0, -1);
+			}
+			if (has_flag(texture->desc.bind_flags, BindFlag::SHADER_RESOURCE))
+			{
+				CreateSubresource(texture, SubresourceType::SRV, 0, -1, 0, -1);
+			}
+			if (has_flag(texture->desc.bind_flags, BindFlag::UNORDERED_ACCESS))
+			{
+				CreateSubresource(texture, SubresourceType::UAV, 0, -1, 0, -1);
+			}
 		}
 
 		if (has_flag(texture->desc.misc_flags, ResourceMiscFlag::VIDEO_DECODE))
@@ -4542,8 +4580,9 @@ using namespace vulkan_internal;
 
 			for (auto& x : bindings)
 			{
-				if (x->accessed == 0)
-					continue;
+				// This has some issues atm with some specific shader, recheck in the future with different compiler version
+				//if (x->accessed == 0)
+				//	continue;
 				const bool bindless = x->set > 0;
 
 				if (bindless)
@@ -7346,7 +7385,7 @@ using namespace vulkan_internal;
 		// Queue command:
 		{
 			CommandQueue& q = queues[queue];
-			std::scoped_lock lock(q.locker);
+			std::scoped_lock lock(*q.locker);
 			assert(q.sparse_binding_supported);
 
 			VkResult res = vkQueueBindSparse(q.queue, (uint32_t)sparse_infos.size(), sparse_infos.data(), VK_NULL_HANDLE);
@@ -8966,8 +9005,8 @@ using namespace vulkan_internal;
 			dpb.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_KHR;
 			dpb.pStdReferenceInfo = &ref;
 
-			ref.flags.bottom_field_flag = 1;
-			ref.flags.top_field_flag = 1;
+			ref.flags.bottom_field_flag = 0;
+			ref.flags.top_field_flag = 0;
 			ref.flags.is_non_existing = 0;
 			ref.flags.used_for_long_term_reference = 0;
 			ref.FrameNum = op->dpb_framenum[i];
