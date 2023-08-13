@@ -223,3 +223,10 @@ wiShaderdump.h
 
 # vscode
 .vscode/settings.json
+
+# PlayStation
+*.tlog
+*.o
+*.a
+*.elf
+*.prx

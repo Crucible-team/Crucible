@@ -96,7 +96,10 @@ namespace wi::helper
 
 	bool FileExists(const std::string& fileName);
 
+	uint64_t FileTimestamp(const std::string& fileName);
+
 	std::string GetTempDirectoryPath();
+	std::string GetCacheDirectoryPath();
 	std::string GetCurrentPath();
 
 	struct FileDialogParams
@@ -128,6 +131,15 @@ namespace wi::helper
 	// Parameter - to - must be pre-allocated!
 	// returns result string length
 	int StringConvert(const wchar_t* from, char* to);
+
+	// Prints debug info to the console output
+	enum class DebugLevel
+	{
+		Normal,
+		Warning,
+		Error
+	};
+	void DebugOut(const std::string& str, DebugLevel level = DebugLevel::Normal);
 
 	// Puts the current thread to sleeping state for a given time (OS can overtake)
 	void Sleep(float milliseconds);
