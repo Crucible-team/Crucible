@@ -732,6 +732,10 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	float2 bumpColor0 = 0;
 	float2 bumpColor1 = 0;
 	float2 bumpColor2 = 0;
+	//WATER COLOR
+	float2 waterColor0 = 0;
+	float2 waterColor1 = 0;
+	float2 waterColor2 = 0;
 	[branch]
 	if (GetMaterial().textures[NORMALMAP].IsValid())
 	{
@@ -757,6 +761,32 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 		reflectionUV.xy /= reflectionUV.w;
 		reflectionUV.xy = clipspace_to_uv(reflectionUV.xy);
 		lighting.indirect.specular += bindless_textures[GetCamera().texture_reflection_index].SampleLevel(sampler_linear_mirror, reflectionUV.xy + surface.bumpColor.rg, 0).rgb * surface.F;
+	}
+	[branch] if (GetMaterial().textures[WATERCOLOR].IsValid())
+	{
+		Texture2D waterColor = bindless_textures[GetMaterial().textures[WATERCOLOR].texture_descriptor];
+		waterColor0 = 2 * waterColor.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
+		waterColor1 = 2 * waterColor.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+		waterColor2 = bindless_textures_float2[GetCamera().texture_waterriples_index].SampleLevel(sampler_linear_clamp, ScreenCoord, 0).rg;
+	}
+	surface.waterColor = float3(waterColor0 + waterColor1 + waterColor2, 1);
+	[branch] if (GetMaterial().textures[WATERCOLOR].IsValid())
+	{
+		Texture2D waterColor = bindless_textures[GetMaterial().textures[WATERCOLOR].texture_descriptor]; waterColor0 = 2 * waterColor.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
+		waterColor1 = 2 * waterColor.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+		waterColor2 = bindless_textures_float2[GetCamera().texture_waterriples_index].SampleLevel(sampler_linear_clamp, ScreenCoord, 0).rg; surface.waterColor = float3(waterColor0 + waterColor1 + waterColor2, 1);
+	}
+	[branch] if (GetCamera().texture_refraction_index >= 0)
+	{
+		//REFRACTION
+		Texture2D texture_refraction = bindless_textures[GetCamera().texture_refraction_index];
+		float2 size;
+		float mipLevels;
+		const float2 normal2D = mul((float3x3)GetCamera().view, surface.N.xyz).xy;
+		float2 perturbatedRefrTexCoords = ScreenCoord.xy + normal2D * GetMaterial().refraction;
+		float4 refractiveColor = texture_refraction.SampleLevel(sampler_linear_clamp, perturbatedRefrTexCoords, surface.roughness * mipLevels);
+		surface.refraction.rgb = (surface.albedo * refractiveColor.rgb * surface.waterColor) + (bindless_textures[GetCamera().texture_reflection_index].SampleLevel(sampler_linear_mirror, reflectionUV.xy + surface.bumpColor.rg, 0).rgb * surface.F * surface.waterColor);
+		surface.refraction.a = surface.transmission;
 	}
 #endif // WATER
 
