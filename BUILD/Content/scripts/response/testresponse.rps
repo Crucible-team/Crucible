@@ -1,0 +1,34 @@
+{
+  "lighthit": {
+    "conditions": {
+      "BURN": 1,
+      "SEE FEAR": 30,
+	  "HEAR DANGER": 30,
+	  "HEAR PLAYER": 30,
+	  "RESPOND TO QUESTION": 30
+    },
+    "sequence": {
+      "play": "test.wav",
+      "animation": "hurt"
+    }
+  },
+  "heavyhit": {
+    "conditions": {
+      "ACID": 1,
+      "type": 29
+    },
+    "sequence": {
+      "play": "heavy.wav",
+      "animation": "hurtH"
+    }
+  },
+  "walk": {
+    "conditions": {
+      "goto": 1
+    },
+    "sequence": {
+      "play": "sigh.wav",
+      "animation": "walk"
+    }
+  }
+}

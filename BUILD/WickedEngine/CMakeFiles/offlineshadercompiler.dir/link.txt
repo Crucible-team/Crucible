@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/offlineshadercompiler.dir/offlineshadercompiler.cpp.o -o offlineshadercompiler  libWickedEngine_Linux.a -ldl BULLET/libBullet.a LUA/libLUA.a Utility/libUtility.a Utility/FAudio/libFAudio.a /usr/lib/libSDL2-2.0.so.0.2400.1 /usr/lib/libSDL2main.a 
