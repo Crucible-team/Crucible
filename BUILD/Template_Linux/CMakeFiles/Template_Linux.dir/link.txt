@@ -1,1 +1,0 @@
-/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/Template_Linux.dir/main.cpp.o -o Template_Linux  ../WickedEngine/libWickedEngine_Linux.a -ldl ../WickedEngine/BULLET/libBullet.a ../WickedEngine/LUA/libLUA.a ../WickedEngine/Utility/libUtility.a ../WickedEngine/Utility/FAudio/libFAudio.a /usr/lib/libSDL2-2.0.so.0.2400.1 /usr/lib/libSDL2main.a 
