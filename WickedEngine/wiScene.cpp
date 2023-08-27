@@ -1938,7 +1938,8 @@ namespace wi::scene
 				XMStoreFloat4(&rot, spline.GetOrintation(splineverts, t));
 				XMVECTOR S_local = XMLoadFloat3(&scal);
 				XMVECTOR R_local = XMLoadFloat4(&rot);
-				XMVECTOR T_local = XMLoadFloat3(&spline.GetSplinePointCat(splineverts, t));
+				XMFLOAT3 sPoint = spline.GetSplinePointCat(splineverts, t);
+				XMVECTOR T_local = XMLoadFloat3(&sPoint);
 				//XMFLOAT3 T_local2 = spline.GetSplinePointCat(splineverts, t);
 
 				XMMATRIX world = XMMatrixScalingFromVector(S_local) * XMMatrixRotationQuaternion(R_local) * XMMatrixTranslationFromVector(T_local);
