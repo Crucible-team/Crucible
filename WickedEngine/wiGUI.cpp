@@ -1492,6 +1492,12 @@ namespace wi::gui
 					}
 				}
 
+				if (wi::input::Down(wi::input::KEYBOARD_BUTTON_LCONTROL) && wi::input::Down((wi::input::BUTTON)'A'))
+				{
+					caret_begin = 0;
+					caret_pos = (int)font_input.GetText().size();
+				}
+
 			}
 
 			if (clicked && state == FOCUS)
@@ -1649,6 +1655,8 @@ namespace wi::gui
 	void TextInputField::AddInput(const wchar_t inputChar)
 	{
 		input_updated = true;
+		if (wi::input::Down(wi::input::KEYBOARD_BUTTON_LCONTROL) || wi::input::Down(wi::input::KEYBOARD_BUTTON_RCONTROL))
+			return;
 		switch (inputChar)
 		{
 		case '\b':	// BACKSPACE
@@ -3354,6 +3362,10 @@ namespace wi::gui
 	{
 		onCollapse = func;
 	}
+	void Window::OnResize(std::function<void()> func)
+	{
+		onResize = func;
+	}
 	void Window::SetColor(wi::Color color, int id)
 	{
 		Widget::SetColor(color, id);
@@ -3528,6 +3540,11 @@ namespace wi::gui
 			scrollbar_vertical.SetPos(XMFLOAT2(translation.x + scale.x - control_size, translation.y + 1 + control_size));
 			scrollbar_vertical.AttachTo(this);
 			scrollbar_vertical.SetSafeArea(scrollbar_vertical.scale.x);
+		}
+
+		if (onResize)
+		{
+			onResize();
 		}
 	}
 	void Window::ExportLocalization(wi::Localization& localization) const
