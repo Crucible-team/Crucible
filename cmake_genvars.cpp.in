@@ -1,3 +1,0 @@
-#include "cmake_genvars.h"
-const char *kGitHash = "@GIT_HASH@";
-const char *kTimestamp = "@TS_BUILD@";

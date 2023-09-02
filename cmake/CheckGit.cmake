@@ -41,13 +41,9 @@ function(CheckGitVersion)
         file(COPY ${pre_configure_dir}/cmake_genvars.h DESTINATION ${post_configure_dir})
     endif()
 
-    if (NOT DEFINED GIT_HASH_CACHE)
-        set(GIT_HASH_CACHE "INVALID")
-    endif ()
-
     # Only update the cmake_genvars.cpp if the hash has changed. This will
     # prevent us from rebuilding the project more than we need to.
-    if (NOT ${GIT_HASH} STREQUAL ${GIT_HASH_CACHE} OR NOT EXISTS ${post_configure_file})
+    if (NOT "${GIT_HASH}" STREQUAL "${GIT_HASH_CACHE}" OR NOT EXISTS ${post_configure_file})
         # Set che GIT_HASH_CACHE variable the next build won't have
         # to regenerate the source file.
         CheckGitWrite(${GIT_HASH})
@@ -58,6 +54,10 @@ function(CheckGitVersion)
 endfunction()
 
 function(CheckGitSetup)
+
+if (NOT DEFINED GIT_HASH_CACHE)
+set(GIT_HASH_CACHE "INVALID")
+endif ()
 
     add_custom_target(AlwaysCheckGit COMMAND ${CMAKE_COMMAND}
         -DRUN_CHECK_GIT_VERSION=1

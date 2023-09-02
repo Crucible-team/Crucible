@@ -3,7 +3,6 @@ set(MIN_OpenImageDenoise_VERSION "2.0")
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
-include(../CheckGit.cmake)
 set(INSTALL_LOCAL_CONFIGDIR "${CMAKE_BINARY_DIR}/cmake")
 set(INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/WickedEngine")
 
@@ -17,7 +16,8 @@ endif()
 
 if(CRUCIBLE_NIGHTLY_VERSIONING)
 message(STATUS "Nightly versioning scheme enabled")
-CheckGitVersion()
+include(../cmake/CheckGit.cmake)
+CheckGitSetup()
 endif()
 
 if (WIN32)
@@ -261,6 +261,7 @@ else ()
 		Threads::Threads
 		SDL2::SDL2
 		$<$<BOOL:${OpenImageDenoise_FOUND}>:OpenImageDenoise> # links OpenImageDenoise only if it's found
+		cmake_genvars
 	)
 	set(WICKEDENGINE_STATIC_LIBRARIES ${WICKEDENGINE_STATIC_LIBRARIES} FAudio)
 
@@ -300,8 +301,6 @@ add_custom_command(
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/WickedEngine/${LIBDXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
 		COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/WickedEngine/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
 )
-
-#target_link_libraries(${TARGET_NAME} PUBLIC cmake_genvars)
 
 # OFFLINE SHADER COMPILER
 add_executable(offlineshadercompiler
