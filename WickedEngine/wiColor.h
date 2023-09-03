@@ -128,6 +128,7 @@ namespace wi
 
 		static constexpr Color Warning() { return 0xFF66FFFF; } // light yellow
 		static constexpr Color Error() { return 0xFF6666FF; } // light red
+		static constexpr Color Init() { return 0x80FF00FF;}
 	};
 
 	struct Color16

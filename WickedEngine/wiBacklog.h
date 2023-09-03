@@ -12,6 +12,7 @@ namespace wi::backlog
 	enum class LogLevel
 	{
 		None,
+//		Init,
 		Default,
 		Warning,
 		Error,

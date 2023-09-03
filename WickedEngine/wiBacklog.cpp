@@ -155,18 +155,18 @@ namespace wi::backlog
 					toggleButton.SetColor(theme_color_focus, wi::gui::FOCUS);
 					toggleButton.SetColor(theme_color_active, wi::gui::ACTIVE);
 					toggleButton.SetColor(theme_color_deactivating, wi::gui::DEACTIVATING);
-					toggleButton.SetShadowRadius(5);
+					toggleButton.SetShadowRadius(1);
 					toggleButton.SetShadowColor(wi::Color(80, 140, 180, 100));
 					toggleButton.font.params.color = wi::Color(160, 240, 250, 255);
 					toggleButton.font.params.rotation = XM_PI;
 					toggleButton.font.params.size = 24;
 					toggleButton.font.params.scaling = 3;
 					toggleButton.font.params.shadowColor = wi::Color::Transparent();
-					for (int i = 0; i < arraysize(toggleButton.sprites); ++i)
+					/*for (int i = 0; i < arraysize(toggleButton.sprites); ++i)
 					{
 						toggleButton.sprites[i].params.enableCornerRounding();
 						toggleButton.sprites[i].params.corners_rounding[2].radius = 50;
-					}
+					}*/
 				}
 				if (inputField.GetState() != wi::gui::ACTIVE)
 				{
@@ -231,16 +231,16 @@ namespace wi::backlog
 		wi::image::Params inputbg;
 		inputbg.color = wi::Color(80, 140, 180, 200);
 		inputbg.pos = inputField.translation;
-		inputbg.pos.x -= 8;
-		inputbg.pos.y -= 8;
+		inputbg.pos.x -= 4;
+		inputbg.pos.y -= 4;
 		inputbg.siz = inputField.GetSize();
-		inputbg.siz.x += 16;
-		inputbg.siz.y += 16;
-		inputbg.enableCornerRounding();
-		inputbg.corners_rounding[0].radius = 10;
-		inputbg.corners_rounding[1].radius = 10;
-		inputbg.corners_rounding[2].radius = 10;
-		inputbg.corners_rounding[3].radius = 10;
+		inputbg.siz.x += 8;
+		inputbg.siz.y += 8;
+		//inputbg.enableCornerRounding();
+		//inputbg.corners_rounding[0].radius = 10;
+		//inputbg.corners_rounding[1].radius = 10;
+		//inputbg.corners_rounding[2].radius = 10;
+		//inputbg.corners_rounding[3].radius = 10;
 		if (colorspace != ColorSpace::SRGB)
 		{
 			inputbg.enableLinearOutputMapping(9);
@@ -291,7 +291,7 @@ namespace wi::backlog
 		if (refitscroll)
 		{
 			float textheight = wi::font::TextHeight(getTextWithoutLock(), params);
-			float limit = canvas.GetLogicalHeight() - 50;
+			float limit = canvas.GetLogicalHeight() - 45;
 			if (scroll + textheight > limit)
 			{
 				scroll = limit - textheight;
@@ -315,6 +315,9 @@ namespace wi::backlog
 			case LogLevel::Error:
 				params.color = wi::Color::Error();
 				break;
+//			case LogLevel::Init:
+//				params.color = wi::Color::Init();
+//				break;
 			default:
 				params.color = font_params.color;
 				break;
