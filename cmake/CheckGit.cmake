@@ -32,6 +32,13 @@ function(CheckGitVersion)
         OUTPUT_STRIP_TRAILING_WHITESPACE
         )
 
+	execute_process(
+		COMMAND date +%F%H%M%S
+		WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+		OUTPUT_VARIABLE TS_BUILD
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+
     CheckGitRead(GIT_HASH_CACHE)
     if (NOT EXISTS ${post_configure_dir})
         file(MAKE_DIRECTORY ${post_configure_dir})
@@ -44,7 +51,7 @@ function(CheckGitVersion)
     # Only update the cmake_genvars.cpp if the hash has changed. This will
     # prevent us from rebuilding the project more than we need to.
     if (NOT "${GIT_HASH}" STREQUAL "${GIT_HASH_CACHE}" OR NOT EXISTS ${post_configure_file})
-        # Set che GIT_HASH_CACHE variable the next build won't have
+        # Set the GIT_HASH_CACHE variable so the next build won't have
         # to regenerate the source file.
         CheckGitWrite(${GIT_HASH})
 

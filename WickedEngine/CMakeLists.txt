@@ -3,6 +3,7 @@ set(MIN_OpenImageDenoise_VERSION "2.0")
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+include(../cmake/CheckGit.cmake)
 set(INSTALL_LOCAL_CONFIGDIR "${CMAKE_BINARY_DIR}/cmake")
 set(INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/WickedEngine")
 
@@ -16,8 +17,8 @@ endif()
 
 if(CRUCIBLE_NIGHTLY_VERSIONING)
 message(STATUS "Nightly versioning scheme enabled")
-include(../cmake/CheckGit.cmake)
 CheckGitSetup()
+add_compile_definitions(CRUCIBLE_NIGHTLY=1)
 endif()
 
 if (WIN32)
@@ -244,6 +245,10 @@ set(WICKEDENGINE_STATIC_LIBRARIES
 	Utility
 )
 
+if(CRUCIBLE_NIGHTLY_VERSIONING)
+set(WICKEDENGINE_STATIC_LIBRARIES ${WICKEDENGINE_STATIC_LIBRARIES} cmake_genvars)
+endif()
+
 if (WIN32)
 	target_compile_definitions(${TARGET_NAME} PUBLIC
 		UNICODE _UNICODE
@@ -261,7 +266,6 @@ else ()
 		Threads::Threads
 		SDL2::SDL2
 		$<$<BOOL:${OpenImageDenoise_FOUND}>:OpenImageDenoise> # links OpenImageDenoise only if it's found
-		cmake_genvars
 	)
 	set(WICKEDENGINE_STATIC_LIBRARIES ${WICKEDENGINE_STATIC_LIBRARIES} FAudio)
 

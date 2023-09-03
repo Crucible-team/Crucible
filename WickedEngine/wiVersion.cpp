@@ -1,4 +1,7 @@
 #include "wiVersion.h"
+#if defined(CRUCIBLE_NIGHTLY)
+#include "cmake_genvars.h"
+#endif
 
 #include <string>
 
@@ -10,9 +13,11 @@ namespace wi::version
 	const int minor = 71;
 	// minor bug fixes, alterations, refactors, updates
 	const int revision = 279;
-
+	#if defined(CRUCIBLE_NIGHTLY)
+	const std::string version_string = std::string("nightly_") + kGitHash + std::string("-") + kTimestamp;
+	#else
 	const std::string version_string = std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(revision);
-
+	#endif
 	int GetMajor()
 	{
 		return major;
