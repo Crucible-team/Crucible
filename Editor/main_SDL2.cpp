@@ -59,7 +59,7 @@ int sdl_loop(Editor &editor)
                             break;
                     }
                 case SDL_KEYDOWN:
-                    if(event.key.keysym.scancode == SDL_SCANCODE_BACKSPACE 
+                    if(event.key.keysym.scancode == SDL_SCANCODE_BACKSPACE
                         || event.key.keysym.scancode == SDL_SCANCODE_DELETE
                         || event.key.keysym.scancode == SDL_SCANCODE_KP_BACKSPACE){
                             wi::gui::TextInputField::DeleteFromInput();
@@ -104,15 +104,15 @@ void set_window_icon(SDL_Window *window) {
         rmask, gmask, bmask, amask);
 
     SDL_SetWindowIcon(window, icon);
- 
+
     SDL_FreeSurface(icon);
 }
 
 int main(int argc, char *argv[])
 {
-    
+
     wi::arguments::Parse(argc, argv);
-	
+
 	Gameconfig::getInstance().get_game_directories(wi::helper::GetCurrentPath() + "/games");
 
 	Gameconfig::getInstance().currentgame = "default";
@@ -128,13 +128,13 @@ int main(int argc, char *argv[])
 
 			Gameconfig::getInstance().config.GetSection(name.c_str()).Set("gamepath", name2);
 			Gameconfig::getInstance().config.Commit();
-			
-			
+
+
 			//wi::backlog::post("game: " + name + " , " + name2);
 		}
 		Gameconfig::getInstance().config.Commit();
-		
-		
+
+
 		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shadersourcepath"))
 		{
 			std::string path = Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shadersourcepath");
@@ -144,28 +144,28 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() +"/Data/shaders/");
+			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() +"/Data/shadersrc/");
 		}
-		
+
 		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shaderpath"))
 		{
 			std::string path = Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shaderpath");
 			wi::helper::MakePathRelative(wi::helper::GetCurrentPath(),path);
-			
+
 			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + path);
 		}
 		else
 		{
-			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/shaders/");
+			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/Data/shaders/");
 		}
-	
+
 
 		wi::backlog::post("gameconfig.ini loaded in " + std::to_string(timer.elapsed_milliseconds()) + " milliseconds\n");
 	}
 	else
 	{
-		wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + "/Data/shaders/");
-		wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/shaders/");
+		wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + "/Data/shadersrc/");
+		wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/Data/shaders/");
 	}
 
 	Gameconfig::getInstance().config.Commit();
