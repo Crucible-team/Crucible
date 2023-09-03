@@ -31,7 +31,7 @@ namespace dummy_male
 
 void Editor::Initialize()
 {
-	
+
 
 
 
@@ -350,7 +350,7 @@ void EditorComponent::Load()
 	logButton.SetLocalizationEnabled(wi::gui::LocalizationEnabled::Tooltip);
 	logButton.SetShadowRadius(2);
 	logButton.font.params.shadowColor = wi::Color::Transparent();
-	logButton.SetTooltip("Open the backlog (toggle with HOME button)");
+	logButton.SetTooltip("Open the backlog (toggle with HOME or GRAVE keys)");
 	logButton.SetColor(wi::Color(50, 160, 200, 180), wi::gui::WIDGETSTATE::IDLE);
 	logButton.SetColor(wi::Color(120, 200, 200, 255), wi::gui::WIDGETSTATE::FOCUS);
 	logButton.OnClick([&](wi::gui::EventArgs args) {
@@ -438,11 +438,11 @@ void EditorComponent::Load()
 	bugButton.SetLocalizationEnabled(wi::gui::LocalizationEnabled::Tooltip);
 	bugButton.SetShadowRadius(2);
 	bugButton.font.params.shadowColor = wi::Color::Transparent();
-	bugButton.SetTooltip("Opens a browser window where you can report a bug or an issue.\nURL: https://github.com/turanszkij/WickedEngine/issues/new");
+	bugButton.SetTooltip("Opens a browser window where you can report a bug or an issue.\nURL: https://github.com/Crucible-team/Crucible/issues/new");
 	bugButton.SetColor(wi::Color(50, 160, 200, 180), wi::gui::WIDGETSTATE::IDLE);
 	bugButton.SetColor(wi::Color(120, 200, 200, 255), wi::gui::WIDGETSTATE::FOCUS);
 	bugButton.OnClick([](wi::gui::EventArgs args) {
-		wi::helper::OpenUrl("https://github.com/turanszkij/WickedEngine/issues/new");
+		wi::helper::OpenUrl("https://github.com/Crucible-team/Crucible/issues/new");
 	});
 	GetGUI().AddWidget(&bugButton);
 
@@ -461,11 +461,11 @@ void EditorComponent::Load()
 
 	{
 		std::string ss;
-		ss += "Crucible Engine Editor v";
+		ss += "Crucible Engine Editor (JOE) v ";
 		ss += wi::version::GetVersionString();
-		ss += "\n\nWebsite: https://wickedengine.net/";
-		ss += "\nSource code: https://github.com/turanszkij/WickedEngine";
-		ss += "\nDiscord chat: https://discord.gg/CFjRYmE";
+		//ss += "\n\nWebsite: https://wickedengine.net/";
+		ss += "\nSource code: https://github.com/Crucible-team/Crucible";
+		//ss += "\nDiscord chat: https://discord.gg/CFjRYmE";
 		ss += "\n\nControls\n";
 		ss += "------------\n";
 		ss += "Move camera: WASD, or Contoller left stick or D-pad\n";
@@ -488,6 +488,7 @@ void EditorComponent::Load()
 		ss += "Save As: Ctrl + Shift + S\n";
 		ss += "Save: Ctrl + S\n";
 		ss += "Transform: Ctrl + T\n";
+		ss += "Mouselook Toggle: Z\n";
 		ss += "Move Toggle: 1\n";
 		ss += "Rotate Toggle: 2\n";
 		ss += "Scale Toggle: 3\n";
@@ -515,7 +516,7 @@ void EditorComponent::Load()
 		ss += "\t- Enable graphics device GPU-based validation: gpuvalidation\n";
 		ss += "\t- Make window always active, even when in background: alwaysactive\n";
 		ss += "\nFor questions, bug reports, feedback, requests, please open an issue at:\n";
-		ss += "https://github.com/turanszkij/WickedEngine/issues\n";
+		ss += "https://github.com/Crucible-team/Crucible/issues\n";
 		ss += "\n\n";
 		ss += wi::version::GetCreditsString();
 
@@ -1333,7 +1334,7 @@ void EditorComponent::Update(float dt)
 				{
 					// Union selection:
 					wi::vector<wi::scene::PickResult> saved = translator.selected;
-					translator.selected.clear(); 
+					translator.selected.clear();
 					for (const wi::scene::PickResult& picked : saved)
 					{
 						AddSelected(picked);
@@ -2693,7 +2694,7 @@ void EditorComponent::Render() const
 				spline_shape_count += shape.mesh2dvtex.size();
 			}
 
-			
+
 
 			if (spline_points_count > 0)
 			{
@@ -2738,7 +2739,7 @@ void EditorComponent::Render() const
 							//XMFLOAT3 start = GetSplinePoint();
 							//XMFLOAT3 end = GetSplinePoint();
 
-							
+
 
 							//point.position = spline.GetSplinePointCat(path, i);
 
@@ -2784,7 +2785,7 @@ void EditorComponent::Render() const
 								XMStoreFloat4(&rot, spline.GetOrintation(path, spline.T));
 								entTransform->rotation_local = rot;
 
-								
+
 								//entTransform->Rotate(spline.GetOrintation(path, spline.T));
 							}
 
@@ -2797,7 +2798,7 @@ void EditorComponent::Render() const
 
 									wi::renderer::RenderableLine line;
 
-									
+
 
 
 									for (size_t i = 0; i < spline.lineIndices.size(); i += 2)
@@ -2818,7 +2819,7 @@ void EditorComponent::Render() const
 										XMFLOAT3 TT;
 
 										XMStoreFloat3(&TT, T);
-											
+
 										XMFLOAT3 a = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i]].point.x + TT.x, spline.mesh2dvtex[spline.lineIndices[i]].point.y + TT.y, TT.z);
 										XMFLOAT3 b = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i + 1]].point.x + TT.x, spline.mesh2dvtex[spline.lineIndices[i + 1]].point.y + TT.y, TT.z);
 										line.start = a;
@@ -2827,7 +2828,7 @@ void EditorComponent::Render() const
 									}
 								}
 							}*/
-							
+
 						}
 
 
@@ -2854,9 +2855,9 @@ void EditorComponent::Render() const
 							if (spline.path.size() > 1)
 							{
 
-								
 
-								
+
+
 								point.position = spline.GetSplinePointLinear(path, i);
 
 								point.size = 0.01f;
@@ -2872,23 +2873,23 @@ void EditorComponent::Render() const
 
 								wi::renderer::DrawPoint(point);
 
-								
+
 
 
 
 							}
-							
-							
 
-							
+
+
+
 						}
 
 
 					}
 				}
-				
 
-			
+
+
 
 			}
 
@@ -2944,7 +2945,7 @@ void EditorComponent::Render() const
 					LoadShaders();
 				}
 
-				
+
 
 				size_t bone_count = 0;
 				for (size_t i = 0; i < scene.armatures.GetCount(); ++i)
