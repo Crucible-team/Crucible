@@ -23,12 +23,13 @@ int main( int argc, char *argv[])
 		arg1 = argv[1];
 		arg2 = argv[2];
 		arg3 = argv[3];
-		arg4 = argv[4];
 
 		if(argc = 4){
+			std::cout << "defaulting to 4 channels.\n";
 			chan = 4; //default for these headers is 4 channels.
 		}
 		else{
+			arg4 = argv[4];
 			chan = atoi(arg4.c_str());
 		}
 
