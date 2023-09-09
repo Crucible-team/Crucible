@@ -31,7 +31,7 @@ namespace dummy_male
 
 void Editor::Initialize()
 {
-	
+
 
 
 
@@ -177,8 +177,8 @@ void EditorComponent::ResizeLayout()
 	componentsWnd.SetPos(XMFLOAT2(screenW - componentsWnd.GetScale().x, screenH - componentsWnd.GetScale().y));
 	componentsWnd.scale_local = wi::math::Clamp(componentsWnd.scale_local, XMFLOAT3(1, 1, 1), XMFLOAT3(screenW, screenH, 1));
 
-	aboutLabel.SetSize(XMFLOAT2(screenW / 2.0f, screenH / 1.5f));
-	aboutLabel.SetPos(XMFLOAT2(screenW / 2.0f - aboutLabel.scale.x / 2.0f, screenH / 2.0f - aboutLabel.scale.y / 2.0f));
+	aboutWindow.SetSize(XMFLOAT2(screenW / 2.0f, screenH / 1.5f));
+	aboutWindow.SetPos(XMFLOAT2(screenW / 2.0f - aboutWindow.scale.x / 2.0f, screenH / 2.0f - aboutWindow.scale.y / 2.0f));
 
 }
 void EditorComponent::Load()
@@ -350,7 +350,7 @@ void EditorComponent::Load()
 	logButton.SetLocalizationEnabled(wi::gui::LocalizationEnabled::Tooltip);
 	logButton.SetShadowRadius(2);
 	logButton.font.params.shadowColor = wi::Color::Transparent();
-	logButton.SetTooltip("Open the backlog (toggle with HOME button)");
+	logButton.SetTooltip("Open the backlog (toggle with HOME or GRAVE keys)");
 	logButton.SetColor(wi::Color(50, 160, 200, 180), wi::gui::WIDGETSTATE::IDLE);
 	logButton.SetColor(wi::Color(120, 200, 200, 255), wi::gui::WIDGETSTATE::FOCUS);
 	logButton.OnClick([&](wi::gui::EventArgs args) {
@@ -438,11 +438,11 @@ void EditorComponent::Load()
 	bugButton.SetLocalizationEnabled(wi::gui::LocalizationEnabled::Tooltip);
 	bugButton.SetShadowRadius(2);
 	bugButton.font.params.shadowColor = wi::Color::Transparent();
-	bugButton.SetTooltip("Opens a browser window where you can report a bug or an issue.\nURL: https://github.com/turanszkij/WickedEngine/issues/new");
+	bugButton.SetTooltip("Opens a browser window where you can report a bug or an issue.\nURL: https://github.com/Crucible-team/Crucible/issues/new");
 	bugButton.SetColor(wi::Color(50, 160, 200, 180), wi::gui::WIDGETSTATE::IDLE);
 	bugButton.SetColor(wi::Color(120, 200, 200, 255), wi::gui::WIDGETSTATE::FOCUS);
 	bugButton.OnClick([](wi::gui::EventArgs args) {
-		wi::helper::OpenUrl("https://github.com/turanszkij/WickedEngine/issues/new");
+		wi::helper::OpenUrl("https://github.com/Crucible-team/Crucible/issues/new");
 	});
 	GetGUI().AddWidget(&bugButton);
 
@@ -455,17 +455,17 @@ void EditorComponent::Load()
 	aboutButton.SetColor(wi::Color(50, 160, 200, 180), wi::gui::WIDGETSTATE::IDLE);
 	aboutButton.SetColor(wi::Color(120, 200, 200, 255), wi::gui::WIDGETSTATE::FOCUS);
 	aboutButton.OnClick([&](wi::gui::EventArgs args) {
-		aboutLabel.SetVisible(!aboutLabel.IsVisible());
+		aboutWindow.SetVisible(!aboutWindow.IsVisible());
 		});
 	GetGUI().AddWidget(&aboutButton);
 
 	{
 		std::string ss;
-		ss += "Crucible Engine Editor v";
+		ss += "Crucible Engine Editor (JOE) v ";
 		ss += wi::version::GetVersionString();
-		ss += "\n\nWebsite: https://wickedengine.net/";
-		ss += "\nSource code: https://github.com/turanszkij/WickedEngine";
-		ss += "\nDiscord chat: https://discord.gg/CFjRYmE";
+		//ss += "\n\nWebsite: https://wickedengine.net/";
+		ss += "\nSource code: https://github.com/Crucible-team/Crucible";
+		//ss += "\nDiscord chat: https://discord.gg/CFjRYmE";
 		ss += "\n\nControls\n";
 		ss += "------------\n";
 		ss += "Move camera: WASD, or Contoller left stick or D-pad\n";
@@ -488,10 +488,12 @@ void EditorComponent::Load()
 		ss += "Save As: Ctrl + Shift + S\n";
 		ss += "Save: Ctrl + S\n";
 		ss += "Transform: Ctrl + T\n";
+		ss += "Mouselook Toggle: Z\n";
 		ss += "Move Toggle: 1\n";
 		ss += "Rotate Toggle: 2\n";
 		ss += "Scale Toggle: 3\n";
 		ss += "Wireframe mode: Ctrl + W\n";
+		ss += "Screenshot (saved into Editor's screenshots folder): F2\n";
 		ss += "Depth of field refocus to point: C + left mouse button\n";
 		ss += "Color grading reference: Ctrl + G (color grading palette reference will be displayed in top left corner)\n";
 		ss += "Focus on selected: F button, this will make the camera jump to selection.\n";
@@ -514,16 +516,27 @@ void EditorComponent::Load()
 		ss += "\t- Enable graphics device GPU-based validation: gpuvalidation\n";
 		ss += "\t- Make window always active, even when in background: alwaysactive\n";
 		ss += "\nFor questions, bug reports, feedback, requests, please open an issue at:\n";
-		ss += "https://github.com/turanszkij/WickedEngine/issues\n";
+		ss += "https://github.com/Crucible-team/Crucible/issues\n";
 		ss += "\n\n";
 		ss += wi::version::GetCreditsString();
 
 		aboutLabel.Create("AboutLabel");
 		aboutLabel.SetText(ss);
-		aboutLabel.SetVisible(false);
+		aboutLabel.SetSize(XMFLOAT2(600,4000));
 		aboutLabel.SetColor(wi::Color(113, 183, 214, 100));
 		aboutLabel.SetLocalizationEnabled(false);
-		GetGUI().AddWidget(&aboutLabel);
+		aboutWindow.AddWidget(&aboutLabel);
+
+		auto wctrl = wi::gui::Window::WindowControls::ALL;
+		wctrl &= ~wi::gui::Window::WindowControls::RESIZE_BOTTOMLEFT;
+		aboutWindow.Create("About", wctrl);
+		aboutWindow.SetVisible(false);
+		aboutWindow.SetPos(XMFLOAT2(100, 100));
+		aboutWindow.SetSize(XMFLOAT2(640, 480));
+		aboutWindow.OnResize([this]() {
+			aboutLabel.SetSize(XMFLOAT2(aboutWindow.GetWidgetAreaSize().x - 20, aboutLabel.GetSize().y));
+		});
+		GetGUI().AddWidget(&aboutWindow);
 	}
 
 	exitButton.Create("Exit");
@@ -616,6 +629,19 @@ void EditorComponent::Update(float dt)
 {
 	wi::profiler::range_id profrange = wi::profiler::BeginRangeCPU("Editor Update");
 
+	if (wi::input::Press(wi::input::KEYBOARD_BUTTON_F2))
+	{
+		std::string filename = wi::helper::screenshot(main->swapChain);
+		if (filename.empty())
+		{
+			PostSaveText("Error! Screenshot was not successful!");
+		}
+		else
+		{
+			PostSaveText("Screenshot saved: ", filename);
+		}
+	}
+
 	Scene& scene = GetCurrentScene();
 	EditorScene& editorscene = GetCurrentEditorScene();
 	CameraComponent& camera = editorscene.camera;
@@ -636,7 +662,7 @@ void EditorComponent::Update(float dt)
 	CheckBonePickingEnabled();
 	UpdateTopMenuAnimation();
 
-	save_text_alpha = std::max(0.0f, save_text_alpha - 0.016f); // constant fade time (no dt, because after saving, dt can become huge)
+	save_text_alpha = std::max(0.0f, save_text_alpha - std::min(dt, 0.033f)); // after saving, dt can become huge
 
 	bool clear_selected = false;
 	if (wi::input::Press(wi::input::KEYBOARD_BUTTON_ESCAPE))
@@ -1308,7 +1334,7 @@ void EditorComponent::Update(float dt)
 				{
 					// Union selection:
 					wi::vector<wi::scene::PickResult> saved = translator.selected;
-					translator.selected.clear(); 
+					translator.selected.clear();
 					for (const wi::scene::PickResult& picked : saved)
 					{
 						AddSelected(picked);
@@ -1600,6 +1626,7 @@ void EditorComponent::Update(float dt)
 
 		componentsWnd.healthWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.armorWnd.SetEntity(INVALID_ENTITY);
+		componentsWnd.splineWnd.SetEntity(INVALID_ENTITY);
 	}
 	else
 	{
@@ -1637,6 +1664,7 @@ void EditorComponent::Update(float dt)
 
 		componentsWnd.healthWnd.SetEntity(picked.entity);
 		componentsWnd.armorWnd.SetEntity(picked.entity);
+		componentsWnd.splineWnd.SetEntity(picked.entity);
 
 		if (picked.subsetIndex >= 0)
 		{
@@ -2651,6 +2679,252 @@ void EditorComponent::Render() const
 					wi::font::Draw(ICON_VIDEO, fp, cmd);
 				}
 			}
+
+			size_t spline_points_count = 0;
+			size_t spline_shape_count = 0;
+			for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+			{
+				const SplineComponent& spline = scene.splines[i];
+				spline_points_count += spline.path.size();
+			}
+
+			for (size_t i = 0; i < scene.shapes.GetCount(); ++i)
+			{
+				const ShapeComponent& shape = scene.shapes[i];
+				spline_shape_count += shape.mesh2dvtex.size();
+			}
+
+
+
+			if (spline_points_count > 0)
+			{
+				wi::renderer::RenderablePoint point;
+				wi::renderer::RenderablePoint point2;
+				wi::renderer::RenderableLine line;
+
+				for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+				{
+					const SplineComponent& spline = scene.splines[i];
+
+					for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+					{
+						point.position = i->second;
+
+						point.size = 0.5f;
+
+						point.color = XMFLOAT4(1,1, 1, 1);
+
+						wi::renderer::DrawPoint(point);
+
+					}
+
+
+				}
+
+				if (spline_points_count >= 4)
+				{
+					for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+					{
+						SplineComponent& spline = scene.splines[i];
+
+						wi::vector<XMFLOAT3> path;
+
+						for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+						{
+							path.push_back(i->second);
+						}
+
+						for (float i = 0; i < spline.path.size() - 3.0f; i+=0.01)
+						{
+							//XMFLOAT3 start = GetSplinePoint();
+							//XMFLOAT3 end = GetSplinePoint();
+
+
+
+							//point.position = spline.GetSplinePointCat(path, i);
+
+							//point.size = 0.01f;
+
+							//point.color = XMFLOAT4(1, 1, 1, 1);
+
+							XMFLOAT3 a = spline.GetSplinePointCat(path, i);
+							XMFLOAT3 b = spline.GetSplinePointCat(path, std::clamp(i + 0.01f,0.0f,spline.path.size() - 3.0f));
+
+							line.color_start = XMFLOAT4(1, 1, 1, 1);
+							line.color_end = XMFLOAT4(0, 0, 1, 1);
+							line.start = a;
+							line.end = b;
+							wi::renderer::DrawLine(line);
+
+							/*line.start = i->second;
+
+							line.end;
+
+							line.color_start = XMFLOAT4(1, 1, 1, 1);
+							line.color_end = XMFLOAT4(1, 1, 1, 1);*/
+
+							point2.position = spline.GetSplinePointCat(path, spline.T);
+							point2.size = 0.75f;
+							point2.color = XMFLOAT4(1, 0, 0, 1);
+
+							//wi::renderer::DrawPoint(point);
+							wi::renderer::DrawPoint(point2);
+
+							if (spline.nexttarget != INVALID_ENTITY)
+							{
+
+								TransformComponent* entTransform = scene.transforms.GetComponent(spline.nexttarget);
+
+
+								if (entTransform == nullptr)
+									return;
+								entTransform->SetDirty();
+								entTransform->translation_local = spline.GetSplinePointCat(path, spline.T);
+								XMFLOAT4 rot;
+
+								XMStoreFloat4(&rot, spline.GetOrintation(path, spline.T));
+								entTransform->rotation_local = rot;
+
+
+								//entTransform->Rotate(spline.GetOrintation(path, spline.T));
+							}
+
+							/*if (spline_shape_count > 0)
+							{
+
+								for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+								{
+									SplineComponent& spline = scene.splines[i];
+
+									wi::renderer::RenderableLine line;
+
+
+
+
+									for (size_t i = 0; i < spline.lineIndices.size(); i += 2)
+									{
+										XMFLOAT3 scal = { 1,1,1 };
+										XMFLOAT3 tan;
+										XMFLOAT4 rot;
+										XMStoreFloat4(&rot, spline.GetOrintation(path, spline.T));
+										XMVECTOR S_local = XMLoadFloat3(&scal);
+										XMVECTOR R_local = XMLoadFloat4(&rot);
+										XMVECTOR T_local = XMLoadFloat3(&spline.GetSplinePointCat(path, spline.T));
+
+										XMMATRIX world = XMMatrixScalingFromVector(S_local) * XMMatrixRotationQuaternion(R_local) * XMMatrixTranslationFromVector(T_local);
+
+										XMVECTOR S, R, T;
+										XMMatrixDecompose(&S, &R, &T, world);
+
+										XMFLOAT3 TT;
+
+										XMStoreFloat3(&TT, T);
+
+										XMFLOAT3 a = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i]].point.x + TT.x, spline.mesh2dvtex[spline.lineIndices[i]].point.y + TT.y, TT.z);
+										XMFLOAT3 b = XMFLOAT3(spline.mesh2dvtex[spline.lineIndices[i + 1]].point.x + TT.x, spline.mesh2dvtex[spline.lineIndices[i + 1]].point.y + TT.y, TT.z);
+										line.start = a;
+										line.end = b;
+										wi::renderer::DrawLine(line);
+									}
+								}
+							}*/
+
+						}
+
+
+					}
+				}
+				else
+				{
+					for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+					{
+						SplineComponent& spline = scene.splines[i];
+
+						wi::vector<XMFLOAT3> path;
+
+						for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+						{
+							path.push_back(i->second);
+						}
+
+						for (float i = 0; i < spline.path.size(); i += 0.01)
+						{
+							//XMFLOAT3 start = GetSplinePoint();
+							//XMFLOAT3 end = GetSplinePoint();
+
+							if (spline.path.size() > 1)
+							{
+
+
+
+
+								point.position = spline.GetSplinePointLinear(path, i);
+
+								point.size = 0.01f;
+
+								point.color = XMFLOAT4(1, 1, 1, 1);
+
+								/*line.start = i->second;
+
+								line.end;
+
+								line.color_start = XMFLOAT4(1, 1, 1, 1);
+								line.color_end = XMFLOAT4(1, 1, 1, 1);*/
+
+								wi::renderer::DrawPoint(point);
+
+
+
+
+
+							}
+
+
+
+
+						}
+
+
+					}
+				}
+
+
+
+
+			}
+
+			if (spline_shape_count > 0)
+			{
+
+				for (size_t i = 0; i < scene.splines.GetCount(); ++i)
+				{
+					ShapeComponent& shape = scene.shapes[i];
+
+					wi::renderer::RenderableLine line;
+
+					for (size_t i = 0; i < shape.lineIndices.size(); i += 2)
+					{
+
+						/*if (!scene.transforms.Contains(entity))
+							continue;
+						const TransformComponent& transform = *scene.transforms.GetComponent(entity);
+						XMVECTOR a = transform.GetPositionV();
+						XMVECTOR b = a + XMVectorSet(0, 0.1f, 0, 0);
+
+						XMFLOAT3 TT;
+
+						XMStoreFloat3(&TT, T);
+						*/
+
+						XMFLOAT3 a = XMFLOAT3(shape.mesh2dvtex[shape.lineIndices[i]].point.x /* + TT.x*/, shape.mesh2dvtex[shape.lineIndices[i]].point.y /*+  TT.y*/, 0);
+						XMFLOAT3 b = XMFLOAT3(shape.mesh2dvtex[shape.lineIndices[i + 1]].point.x /* + TT.x */ , shape.mesh2dvtex[shape.lineIndices[i + 1]].point.y /* + TT.y*/, 0);
+						line.start = a;
+						line.end = b;
+						wi::renderer::DrawLine(line);
+					}
+				}
+			}
+
 			if (bone_picking)
 			{
 				static PipelineState pso;
@@ -2670,6 +2944,8 @@ void EditorComponent::Render() const
 					static wi::eventhandler::Handle handle = wi::eventhandler::Subscribe(wi::eventhandler::EVENT_RELOAD_SHADERS, [](uint64_t userdata) { LoadShaders(); });
 					LoadShaders();
 				}
+
+
 
 				size_t bone_count = 0;
 				for (size_t i = 0; i < scene.armatures.GetCount(); ++i)
@@ -3046,7 +3322,11 @@ void EditorComponent::Compose(CommandList cmd) const
 		params.v_align = wi::font::WIFALIGN_CENTER;
 		params.size = 30;
 		params.shadow_softness = 1;
-		wi::font::Draw(save_text, params, cmd);
+		wi::font::Cursor cursor = wi::font::Draw(save_text_message, params, cmd);
+
+		params.size = 24;
+		params.position.y += cursor.size.y;
+		wi::font::Draw(save_text_filename, params, cmd);
 	}
 
 #ifdef TERRAIN_VIRTUAL_TEXTURE_DEBUG
@@ -3589,7 +3869,7 @@ void EditorComponent::Save(const std::string& filename)
 	GetCurrentEditorScene().path = filename;
 	RefreshSceneList();
 
-	PostSaveText("Scene saved: " + GetCurrentEditorScene().path);
+	PostSaveText("Scene saved: ", GetCurrentEditorScene().path);
 }
 void EditorComponent::SaveAs()
 {
@@ -3618,11 +3898,12 @@ void EditorComponent::SaveAs()
 		});
 }
 
-void EditorComponent::PostSaveText(const std::string& text)
+void EditorComponent::PostSaveText(const std::string& message, const std::string& filename, float time_seconds)
 {
-	save_text = text;
-	save_text_alpha = 2;
-	wi::backlog::post(text);
+	save_text_message = message;
+	save_text_filename = filename;
+	save_text_alpha = time_seconds;
+	wi::backlog::post(message + filename);
 }
 
 void EditorComponent::CheckBonePickingEnabled()
@@ -3960,6 +4241,7 @@ void EditorComponent::RefreshSceneList()
 
 			componentsWnd.healthWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 			componentsWnd.armorWnd.SetEntity(wi::ecs::INVALID_ENTITY);
+			componentsWnd.splineWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 
 			optionsWnd.RefreshEntityTree();
 			ResetHistory();
@@ -4019,7 +4301,19 @@ void EditorComponent::FocusCameraOnSelected()
 		}
 		if (scene.lights.Contains(x.entity))
 		{
-			aabb = AABB::Merge(aabb, scene.aabb_lights[scene.lights.GetIndex(x.entity)]);
+			size_t lightindex = scene.lights.GetIndex(x.entity);
+			const LightComponent& light = scene.lights[lightindex];
+			if (light.GetType() == LightComponent::DIRECTIONAL)
+			{
+				// Directional light AABB is huge, so we handle this as special case:
+				AABB lightAABB;
+				lightAABB.createFromHalfWidth(light.position, XMFLOAT3(1, 1, 1));
+				aabb = AABB::Merge(aabb, lightAABB);
+			}
+			else
+			{
+				aabb = AABB::Merge(aabb, scene.aabb_lights[lightindex]);
+			}
 		}
 		if (scene.decals.Contains(x.entity))
 		{

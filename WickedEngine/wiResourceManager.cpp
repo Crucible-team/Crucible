@@ -739,6 +739,7 @@ namespace wi
 					{
 						int height, width, channels; // stb_image
 						float* data = stbi_loadf_from_memory(filedata, (int)filesize, &width, &height, &channels, 0);
+						static constexpr bool allow_packing = true; // we now always assume that we won't need full precision float textures, so pack them for memory saving
 
 						if (data != nullptr)
 						{
@@ -749,16 +750,67 @@ namespace wi
 							{
 							default:
 							case 4:
-								desc.format = Format::R32G32B32A32_FLOAT;
+								if (allow_packing)
+								{
+									desc.format = Format::R16G16B16A16_FLOAT;
+									const XMFLOAT4* data_full = (const XMFLOAT4*)data;
+									XMHALF4* data_packed = (XMHALF4*)data;
+									for (int i = 0; i < width * height; ++i)
+									{
+										XMStoreHalf4(data_packed + i, XMLoadFloat4(data_full + i));
+									}
+								}
+								else
+								{
+									desc.format = Format::R32G32B32A32_FLOAT;
+								}
 								break;
 							case 3:
-								desc.format = Format::R32G32B32_FLOAT;
+								if (allow_packing)
+								{
+									desc.format = Format::R9G9B9E5_SHAREDEXP;
+									const XMFLOAT3* data_full = (const XMFLOAT3*)data;
+									XMFLOAT3SE* data_packed = (XMFLOAT3SE*)data;
+									for (int i = 0; i < width * height; ++i)
+									{
+										XMStoreFloat3SE(data_packed + i, XMLoadFloat3(data_full + i));
+									}
+								}
+								else
+								{
+									desc.format = Format::R32G32B32_FLOAT;
+								}
 								break;
 							case 2:
-								desc.format = Format::R32G32_FLOAT;
+								if (allow_packing)
+								{
+									desc.format = Format::R16G16_FLOAT;
+									const XMFLOAT2* data_full = (const XMFLOAT2*)data;
+									XMHALF2* data_packed = (XMHALF2*)data;
+									for (int i = 0; i < width * height; ++i)
+									{
+										XMStoreHalf2(data_packed + i, XMLoadFloat2(data_full + i));
+									}
+								}
+								else
+								{
+									desc.format = Format::R32G32_FLOAT;
+								}
 								break;
 							case 1:
-								desc.format = Format::R32_FLOAT;
+								if (allow_packing)
+								{
+									desc.format = Format::R16_FLOAT;
+									HALF* data_packed = (HALF*)data;
+									for (int i = 0; i < width * height; ++i)
+									{
+										data_packed[i] = XMConvertFloatToHalf(data[i]);
+									}
+								}
+								else
+								{
+									desc.format = Format::R32_FLOAT;
+								}
 								break;
 							}
 							desc.bind_flags = BindFlag::SHADER_RESOURCE;
@@ -768,26 +820,38 @@ namespace wi
 							InitData.row_pitch = width * GetFormatStride(desc.format);
 							success = device->CreateTexture(&desc, &InitData, &resource->texture);
 							device->SetName(&resource->texture, name.c_str());
+
+							stbi_image_free(data);
 						}
 					}
 					else
 					{
 						// qoi, png, tga, jpg, etc. loader:
-
 						const int channelCount = 4;
-						int height, width, bpp; // stb_image
-						qoi_desc desc;
+						int height = 0, width = 0, bpp = 0;
+						bool is_16bit = false;
 
 						void* rgba;
 						if (!ext.compare("QOI"))
 						{
+							qoi_desc desc = {};
 							rgba = qoi_decode(filedata, (int)filesize, &desc, channelCount);
 							// redefine width, height to avoid further conditionals
 							height = desc.height;
 							width = desc.width;
 						}
 						else
-							rgba = stbi_load_from_memory(filedata, (int)filesize, &width, &height, &bpp, channelCount);
+						{
+							if (!has_flag(flags, Flags::IMPORT_COLORGRADINGLUT) && stbi_is_16_bit_from_memory(filedata, (int)filesize))
+							{
+								is_16bit = true;
+								rgba = stbi_load_16_from_memory(filedata, (int)filesize, &width, &height, &bpp, channelCount);
+							}
+							else
+							{
+								rgba = stbi_load_from_memory(filedata, (int)filesize, &width, &height, &bpp, channelCount);
+							}
+						}
 
 						if (rgba != nullptr)
 						{
@@ -837,7 +901,14 @@ namespace wi
 							else
 							{
 								desc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
-								desc.format = Format::R8G8B8A8_UNORM;
+								if (is_16bit)
+								{
+									desc.format = Format::R16G16B16A16_UNORM;
+								}
+								else
+								{
+									desc.format = Format::R8G8B8A8_UNORM;
+								}
 								desc.mip_levels = GetMipCount(desc.width, desc.height);
 								desc.usage = Usage::DEFAULT;
 								desc.layout = ResourceState::SHADER_RESOURCE;
@@ -848,7 +919,7 @@ namespace wi
 								for (uint32_t mip = 0; mip < desc.mip_levels; ++mip)
 								{
 									init_data[mip].data_ptr = rgba; // attention! we don't fill the mips here correctly, just always point to the mip0 data by default. Mip levels will be created using compute shader when needed!
-									init_data[mip].row_pitch = static_cast<uint32_t>(mipwidth * channelCount);
+									init_data[mip].row_pitch = uint32_t(mipwidth * GetFormatStride(desc.format));
 									mipwidth = std::max(1u, mipwidth / 2);
 								}
 
@@ -901,18 +972,38 @@ namespace wi
 										//	We only care about grayscale if it's not transparent
 										bool has_transparency = false;
 										bool is_grayscale = true;
-										for (int y = 0; (y < height) && !has_transparency; ++y)
+										if (is_16bit)
 										{
-											for (int x = 0; (x < width) && !has_transparency; ++x)
+											for (int y = 0; (y < height) && !has_transparency; ++y)
 											{
-												const wi::Color color = ((wi::Color*)rgba)[x + y * width];
-												const uint8_t r = color.getR();
-												const uint8_t g = color.getG();
-												const uint8_t b = color.getB();
-												const uint8_t a = color.getA();
-												has_transparency |= a < 255;
-												is_grayscale &= r == g;
-												is_grayscale &= r == b;
+												for (int x = 0; (x < width) && !has_transparency; ++x)
+												{
+													const wi::Color16 color = ((wi::Color16*)rgba)[x + y * width];
+													const uint16_t r = color.getR();
+													const uint16_t g = color.getG();
+													const uint16_t b = color.getB();
+													const uint16_t a = color.getA();
+													has_transparency |= a < 65535;
+													is_grayscale &= r == g;
+													is_grayscale &= r == b;
+												}
+											}
+										}
+										else
+										{
+											for (int y = 0; (y < height) && !has_transparency; ++y)
+											{
+												for (int x = 0; (x < width) && !has_transparency; ++x)
+												{
+													const wi::Color color = ((wi::Color*)rgba)[x + y * width];
+													const uint8_t r = color.getR();
+													const uint8_t g = color.getG();
+													const uint8_t b = color.getB();
+													const uint8_t a = color.getA();
+													has_transparency |= a < 255;
+													is_grayscale &= r == g;
+													is_grayscale &= r == b;
+												}
 											}
 										}
 										if (has_transparency)

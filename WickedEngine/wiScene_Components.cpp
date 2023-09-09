@@ -13,10 +13,12 @@
 #include "wiLua.h"
 
 #if __has_include("OpenImageDenoise/oidn.hpp")
-#define OPEN_IMAGE_DENOISE
 #include "OpenImageDenoise/oidn.hpp"
+#if OIDN_VERSION_MAJOR >= 2
+#define OPEN_IMAGE_DENOISE
 #pragma comment(lib,"OpenImageDenoise.lib")
 // Also provide the required DLL files from OpenImageDenoise release near the exe!
+#endif // OIDN_VERSION_MAJOR >= 2
 #endif // __has_include("OpenImageDenoise/oidn.hpp")
 
 using namespace wi::ecs;
@@ -563,7 +565,7 @@ namespace wi::scene
 		GPUBufferDesc bd;
 		bd.usage = Usage::DEFAULT;
 		bd.bind_flags = BindFlag::VERTEX_BUFFER | BindFlag::INDEX_BUFFER | BindFlag::SHADER_RESOURCE;
-		bd.misc_flags = ResourceMiscFlag::BUFFER_RAW;
+		bd.misc_flags = ResourceMiscFlag::BUFFER_RAW | ResourceMiscFlag::TYPED_FORMAT_CASTING | ResourceMiscFlag::NO_DEFAULT_DESCRIPTORS;
 		if (device->CheckCapability(GraphicsDeviceCapability::RAYTRACING))
 		{
 			bd.misc_flags |= ResourceMiscFlag::RAY_TRACING;
@@ -579,15 +581,17 @@ namespace wi::scene
 			AlignTo(vertex_boneindices.size() * sizeof(Vertex_BON), alignment)
 			;
 
+		constexpr Format morph_format = Format::R16G16B16A16_FLOAT;
+		constexpr size_t morph_stride = GetFormatStride(morph_format);
 		for (MorphTarget& morph : morph_targets)
 		{
 			if (!morph.vertex_positions.empty())
 			{
-				bd.size += AlignTo(vertex_positions.size() * sizeof(XMHALF4), alignment);
+				bd.size += AlignTo(vertex_positions.size() * morph_stride, alignment);
 			}
 			if (!morph.vertex_normals.empty())
 			{
-				bd.size += AlignTo(vertex_normals.size() * sizeof(XMHALF4), alignment);
+				bd.size += AlignTo(vertex_normals.size() * morph_stride, alignment);
 			}
 		}
 
@@ -735,11 +739,12 @@ namespace wi::scene
 			// morph buffers:
 			if (!morph_targets.empty())
 			{
+				vb_mor.offset = buffer_offset;
 				for (MorphTarget& morph : morph_targets)
 				{
 					if (!morph.vertex_positions.empty())
 					{
-						morph.offset_pos = buffer_offset;
+						morph.offset_pos = (buffer_offset - vb_mor.offset) / morph_stride;
 						XMHALF4* vertices = (XMHALF4*)(buffer_data + buffer_offset);
 						std::fill(vertices, vertices + vertex_positions.size(), 0);
 						if (morph.sparse_indices_positions.empty())
@@ -763,7 +768,7 @@ namespace wi::scene
 					}
 					if (!morph.vertex_normals.empty())
 					{
-						morph.offset_nor = buffer_offset;
+						morph.offset_nor = (buffer_offset - vb_mor.offset) / morph_stride;
 						XMHALF4* vertices = (XMHALF4*)(buffer_data + buffer_offset);
 						std::fill(vertices, vertices + vertex_normals.size(), 0);
 						if (morph.sparse_indices_normals.empty())
@@ -786,6 +791,7 @@ namespace wi::scene
 						buffer_offset += AlignTo(morph.vertex_normals.size() * sizeof(XMHALF4), alignment);
 					}
 				}
+				vb_mor.size = buffer_offset - vb_mor.offset;
 			}
 		};
 
@@ -799,33 +805,38 @@ namespace wi::scene
 		ib.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, ib.subresource_srv);
 
 		assert(vb_pos_nor_wind.IsValid());
-		vb_pos_nor_wind.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_pos_nor_wind.offset, vb_pos_nor_wind.size);
+		vb_pos_nor_wind.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_pos_nor_wind.offset, vb_pos_nor_wind.size, &Vertex_POS::FORMAT);
 		vb_pos_nor_wind.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_pos_nor_wind.subresource_srv);
 
 		if (vb_tan.IsValid())
 		{
-			vb_tan.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_tan.offset, vb_tan.size);
+			vb_tan.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_tan.offset, vb_tan.size, &Vertex_TAN::FORMAT);
 			vb_tan.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_tan.subresource_srv);
 		}
 		if (vb_uvs.IsValid())
 		{
-			vb_uvs.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_uvs.offset, vb_uvs.size);
+			vb_uvs.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_uvs.offset, vb_uvs.size, &Vertex_UVS::FORMAT);
 			vb_uvs.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_uvs.subresource_srv);
 		}
 		if (vb_atl.IsValid())
 		{
-			vb_atl.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_atl.offset, vb_atl.size);
+			vb_atl.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_atl.offset, vb_atl.size, &Vertex_TEX::FORMAT);
 			vb_atl.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_atl.subresource_srv);
 		}
 		if (vb_col.IsValid())
 		{
-			vb_col.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_col.offset, vb_col.size);
+			vb_col.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_col.offset, vb_col.size, &Vertex_COL::FORMAT);
 			vb_col.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_col.subresource_srv);
 		}
 		if (vb_bon.IsValid())
 		{
 			vb_bon.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_bon.offset, vb_bon.size);
 			vb_bon.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_bon.subresource_srv);
+		}
+		if (vb_mor.IsValid())
+		{
+			vb_mor.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_mor.offset, vb_mor.size, &morph_format);
+			vb_mor.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_mor.subresource_srv);
 		}
 
 		if (!vertex_boneindices.empty() || !morph_targets.empty())
@@ -840,7 +851,7 @@ namespace wi::scene
 		GPUBufferDesc desc;
 		desc.usage = Usage::DEFAULT;
 		desc.bind_flags = BindFlag::VERTEX_BUFFER | BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
-		desc.misc_flags = ResourceMiscFlag::BUFFER_RAW;
+		desc.misc_flags = ResourceMiscFlag::BUFFER_RAW | ResourceMiscFlag::TYPED_FORMAT_CASTING | ResourceMiscFlag::NO_DEFAULT_DESCRIPTORS;
 		if (device->CheckCapability(GraphicsDeviceCapability::RAYTRACING))
 		{
 			desc.misc_flags |= ResourceMiscFlag::RAY_TRACING;
@@ -860,8 +871,8 @@ namespace wi::scene
 		so_pos_nor_wind.offset = buffer_offset;
 		so_pos_nor_wind.size = vb_pos_nor_wind.size;
 		buffer_offset += AlignTo(so_pos_nor_wind.size, alignment);
-		so_pos_nor_wind.subresource_srv = device->CreateSubresource(&streamoutBuffer, SubresourceType::SRV, so_pos_nor_wind.offset, so_pos_nor_wind.size);
-		so_pos_nor_wind.subresource_uav = device->CreateSubresource(&streamoutBuffer, SubresourceType::UAV, so_pos_nor_wind.offset, so_pos_nor_wind.size);
+		so_pos_nor_wind.subresource_srv = device->CreateSubresource(&streamoutBuffer, SubresourceType::SRV, so_pos_nor_wind.offset, so_pos_nor_wind.size, &Vertex_POS::FORMAT);
+		so_pos_nor_wind.subresource_uav = device->CreateSubresource(&streamoutBuffer, SubresourceType::UAV, so_pos_nor_wind.offset, so_pos_nor_wind.size, &Vertex_POS::FORMAT);
 		so_pos_nor_wind.descriptor_srv = device->GetDescriptorIndex(&streamoutBuffer, SubresourceType::SRV, so_pos_nor_wind.subresource_srv);
 		so_pos_nor_wind.descriptor_uav = device->GetDescriptorIndex(&streamoutBuffer, SubresourceType::UAV, so_pos_nor_wind.subresource_uav);
 
@@ -870,8 +881,8 @@ namespace wi::scene
 			so_tan.offset = buffer_offset;
 			so_tan.size = vb_tan.size;
 			buffer_offset += AlignTo(so_tan.size, alignment);
-			so_tan.subresource_srv = device->CreateSubresource(&streamoutBuffer, SubresourceType::SRV, so_tan.offset, so_tan.size);
-			so_tan.subresource_uav = device->CreateSubresource(&streamoutBuffer, SubresourceType::UAV, so_tan.offset, so_tan.size);
+			so_tan.subresource_srv = device->CreateSubresource(&streamoutBuffer, SubresourceType::SRV, so_tan.offset, so_tan.size, &Vertex_TAN::FORMAT);
+			so_tan.subresource_uav = device->CreateSubresource(&streamoutBuffer, SubresourceType::UAV, so_tan.offset, so_tan.size, &Vertex_TAN::FORMAT);
 			so_tan.descriptor_srv = device->GetDescriptorIndex(&streamoutBuffer, SubresourceType::SRV, so_tan.subresource_srv);
 			so_tan.descriptor_uav = device->GetDescriptorIndex(&streamoutBuffer, SubresourceType::UAV, so_tan.subresource_uav);
 		}
@@ -879,8 +890,8 @@ namespace wi::scene
 		so_pre.offset = buffer_offset;
 		so_pre.size = vb_pos_nor_wind.size;
 		buffer_offset += AlignTo(so_pre.size, alignment);
-		so_pre.subresource_srv = device->CreateSubresource(&streamoutBuffer, SubresourceType::SRV, so_pre.offset, so_pre.size);
-		so_pre.subresource_uav = device->CreateSubresource(&streamoutBuffer, SubresourceType::UAV, so_pre.offset, so_pre.size);
+		so_pre.subresource_srv = device->CreateSubresource(&streamoutBuffer, SubresourceType::SRV, so_pre.offset, so_pre.size, &Vertex_POS::FORMAT);
+		so_pre.subresource_uav = device->CreateSubresource(&streamoutBuffer, SubresourceType::UAV, so_pre.offset, so_pre.size, &Vertex_POS::FORMAT);
 		so_pre.descriptor_srv = device->GetDescriptorIndex(&streamoutBuffer, SubresourceType::SRV, so_pre.subresource_srv);
 		so_pre.descriptor_uav = device->GetDescriptorIndex(&streamoutBuffer, SubresourceType::UAV, so_pre.subresource_uav);
 	}
@@ -1706,6 +1717,150 @@ namespace wi::scene
 		this->filename = filename;
 		resource = wi::resourcemanager::Load(filename, wi::resourcemanager::Flags::IMPORT_RETAIN_FILEDATA);
 		script.clear(); // will be created on first Update()
+	}
+
+	XMFLOAT3 SplineComponent::GetSplinePointCat(wi::vector<XMFLOAT3> path, float t)
+	{
+
+		int p1, p2, p3, p4;
+		p2 = (int)t + 1;
+		p3 = p2 + 1;
+		p4 = p3 + 1;
+		p1 = p2 - 1;
+		t = t - (int)t;
+		XMVECTOR spline_p = XMVectorCatmullRom(
+			XMLoadFloat3(&path[p1]),
+			XMLoadFloat3(&path[p2]),
+			XMLoadFloat3(&path[p3]),
+			XMLoadFloat3(&path[p4]),
+			t
+		);
+
+
+		XMFLOAT3 sp;
+		XMStoreFloat3(&sp, spline_p);
+		//dest = XMFLOAT3(tx, ty, tz);
+		return sp;//{ tx,ty,tz };
+
+	}
+
+	XMFLOAT3 SplineComponent::GetTangent(wi::vector<XMFLOAT3> path, float t)
+	{
+		
+		float omt = 1.0f - t;
+		float omt2 = omt * omt;
+		float t2 = t * t;
+
+		int p1, p2, p3, p4;
+		p2 = (int)t + 1;
+		p3 = p2 + 1;
+		p4 = p3 + 1;
+		p1 = p2 - 1;
+		
+
+		XMVECTOR tag0 = XMLoadFloat3(&path[p1]);
+
+		tag0 = tag0 * (-omt2);
+
+		XMVECTOR tag1 = XMLoadFloat3(&path[p2]);
+
+		tag1 = tag1 * (3* omt2 - 2 *omt);
+
+		XMVECTOR tag2 = XMLoadFloat3(&path[p3]);
+
+		tag2 = tag2 * (-3 * t2 + 2 * t);
+
+		XMVECTOR tag3 = XMLoadFloat3(&path[p4]);
+
+		tag3 = tag3* (t2);
+
+		XMVECTOR tagsum1 = XMVectorAdd(tag0, tag1);
+		XMVECTOR tagsum2 = XMVectorAdd(tagsum1, tag2);
+		XMVECTOR tagsum3 = XMVectorAdd(tagsum2, tag3);
+
+		XMVECTOR normalized = XMVector3Normalize(tagsum3);
+
+
+		XMFLOAT3 result;
+
+		XMStoreFloat3(&result, normalized);
+
+		return result;
+	}
+
+	XMFLOAT3 SplineComponent::GetNormal(wi::vector<XMFLOAT3> path, float t, XMVECTOR up)
+	{
+
+
+		XMFLOAT3 tng = GetTangent(path, t);
+		XMVECTOR binormal = XMVector3Cross(up, XMLoadFloat3(&tng));
+
+		binormal = XMVector3Normalize(binormal);
+
+		XMVECTOR result = XMVector3Cross(XMLoadFloat3(&tng), binormal);
+		
+		XMFLOAT3 normal;
+
+		XMStoreFloat3(&normal, result);
+
+		return normal;
+	}
+
+	XMVECTOR SplineComponent::GetOrintation(wi::vector<XMFLOAT3> path, float t)
+	{
+
+		XMFLOAT3 tng = GetTangent(path, t);
+
+		XMFLOAT3 up = { 0, 1, 0 };
+
+		//XMFLOAT3 nrm = GetNormal(path, t, XMLoadFloat3(&up));
+
+		XMVECTOR binormal = XMVector3Cross(XMLoadFloat3(&up), XMLoadFloat3(&tng));
+
+		binormal = XMVector3Normalize(binormal);
+
+		XMVECTOR straightCross = XMVector3Cross(XMLoadFloat3(&tng), XMLoadFloat3(&up));
+
+		XMVECTOR straightCross2 = XMVector3Cross(straightCross, XMLoadFloat3(&tng));
+
+		XMFLOAT3 point =  GetSplinePointCat(path, t);
+
+		XMMATRIX matrix(XMLoadFloat3(&tng), binormal, straightCross, XMLoadFloat3(&point));
+
+		//float3 straightCross = (math.cross(up, direction));
+		//quaternion nonNormalizedQuat = math.quaternion(math.float3x3(straightCross, math.cross(direction, straightCross), direction));
+
+
+		//XMMATRIX _V = XMMatrixLookToLH(XMLoadFloat3(&tng), yDir, zDir);
+
+		XMVECTOR quat = XMQuaternionRotationMatrix(matrix);
+
+
+		return quat;
+	}
+
+	XMFLOAT3 SplineComponent::GetSplinePointLinear(wi::vector<XMFLOAT3> path, float t)
+	{
+
+		int p1, p2;//, p3, p4;
+		p2 = (int)t + 1;
+		//p3 = p2 + 1;
+		//p4 = p3 + 1;
+		p1 = p2 - 1;
+
+		if (path.size() > 2)
+		{
+			t = t - (int)t;
+		}
+		
+
+		XMVECTOR spline_p = XMVectorLerp(XMLoadFloat3(&path[p1]), XMLoadFloat3(&path[p2]),t);
+
+		XMFLOAT3 sp;
+		XMStoreFloat3(&sp, spline_p);
+		//dest = XMFLOAT3(tx, ty, tz);
+		return sp;//{ tx,ty,tz };
+
 	}
 
 	void ResponseComponent::CreateFromFile(const std::string& filename)

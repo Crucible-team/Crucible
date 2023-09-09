@@ -70,6 +70,8 @@ namespace wi::scene
 
 		wi::ecs::ComponentManager<HealthComponent>& healths = componentLibrary.Register<HealthComponent>("wi::scene::Scene::healths");
 		wi::ecs::ComponentManager<ArmorComponent>& armors = componentLibrary.Register<ArmorComponent>("wi::scene::Scene::armors");
+		wi::ecs::ComponentManager<SplineComponent>& splines = componentLibrary.Register<SplineComponent>("wi::scene::Scene::splines");
+		wi::ecs::ComponentManager<ShapeComponent>& shapes = componentLibrary.Register<ShapeComponent>("wi::scene::Scene::shapes");
 
 		// Non-serialized attributes:
 		float dt = 0;
@@ -396,6 +398,40 @@ namespace wi::scene
 		wi::ecs::Entity Entity_CreatePlane(
 			const std::string& name
 		);
+		wi::ecs::Entity Entity_CreateCylinder(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateCircle(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreatePipe(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateSphere(
+			const std::string& name
+		);
+
+		wi::ecs::Entity Entity_CreateRussainElpisoid(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateTorus(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateTetrahedron(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateOctahedron(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateDodecahedron(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateIcosahedron(
+			const std::string& name
+		);
+		wi::ecs::Entity Entity_CreateCone(
+			const std::string& name
+		);
 
 		// Attaches an entity to a parent:
 		//	child_already_in_local_space	:	child won't be transformed from world space to local space
@@ -475,9 +511,11 @@ namespace wi::scene
 		//	src			:	the animation to copy, it should already target humanoid bones
 		//	bake_data	:	if true, the retargeted data will be baked into a new animation data.
 		//					if false, it will reuse the source animation data without creating a new one and retargeting will be applied at runtime on every Update
+		//	src_scene	:	(optional) specify if you want to retarget from an other scene. This scene must be kept alive while you use the resulting animation!
+		//					If you use a separate scene, then you mustn't serialize the scene while there are animations referencing the src_scene!
 		//
 		//	returns entity ID of the new animation or INVALID_ENTITY if retargeting was not successful
-		wi::ecs::Entity RetargetAnimation(wi::ecs::Entity dst, wi::ecs::Entity src, bool bake_data);
+		wi::ecs::Entity RetargetAnimation(wi::ecs::Entity dst, wi::ecs::Entity src, bool bake_data, const Scene* src_scene = nullptr);
 	};
 
 	// Returns skinned vertex position in armature local space

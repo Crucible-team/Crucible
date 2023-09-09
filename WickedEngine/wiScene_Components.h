@@ -495,6 +495,7 @@ namespace wi::scene
 		BufferView vb_atl;
 		BufferView vb_col;
 		BufferView vb_bon;
+		BufferView vb_mor;
 		BufferView so_pos_nor_wind;
 		BufferView so_tan;
 		BufferView so_pre;
@@ -582,9 +583,12 @@ namespace wi::scene
 		struct Vertex_POS
 		{
 			XMFLOAT3 pos = XMFLOAT3(0.0f, 0.0f, 0.0f);
-			uint32_t normal_wind = 0;
+			uint8_t n_x = 0;
+			uint8_t n_y = 0;
+			uint8_t n_z = 0;
+			uint8_t w = 0;
 
-			void FromFULL(const XMFLOAT3& _pos, const XMFLOAT3& _nor, uint8_t wind)
+			constexpr void FromFULL(const XMFLOAT3& _pos, const XMFLOAT3& _nor, uint8_t wind)
 			{
 				pos.x = _pos.x;
 				pos.y = _pos.y;
@@ -600,39 +604,33 @@ namespace wi::scene
 				XMFLOAT3 N = GetNor_FULL();
 				return XMLoadFloat3(&N);
 			}
-			inline void MakeFromParams(const XMFLOAT3& normal)
+			constexpr void MakeFromParams(const XMFLOAT3& normal)
 			{
-				normal_wind = normal_wind & 0xFF000000; // reset only the normals
-
-				normal_wind |= (uint32_t)((normal.x * 0.5f + 0.5f) * 255.0f) << 0;
-				normal_wind |= (uint32_t)((normal.y * 0.5f + 0.5f) * 255.0f) << 8;
-				normal_wind |= (uint32_t)((normal.z * 0.5f + 0.5f) * 255.0f) << 16;
+				n_x = uint8_t((normal.x * 0.5f + 0.5f) * 255.0f);
+				n_y = uint8_t((normal.y * 0.5f + 0.5f) * 255.0f);
+				n_z = uint8_t((normal.z * 0.5f + 0.5f) * 255.0f);
 			}
-			inline void MakeFromParams(const XMFLOAT3& normal, uint8_t wind)
+			constexpr void MakeFromParams(const XMFLOAT3& normal, uint8_t wind)
 			{
-				normal_wind = 0;
-
-				normal_wind |= (uint32_t)((normal.x * 0.5f + 0.5f) * 255.0f) << 0;
-				normal_wind |= (uint32_t)((normal.y * 0.5f + 0.5f) * 255.0f) << 8;
-				normal_wind |= (uint32_t)((normal.z * 0.5f + 0.5f) * 255.0f) << 16;
-				normal_wind |= (uint32_t)wind << 24;
+				n_x = uint8_t((normal.x * 0.5f + 0.5f) * 255.0f);
+				n_y = uint8_t((normal.y * 0.5f + 0.5f) * 255.0f);
+				n_z = uint8_t((normal.z * 0.5f + 0.5f) * 255.0f);
+				w = wind;
 			}
-			inline XMFLOAT3 GetNor_FULL() const
+			constexpr XMFLOAT3 GetNor_FULL() const
 			{
 				XMFLOAT3 nor_FULL(0, 0, 0);
-
-				nor_FULL.x = (float)((normal_wind >> 0) & 0x000000FF) / 255.0f * 2.0f - 1.0f;
-				nor_FULL.y = (float)((normal_wind >> 8) & 0x000000FF) / 255.0f * 2.0f - 1.0f;
-				nor_FULL.z = (float)((normal_wind >> 16) & 0x000000FF) / 255.0f * 2.0f - 1.0f;
-
+				nor_FULL.x = (float(n_x) / 255.0f) * 2.0f - 1.0f;
+				nor_FULL.y = (float(n_y) / 255.0f) * 2.0f - 1.0f;
+				nor_FULL.z = (float(n_z) / 255.0f) * 2.0f - 1.0f;
 				return nor_FULL;
 			}
-			inline uint8_t GetWind() const
+			constexpr uint8_t GetWind() const
 			{
-				return (normal_wind >> 24) & 0x000000FF;
+				return w;
 			}
 
-			static const wi::graphics::Format FORMAT = wi::graphics::Format::R32G32B32A32_FLOAT;
+			static constexpr wi::graphics::Format FORMAT = wi::graphics::Format::R32G32B32A32_FLOAT;
 		};
 		struct Vertex_TEX
 		{
@@ -643,64 +641,63 @@ namespace wi::scene
 				tex = XMHALF2(texcoords.x, texcoords.y);
 			}
 
-			static const wi::graphics::Format FORMAT = wi::graphics::Format::R16G16_FLOAT;
+			static constexpr wi::graphics::Format FORMAT = wi::graphics::Format::R16G16_FLOAT;
 		};
 		struct Vertex_UVS
 		{
 			Vertex_TEX uv0;
 			Vertex_TEX uv1;
+			static constexpr wi::graphics::Format FORMAT = wi::graphics::Format::R16G16B16A16_FLOAT;
 		};
 		struct Vertex_BON
 		{
-			uint64_t ind = 0;
-			uint64_t wei = 0;
+			uint16_t ind0 = 0;
+			uint16_t ind1 = 0;
+			uint16_t ind2 = 0;
+			uint16_t ind3 = 0;
 
-			void FromFULL(const XMUINT4& boneIndices, const XMFLOAT4& boneWeights)
+			uint16_t wei0 = 0;
+			uint16_t wei1 = 1;
+			uint16_t wei2 = 2;
+			uint16_t wei3 = 3;
+
+			constexpr void FromFULL(const XMUINT4& boneIndices, const XMFLOAT4& boneWeights)
 			{
-				ind = 0;
-				wei = 0;
+				ind0 = uint16_t(boneIndices.x);
+				ind1 = uint16_t(boneIndices.y);
+				ind2 = uint16_t(boneIndices.z);
+				ind3 = uint16_t(boneIndices.w);
 
-				ind |= (uint64_t)boneIndices.x << 0;
-				ind |= (uint64_t)boneIndices.y << 16;
-				ind |= (uint64_t)boneIndices.z << 32;
-				ind |= (uint64_t)boneIndices.w << 48;
-
-				wei |= (uint64_t)(boneWeights.x * 65535.0f) << 0;
-				wei |= (uint64_t)(boneWeights.y * 65535.0f) << 16;
-				wei |= (uint64_t)(boneWeights.z * 65535.0f) << 32;
-				wei |= (uint64_t)(boneWeights.w * 65535.0f) << 48;
+				wei0 = uint16_t(boneWeights.x * 65535.0f);
+				wei1 = uint16_t(boneWeights.y * 65535.0f);
+				wei2 = uint16_t(boneWeights.z * 65535.0f);
+				wei3 = uint16_t(boneWeights.w * 65535.0f);
 			}
-			inline XMUINT4 GetInd_FULL() const
+			constexpr XMUINT4 GetInd_FULL() const
 			{
-				XMUINT4 ind_FULL(0, 0, 0, 0);
-
-				ind_FULL.x = ((ind >> 0) & 0x0000FFFF);
-				ind_FULL.y = ((ind >> 16) & 0x0000FFFF);
-				ind_FULL.z = ((ind >> 32) & 0x0000FFFF);
-				ind_FULL.w = ((ind >> 48) & 0x0000FFFF);
-
-				return ind_FULL;
+				return XMUINT4(ind0, ind1, ind2, ind3);
 			}
-			inline XMFLOAT4 GetWei_FULL() const
+			constexpr XMFLOAT4 GetWei_FULL() const
 			{
-				XMFLOAT4 wei_FULL(0, 0, 0, 0);
-
-				wei_FULL.x = (float)((wei >> 0) & 0x0000FFFF) / 65535.0f;
-				wei_FULL.y = (float)((wei >> 16) & 0x0000FFFF) / 65535.0f;
-				wei_FULL.z = (float)((wei >> 32) & 0x0000FFFF) / 65535.0f;
-				wei_FULL.w = (float)((wei >> 48) & 0x0000FFFF) / 65535.0f;
-
-				return wei_FULL;
+				return XMFLOAT4(
+					float(wei0) / 65535.0f,
+					float(wei1) / 65535.0f,
+					float(wei2) / 65535.0f,
+					float(wei3) / 65535.0f
+				);
 			}
 		};
 		struct Vertex_COL
 		{
 			uint32_t color = 0;
-			static const wi::graphics::Format FORMAT = wi::graphics::Format::R8G8B8A8_UNORM;
+			static constexpr wi::graphics::Format FORMAT = wi::graphics::Format::R8G8B8A8_UNORM;
 		};
 		struct Vertex_TAN
 		{
-			uint32_t tangent = 0;
+			int8_t x = 0;
+			int8_t y = 0;
+			int8_t z = 0;
+			int8_t w = 0;
 
 			void FromFULL(const XMFLOAT4& tan)
 			{
@@ -709,14 +706,14 @@ namespace wi::scene
 				XMFLOAT4 t;
 				XMStoreFloat4(&t, T);
 				t.w = tan.w;
-				tangent = 0;
-				tangent |= (uint)((t.x * 0.5f + 0.5f) * 255.0f) << 0;
-				tangent |= (uint)((t.y * 0.5f + 0.5f) * 255.0f) << 8;
-				tangent |= (uint)((t.z * 0.5f + 0.5f) * 255.0f) << 16;
-				tangent |= (uint)((t.w * 0.5f + 0.5f) * 255.0f) << 24;
+
+				x = int8_t(t.x * 127.5f);
+				y = int8_t(t.y * 127.5f);
+				z = int8_t(t.z * 127.5f);
+				w = int8_t(t.w * 127.5f);
 			}
 
-			static const wi::graphics::Format FORMAT = wi::graphics::Format::R8G8B8A8_UNORM;
+			static constexpr wi::graphics::Format FORMAT = wi::graphics::Format::R8G8B8A8_SNORM;
 		};
 
 	};
@@ -1319,6 +1316,9 @@ namespace wi::scene
 
 			// The data is now not part of the sampler, so it can be shared. This is kept only for backwards compatibility with previous versions.
 			AnimationDataComponent backwards_compatibility_data;
+
+			// Non-serialized attributes:
+			const void* scene = nullptr; // if animation data is in a different scene (if retargetting from a separate scene)
 		};
 		struct RetargetSourceData
 		{
@@ -1586,7 +1586,7 @@ namespace wi::scene
 		std::string filename;
 
 		// Non-serialized attributes:
-		std::string script;
+		wi::vector<uint8_t> script; // compiled script binary data
 		wi::Resource resource;
 
 		inline void Play() { _flags |= PLAYING; }
@@ -2368,6 +2368,45 @@ namespace wi::scene
 		void AddMaxArmor(int ar) { MaxArmor += ar; };
 		void SubMaxArmor(int ar) { MaxArmor -= ar; };
 		int MaxArmor = 1000;
+		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
+
+
+	struct SplineComponent
+	{
+		std::map<std::string,XMFLOAT3> path;
+
+		wi::ecs::Entity prevtarget = wi::ecs::INVALID_ENTITY; // previous entity in the spline.
+		wi::ecs::Entity nexttarget = wi::ecs::INVALID_ENTITY; // next entity in the spline.
+
+		
+
+		float T;
+		//void CreateFromFile(const std::string& filename);
+
+		XMFLOAT3 GetSplinePointCat(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetTangent(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetNormal(wi::vector<XMFLOAT3> path, float t, XMVECTOR up);
+		XMVECTOR GetOrintation(wi::vector<XMFLOAT3> path, float t);
+		XMFLOAT3 GetSplinePointLinear(wi::vector<XMFLOAT3> path, float t);
+
+		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
+	};
+
+	struct ShapeComponent
+	{
+		struct vtex
+		{
+			vtex(const XMFLOAT2& P, const XMFLOAT2& N, const float& U) :
+				point(P), normal(N), u(U) {}
+			XMFLOAT2 point;
+			XMFLOAT2 normal;
+			float u;
+		};
+
+		std::vector <vtex> mesh2dvtex;
+		std::vector<int> lineIndices;
+
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 	};
 }

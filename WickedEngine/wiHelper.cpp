@@ -7,6 +7,7 @@
 #include "Utility/stb_image_write.h"
 #include "Utility/basis_universal/encoder/basisu_comp.h"
 #include "Utility/basis_universal/encoder/basisu_gpu_texture.h"
+#include "Utility/basis_universal/encoder/lodepng.h"
 extern basist::etc1_global_selector_codebook g_basis_global_codebook;
 
 #include <thread>
@@ -18,8 +19,10 @@ extern basist::etc1_global_selector_codebook g_basis_global_codebook;
 #include <codecvt> // string conversion
 #include <filesystem>
 #include <vector>
+#include <iostream>
+#include <cstdlib>
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #include <direct.h>
 #include <Psapi.h> // GetProcessMemoryInfo
 #ifdef PLATFORM_UWP
@@ -35,10 +38,10 @@ extern basist::etc1_global_selector_codebook g_basis_global_codebook;
 #include <Commdlg.h> // openfile
 #include <WinBase.h>
 #endif // PLATFORM_UWP
+#elif defined(PLATFORM_PS5)
 #else
 #include "Utility/portable-file-dialogs.h"
 #endif // _WIN32
-
 
 namespace wi::helper
 {
@@ -66,24 +69,26 @@ namespace wi::helper
 
 	void messageBox(const std::string& msg, const std::string& caption)
 	{
-#ifdef _WIN32
-#ifndef PLATFORM_UWP
+#ifdef PLATFORM_WINDOWS_DESKTOP
 		MessageBoxA(GetActiveWindow(), msg.c_str(), caption.c_str(), 0);
-#else
+#endif // PLATFORM_WINDOWS_DESKTOP
+
+#ifdef PLATFORM_UWP
 		std::wstring wmessage, wcaption;
 		StringConvert(msg, wmessage);
 		StringConvert(caption, wcaption);
 		// UWP can only show message box on main thread:
 		wi::eventhandler::Subscribe_Once(wi::eventhandler::EVENT_THREAD_SAFE_POINT, [=](uint64_t userdata) {
 			winrt::Windows::UI::Popups::MessageDialog(wmessage, wcaption).ShowAsync();
-		});
+			});
 #endif // PLATFORM_UWP
-#elif SDL2
+
+#ifdef SDL2
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, caption.c_str(), msg.c_str(), NULL);
-#endif // _WIN32
+#endif // SDL2
 	}
 
-	void screenshot(const wi::graphics::SwapChain& swapchain, const std::string& name)
+	std::string screenshot(const wi::graphics::SwapChain& swapchain, const std::string& name)
 	{
 		std::string directory;
 		if (name.empty())
@@ -95,13 +100,13 @@ namespace wi::helper
 			directory = GetDirectoryFromPath(name);
 		}
 
-		if(!directory.empty()) //PE: Crash if only filename is used with no folder.
+		if (!directory.empty()) //PE: Crash if only filename is used with no folder.
 			DirectoryCreate(directory);
 
 		std::string filename = name;
 		if (filename.empty())
 		{
-			filename = directory + "/sc_" + getCurrentDateTimeAsString() + ".jpg";
+			filename = directory + "/sc_" + getCurrentDateTimeAsString() + ".png";
 		}
 
 		bool result = saveTextureToFile(wi::graphics::GetDevice()->GetBackBuffer(&swapchain), filename);
@@ -109,8 +114,9 @@ namespace wi::helper
 
 		if (result)
 		{
-			wi::backlog::post("Screenshot saved: " + filename);
+			return filename;
 		}
+		return "";
 	}
 
 	bool saveTextureToMemory(const wi::graphics::Texture& texture, wi::vector<uint8_t>& texturedata)
@@ -182,7 +188,7 @@ namespace wi::helper
 							std::memcpy(
 								dst_slice + i * dst_rowpitch,
 								src_slice + i * subresourcedata.row_pitch,
-								subresourcedata.row_pitch
+								dst_rowpitch
 							);
 						}
 						cpy_offset += mip_height * dst_rowpitch;
@@ -219,6 +225,49 @@ namespace wi::helper
 		using namespace wi::graphics;
 		const uint32_t data_stride = GetFormatStride(desc.format);
 
+		std::string extension = wi::helper::toUpper(fileExtension);
+		const bool is_png = extension.compare("PNG") == 0;
+
+		if (is_png)
+		{
+			if (desc.format == Format::R16_UNORM || desc.format == Format::R16_UINT)
+			{
+				// Specialized handling for 16-bit single channel PNG:
+				wi::vector<uint8_t> src_bigendian = texturedata;
+				uint16_t* dest = (uint16_t*)src_bigendian.data();
+				for (uint32_t i = 0; i < desc.width * desc.height; ++i)
+				{
+					uint16_t r = dest[i];
+					r = (r >> 8) | ((r & 0xFF) << 8); // little endian to big endian
+					dest[i] = r;
+				}
+				unsigned error = lodepng::encode(filedata, src_bigendian, desc.width, desc.height, LCT_GREY, 16);
+				return error == 0;
+			}
+			if (desc.format == Format::R16G16B16A16_UNORM || desc.format == Format::R16G16B16A16_UINT)
+			{
+				// Specialized handling for 16-bit PNG:
+				wi::vector<uint8_t> src_bigendian = texturedata;
+				wi::Color16* dest = (wi::Color16*)src_bigendian.data();
+				for (uint32_t i = 0; i < desc.width * desc.height; ++i)
+				{
+					wi::Color16 rgba = dest[i];
+					uint16_t r = rgba.getR();
+					r = (r >> 8) | ((r & 0xFF) << 8); // little endian to big endian
+					uint16_t g = rgba.getG();
+					g = (g >> 8) | ((g & 0xFF) << 8); // little endian to big endian
+					uint16_t b = rgba.getB();
+					b = (b >> 8) | ((b & 0xFF) << 8); // little endian to big endian
+					uint16_t a = rgba.getA();
+					a = (a >> 8) | ((a & 0xFF) << 8); // little endian to big endian
+					rgba = wi::Color16(r, g, b, a);
+					dest[i] = rgba;
+				}
+				unsigned error = lodepng::encode(filedata, src_bigendian, desc.width, desc.height, LCT_RGBA, 16);
+				return error == 0;
+			}
+		}
+
 		struct MipDesc
 		{
 			const uint8_t* address = nullptr;
@@ -246,7 +295,6 @@ namespace wi::helper
 			mip_depth = std::max(1u, mip_depth / 2);
 		}
 
-		std::string extension = wi::helper::toUpper(fileExtension);
 		bool basis = !extension.compare("BASIS");
 		bool ktx2 = !extension.compare("KTX2");
 		basisu::image basis_image;
@@ -319,6 +367,18 @@ namespace wi::helper
 				rgba8 |= (uint32_t)(a * 255.0f) << 24;
 
 				data32[i] = rgba8;
+			}
+		}
+		else if (desc.format == Format::R16G16B16A16_UNORM || desc.format == Format::R16G16B16A16_UINT)
+		{
+			// This will be converted first to rgba8 before saving to common format:
+			wi::Color16* dataSrc = (wi::Color16*)texturedata.data();
+			wi::Color* data32 = (wi::Color*)texturedata.data();
+
+			for (uint32_t i = 0; i < data_count; ++i)
+			{
+				wi::Color16 pixel16 = dataSrc[i];
+				data32[i] = wi::Color::fromFloat4(pixel16.toFloat4());
 			}
 		}
 		else if (desc.format == Format::R11G11B10_FLOAT)
@@ -522,22 +582,19 @@ namespace wi::helper
 			}
 		};
 
-		const void* src_data = texturedata.data();
-		if (basis_image.get_width() > 0 && basis_image.get_ptr() != nullptr)
-		{
-			src_data = basis_image.get_ptr();
-		}
-
 		static int mip_request = 0; // you can use this while debugging to write specific mip level to file (todo: option param?)
 		const MipDesc& mip = mips[mip_request];
 
-		if (!extension.compare("JPG") || !extension.compare("JPEG"))
+		if (is_png)
+		{
+			// lodepng encoder is better compressing than stb_image_write:
+			unsigned error = lodepng::encode(filedata, texturedata, desc.width, desc.height);
+			return error == 0;
+			//write_result = stbi_write_png_to_func(func, &filedata, (int)mip.width, (int)mip.height, dst_channel_count, mip.address, 0);
+		}
+		else if (!extension.compare("JPG") || !extension.compare("JPEG"))
 		{
 			write_result = stbi_write_jpg_to_func(func, &filedata, (int)mip.width, (int)mip.height, dst_channel_count, mip.address, 100);
-		}
-		else if (!extension.compare("PNG"))
-		{
-			write_result = stbi_write_png_to_func(func, &filedata, (int)mip.width, (int)mip.height, dst_channel_count, mip.address, 0);
 		}
 		else if (!extension.compare("TGA"))
 		{
@@ -678,6 +735,18 @@ namespace wi::helper
 		return filename.substr(0, idx);
 	}
 
+#ifdef _WIN32
+	// On windows we need to expand UTF8 strings to UTF16 when passing it to WinAPI:
+	std::wstring ToNativeString(const std::string& fileName)
+	{
+		std::wstring fileName_wide;
+		StringConvert(fileName, fileName_wide);
+		return fileName_wide;
+	}
+#else
+#define ToNativeString(x) (x)
+#endif // _WIN32
+
 	void MakePathRelative(const std::string& rootdir, std::string& path)
 	{
 		if (rootdir.empty() || path.empty())
@@ -695,14 +764,14 @@ namespace wi::helper
 
 #else
 
-		std::filesystem::path filepath = path;
+		std::filesystem::path filepath = ToNativeString(path);
 		if (filepath.is_absolute())
 		{
-			std::filesystem::path rootpath = rootdir;
-			std::filesystem::path relative = std::filesystem::relative(path, rootdir);
+			std::filesystem::path rootpath = ToNativeString(rootdir);
+			std::filesystem::path relative = std::filesystem::relative(filepath, rootpath);
 			if (!relative.empty())
 			{
-				path = relative.string();
+				path = relative.generic_u8string();
 			}
 		}
 
@@ -712,38 +781,29 @@ namespace wi::helper
 
 	void MakePathAbsolute(std::string& path)
 	{
-		std::filesystem::path filepath = path;
-		std::filesystem::path absolute = std::filesystem::absolute(path);
+		std::filesystem::path absolute = std::filesystem::absolute(ToNativeString(path));
 		if (!absolute.empty())
 		{
-			path = absolute.string();
+			path = absolute.generic_u8string();
 		}
 	}
 
 	void DirectoryCreate(const std::string& path)
 	{
-		std::filesystem::create_directories(path);
+		std::filesystem::create_directories(ToNativeString(path));
 	}
 
 	template<template<typename T, typename A> typename vector_interface>
 	bool FileRead_Impl(const std::string& fileName, vector_interface<uint8_t, std::allocator<uint8_t>>& data)
 	{
 #ifndef PLATFORM_UWP
-#ifdef SDL_FILESYSTEM_UNIX
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_PS5)
 		std::string filepath = fileName;
-		std::replace(filepath.begin(), filepath.end(), '\\', '/');
+		std::replace(filepath.begin(), filepath.end(), '\\', '/'); // Linux cannot handle backslash in file path, need to convert it to forward slash
 		std::ifstream file(filepath, std::ios::binary | std::ios::ate);
 #else
-
-#ifdef _WIN32
-		std::wstring fileName_wide;
-		StringConvert(fileName, fileName_wide);
-		std::ifstream file(fileName_wide, std::ios::binary | std::ios::ate);
-#else
-		std::ifstream file(fileName, std::ios::binary | std::ios::ate);
-#endif //_WIN32
-
-#endif // SDL_FILESYSTEM_UNIX
+		std::ifstream file(ToNativeString(fileName), std::ios::binary | std::ios::ate);
+#endif // PLATFORM_LINUX || PLATFORM_PS5
 		if (file.is_open())
 		{
 			size_t dataSize = (size_t)file.tellg();
@@ -829,7 +889,7 @@ namespace wi::helper
 		}
 
 #ifndef PLATFORM_UWP
-		std::ofstream file(fileName, std::ios::binary | std::ios::trunc);
+		std::ofstream file(ToNativeString(fileName), std::ios::binary | std::ios::trunc);
 		if (file.is_open())
 		{
 			file.write((const char*)data, (std::streamsize)size);
@@ -897,7 +957,7 @@ namespace wi::helper
 	bool FileExists(const std::string& fileName)
 	{
 #ifndef PLATFORM_UWP
-		bool exists = std::filesystem::exists(fileName);
+		bool exists = std::filesystem::exists(ToNativeString(fileName));
 		return exists;
 #else
 		using namespace winrt::Windows::Storage;
@@ -942,23 +1002,55 @@ namespace wi::helper
 #endif // PLATFORM_UWP
 	}
 
+	uint64_t FileTimestamp(const std::string& fileName)
+	{
+		auto tim = std::filesystem::last_write_time(ToNativeString(fileName));
+		return std::chrono::duration_cast<std::chrono::duration<uint64_t>>(tim.time_since_epoch()).count();
+	}
+
 	std::string GetTempDirectoryPath()
 	{
+#if defined(PLATFORM_XBOX) || defined(PLATFORM_PS5)
+		return "";
+#else
 		auto path = std::filesystem::temp_directory_path();
-		return path.string();
+		return path.generic_u8string();
+#endif // PLATFORM_XBOX || PLATFORM_PS5
+	}
+
+	std::string GetCacheDirectoryPath()
+	{
+		#ifdef PLATFORM_LINUX
+			const char* xdg_cache = std::getenv("XDG_CACHE_HOME");
+			if (xdg_cache == nullptr || *xdg_cache == '\0') {
+				const char* home = std::getenv("HOME");
+				if (home != nullptr) {
+					return std::string(home) + "/.cache";
+				} else {
+					// shouldn't happen, just to be safe
+					return GetTempDirectoryPath();
+				}
+			} else {
+				return xdg_cache;
+			}
+		#else
+			return GetTempDirectoryPath();
+		#endif
 	}
 
 	std::string GetCurrentPath()
 	{
+#ifdef PLATFORM_PS5
+		return "/app0";
+#else
 		auto path = std::filesystem::current_path();
-		return path.string();
+		return path.generic_u8string();
+#endif // PLATFORM_PS5
 	}
 
 	void FileDialog(const FileDialogParams& params, std::function<void(std::string fileName)> onSuccess)
 	{
-#ifdef _WIN32
-#ifndef PLATFORM_UWP
-
+#ifdef PLATFORM_WINDOWS_DESKTOP
 		std::thread([=] {
 
 			wchar_t szFile[256];
@@ -1030,8 +1122,9 @@ namespace wi::helper
 			}
 
 			}).detach();
+#endif // PLATFORM_WINDOWS_DESKTOP
 
-#else
+#ifdef PLATFORM_UWP
 		auto filedialoghelper = [](FileDialogParams params, std::function<void(std::string fileName)> onSuccess) -> winrt::fire_and_forget {
 
 			using namespace winrt::Windows::Storage;
@@ -1106,7 +1199,7 @@ namespace wi::helper
 
 #endif // PLATFORM_UWP
 
-#else
+#ifdef PLATFORM_LINUX
 		if (!pfd::settings::available()) {
 			const char *message = "No dialog backend available";
 #ifdef SDL2
@@ -1157,15 +1250,16 @@ namespace wi::helper
 				break;
 			}
 		}
-#endif // _WIN32
+#endif // PLATFORM_LINUX
 	}
 
 	void GetFileNamesInDirectory(const std::string& directory, std::function<void(std::string fileName)> onSuccess, const std::string& filter_extension)
 	{
-		if (!std::filesystem::exists(directory))
+		std::filesystem::path directory_path = ToNativeString(directory);
+		if (!std::filesystem::exists(directory_path))
 			return;
 
-		for (const auto& entry : std::filesystem::directory_iterator(directory))
+		for (const auto& entry : std::filesystem::directory_iterator(directory_path))
 		{
 			std::string filename = entry.path().filename().generic_u8string();
 			if (filter_extension.empty() || wi::helper::toUpper(wi::helper::GetExtensionFromFileName(filename)).compare(filter_extension) == 0)
@@ -1252,6 +1346,28 @@ namespace wi::helper
 		std::wstring_convert<std::codecvt_utf8<wchar_t>> cv;
 		std::memcpy(to, cv.to_bytes(from).c_str(), cv.converted());
 		return (int)cv.converted();
+#endif // _WIN32
+	}
+	
+	void DebugOut(const std::string& str, DebugLevel level)
+	{
+#ifdef _WIN32
+		std::wstring wstr = ToNativeString(str);
+		OutputDebugString(wstr.c_str());
+#else
+		switch (level)
+		{
+		default:
+		case DebugLevel::Normal:
+			std::cout << str;
+			break;
+		case DebugLevel::Warning:
+			std::clog << str;
+			break;
+		case DebugLevel::Error:
+			std::cerr << str;
+			break;
+	}
 #endif // _WIN32
 	}
 	

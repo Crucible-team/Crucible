@@ -44,8 +44,8 @@ CBUFFER(EmittedParticleCB, CBSLOT_OTHER_EMITTEDPARTICLE)
 
 	uint		xEmitCount;
 	uint		xEmitterMeshIndexCount;
-	uint		xEmitterMeshVertexPositionStride;
 	float		xEmitterRandomness;
+	float		xParticleRandomColorFactor;
 
 	float		xParticleSize;
 	float		xParticleScaling;
@@ -90,19 +90,14 @@ CBUFFER(EmittedParticleCB, CBSLOT_OTHER_EMITTEDPARTICLE)
 
 	float3		xParticleVelocity;
 	float		xParticleDrag;
-
-	float		xParticleRandomColorFactor;
-	int padding0;
-	int padding1;
-	int padding2;
 };
 
 static const uint THREADCOUNT_EMIT = 256;
 static const uint THREADCOUNT_MESH_SHADER = 32;
 
 static const uint ARGUMENTBUFFER_OFFSET_DISPATCHEMIT = 0;
-static const uint ARGUMENTBUFFER_OFFSET_DISPATCHSIMULATION = ARGUMENTBUFFER_OFFSET_DISPATCHEMIT + (3 * 4);
-static const uint ARGUMENTBUFFER_OFFSET_DRAWPARTICLES = ARGUMENTBUFFER_OFFSET_DISPATCHSIMULATION + (3 * 4);
+static const uint ARGUMENTBUFFER_OFFSET_DISPATCHSIMULATION = wi::graphics::AlignTo(ARGUMENTBUFFER_OFFSET_DISPATCHEMIT + (3 * 4), IndirectDispatchArgsAlignment);
+static const uint ARGUMENTBUFFER_OFFSET_DRAWPARTICLES = wi::graphics::AlignTo(ARGUMENTBUFFER_OFFSET_DISPATCHSIMULATION + (3 * 4), IndirectDrawArgsAlignment);
 
 
 // If this is not defined, SPH will be resolved as N-body simulation (O(n^2) complexity)

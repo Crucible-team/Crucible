@@ -1,6 +1,9 @@
+set(MIN_OpenImageDenoise_VERSION "2.0")
+
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+include(../cmake/CheckGit.cmake)
 set(INSTALL_LOCAL_CONFIGDIR "${CMAKE_BINARY_DIR}/cmake")
 set(INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/WickedEngine")
 
@@ -12,18 +15,24 @@ else()
 	message(STATUS "Building WickedEngine as a static library")
 endif()
 
+if(CRUCIBLE_NIGHTLY_VERSIONING)
+message(STATUS "Nightly versioning scheme enabled")
+CheckGitSetup()
+add_compile_definitions(CRUCIBLE_NIGHTLY=1)
+endif()
+
 if (WIN32)
 	# TODO: Choose whether to use SDL2 on windows as well
 	set(TARGET_NAME WickedEngine_Windows)
 else ()
 	set(TARGET_NAME WickedEngine_Linux)
 	find_package(SDL2 REQUIRED)
-	find_package(OpenImageDenoise QUIET)
+	find_package(OpenImageDenoise "${MIN_OpenImageDenoise_VERSION}" QUIET)
 	find_package(Threads REQUIRED)
 	if(NOT ${OpenImageDenoise_FOUND})
-		message("OpenImageDenoise not found, it will be disabled.")
+		message("OpenImageDenoise>=${MIN_OpenImageDenoise_VERSION} not found, it will be disabled.")
 	else()
-		message("OpenImageDenoise Found.")
+		message("OpenImageDenoise ${OpenImageDenoise_VERSION} Found.")
 	endif()
 
 	if(NOT TARGET SDL2::SDL2)
@@ -240,6 +249,10 @@ set(WICKEDENGINE_STATIC_LIBRARIES
 	Utility
 )
 
+if(CRUCIBLE_NIGHTLY_VERSIONING)
+set(WICKEDENGINE_STATIC_LIBRARIES ${WICKEDENGINE_STATIC_LIBRARIES} cmake_genvars)
+endif()
+
 if (WIN32)
 	target_compile_definitions(${TARGET_NAME} PUBLIC
 		UNICODE _UNICODE
@@ -296,7 +309,6 @@ add_custom_command(
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/WickedEngine/${LIBDXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
 		COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/WickedEngine/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
 )
-
 
 # OFFLINE SHADER COMPILER
 add_executable(offlineshadercompiler

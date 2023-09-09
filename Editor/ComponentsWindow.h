@@ -31,6 +31,7 @@
 #include "TerrainWindow.h"
 #include "HealthWindow.h"
 #include "ArmorWindow.h"
+#include "SplineWindow.h"
 
 class EditorComponent;
 
@@ -76,4 +77,5 @@ public:
 	ResponseWindow responseWnd;
 	HealthWindow healthWnd;
 	ArmorWindow armorWnd;
+	SplineWindow splineWnd;
 };

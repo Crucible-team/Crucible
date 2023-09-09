@@ -1,6 +1,11 @@
 // Modified version of: https://github.com/knarkowicz/GPURealTimeBC6H/blob/master/bin/compress.hlsl
 #include "globals.hlsli"
 
+#ifdef __PSSL__
+// TODO: register spilling issue
+#pragma warning (disable:7203)
+#endif // __PSSL__
+
 // Whether to use P2 modes (4 endpoints) for compression. Slow, but improves quality.
 #ifdef COMPRESS_CUBEMAP
 #define ENCODE_P2 0
@@ -155,8 +160,8 @@ void InsetColorBBoxP1(float3 texels[16], inout float3 blockMin, inout float3 blo
 
 	for (uint i = 0; i < 16; ++i)
 	{
-		refinedBlockMin = min(refinedBlockMin, texels[i] == blockMin ? refinedBlockMin : texels[i]);
-		refinedBlockMax = max(refinedBlockMax, texels[i] == blockMax ? refinedBlockMax : texels[i]);
+		refinedBlockMin = min(refinedBlockMin, select(texels[i] == blockMin, refinedBlockMin, texels[i]));
+		refinedBlockMax = max(refinedBlockMax, select(texels[i] == blockMax, refinedBlockMax, texels[i]));
 	}
 
 	float3 logRefinedBlockMax = log2(refinedBlockMax + 1.0f);
@@ -184,8 +189,8 @@ void InsetColorBBoxP2(float3 texels[16], uint pattern, uint patternSelector, ino
 		uint paletteID = Pattern(pattern, i);
 		if (paletteID == patternSelector)
 		{
-			refinedBlockMin = min(refinedBlockMin, texels[i] == blockMin ? refinedBlockMin : texels[i]);
-			refinedBlockMax = max(refinedBlockMax, texels[i] == blockMax ? refinedBlockMax : texels[i]);
+			refinedBlockMin = min(refinedBlockMin, select(texels[i] == blockMin, refinedBlockMin, texels[i]));
+			refinedBlockMax = max(refinedBlockMax, select(texels[i] == blockMax, refinedBlockMax, texels[i]));
 		}
 	}
 
@@ -385,9 +390,9 @@ void EncodeP1(inout uint4 block, inout float blockMSLE, float3 texels[16])
 	block.w |= indices[15] << 28;
 }
 
-float DistToLineSq(float3 PointOnLine, float3 LineDirection, float3 Point)
+float DistToLineSq(float3 PointOnLine, float3 LineDirection, float3 _Point)
 {
-	float3 w = Point - PointOnLine;
+	float3 w = _Point - PointOnLine;
 	float3 x = w - dot(w, LineDirection) * LineDirection;
 	return dot(x, x);
 }

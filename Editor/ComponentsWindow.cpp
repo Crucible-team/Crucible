@@ -46,6 +46,7 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	responseWnd.Create(editor);
 	healthWnd.Create(editor);
 	armorWnd.Create(editor);
+	splineWnd.Create(editor);
 
 
 	newComponentCombo.Create("Add: ");
@@ -81,6 +82,7 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	newComponentCombo.AddItem("Video " ICON_VIDEO, 22);
 	newComponentCombo.AddItem("IO " ICON_IO, 23);
 	newComponentCombo.AddItem("Response " ICON_FA_CHART_AREA, 24);
+	newComponentCombo.AddItem("Spline " ICON_FA_CHART_AREA, 27);
 	
 	newComponentCombo.OnSelect([=](wi::gui::EventArgs args) {
 		newComponentCombo.SetSelectedWithoutCallback(-1);
@@ -214,6 +216,10 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 			if (scene.armors.Contains(entity))
 				return;
 			break;
+		case 27:
+			if (scene.splines.Contains(entity))
+				return;
+			break;
 		default:
 			return;
 		}
@@ -325,6 +331,9 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 		case 26:
 			scene.armors.Create(entity);
 			break;
+		case 27:
+			scene.splines.Create(entity);
+			break;
 		default:
 			break;
 		}
@@ -369,6 +378,7 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	AddWidget(&responseWnd);
 	AddWidget(&healthWnd);
 	AddWidget(&armorWnd);
+	AddWidget(&splineWnd);
 
 	materialWnd.SetVisible(false);
 	weatherWnd.SetVisible(false);
@@ -402,6 +412,7 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	responseWnd.SetVisible(false);
 	healthWnd.SetVisible(false);
 	armorWnd.SetVisible(false);
+	splineWnd.SetVisible(false);
 
 	XMFLOAT2 size = XMFLOAT2(338, 500);
 	if (editor->main->config.GetSection("layout").Has("components.width"))
@@ -872,5 +883,18 @@ void ComponentsWindow::ResizeLayout()
 	else
 	{
 		armorWnd.SetVisible(false);
+	}
+
+	if (scene.splines.Contains(splineWnd.entity))
+	{
+		splineWnd.SetVisible(true);
+		splineWnd.SetPos(pos);
+		splineWnd.SetSize(XMFLOAT2(width, splineWnd.GetScale().y));
+		pos.y += splineWnd.GetSize().y;
+		pos.y += padding;
+	}
+	else
+	{
+		splineWnd.SetVisible(false);
 	}
 }

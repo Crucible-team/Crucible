@@ -17,8 +17,7 @@ cmake-build-*/
 bld/
 [Bb]in/
 [Oo]bj/
-build-debug/
-build-release/
+build-*
 
 # Roslyn cache directories
 *.ide/
@@ -223,3 +222,10 @@ wiShaderdump.h
 
 # vscode
 .vscode/settings.json
+
+# PlayStation
+*.tlog
+*.o
+*.a
+*.elf
+*.prx

@@ -984,7 +984,7 @@ namespace wi::gui
 			scrollbar_begin = translation.y;
 			scrollbar_end = scrollbar_begin + scale.y;
 			scrollbar_size = scrollbar_end - scrollbar_begin;
-			scrollbar_granularity = std::min(1.0f, scrollbar_size / std::max(1.0f, list_length - scale.x));
+			scrollbar_granularity = std::min(1.0f, scrollbar_size / std::max(1.0f, list_length - safe_area));
 			scrollbar_length = std::max(scale.x * 2, scrollbar_size * scrollbar_granularity);
 			scrollbar_length = std::min(scrollbar_length, scale.y);
 		}
@@ -993,7 +993,7 @@ namespace wi::gui
 			scrollbar_begin = translation.x;
 			scrollbar_end = scrollbar_begin + scale.x;
 			scrollbar_size = scrollbar_end - scrollbar_begin;
-			scrollbar_granularity = std::min(1.0f, scrollbar_size / std::max(1.0f, list_length - scale.y));
+			scrollbar_granularity = std::min(1.0f, scrollbar_size / std::max(1.0f, list_length - safe_area));
 			scrollbar_length = std::max(scale.y * 2, scrollbar_size * scrollbar_granularity);
 			scrollbar_length = std::min(scrollbar_length, scale.x);
 		}
@@ -1492,6 +1492,12 @@ namespace wi::gui
 					}
 				}
 
+				if (wi::input::Down(wi::input::KEYBOARD_BUTTON_LCONTROL) && wi::input::Down((wi::input::BUTTON)'A'))
+				{
+					caret_begin = 0;
+					caret_pos = (int)font_input.GetText().size();
+				}
+
 			}
 
 			if (clicked && state == FOCUS)
@@ -1649,6 +1655,8 @@ namespace wi::gui
 	void TextInputField::AddInput(const wchar_t inputChar)
 	{
 		input_updated = true;
+		if (wi::input::Down(wi::input::KEYBOARD_BUTTON_LCONTROL) || wi::input::Down(wi::input::KEYBOARD_BUTTON_RCONTROL))
+			return;
 		switch (inputChar)
 		{
 		case '\b':	// BACKSPACE
@@ -3354,6 +3362,10 @@ namespace wi::gui
 	{
 		onCollapse = func;
 	}
+	void Window::OnResize(std::function<void()> func)
+	{
+		onResize = func;
+	}
 	void Window::SetColor(wi::Color color, int id)
 	{
 		Widget::SetColor(color, id);
@@ -3514,6 +3526,7 @@ namespace wi::gui
 			scrollbar_horizontal.SetSize(XMFLOAT2(GetWidgetAreaSize().x - control_size * (offset + 1), control_size));
 			scrollbar_horizontal.SetPos(XMFLOAT2(translation.x + control_size * offset, translation.y + scale.y - control_size));
 			scrollbar_horizontal.AttachTo(this);
+			scrollbar_horizontal.SetSafeArea(scrollbar_horizontal.scale.y);
 		}
 		if (scrollbar_vertical.parent != nullptr)
 		{
@@ -3526,6 +3539,12 @@ namespace wi::gui
 			scrollbar_vertical.SetSize(XMFLOAT2(control_size, GetWidgetAreaSize().y - (control_size + 1) * offset));
 			scrollbar_vertical.SetPos(XMFLOAT2(translation.x + scale.x - control_size, translation.y + 1 + control_size));
 			scrollbar_vertical.AttachTo(this);
+			scrollbar_vertical.SetSafeArea(scrollbar_vertical.scale.x);
+		}
+
+		if (onResize)
+		{
+			onResize();
 		}
 	}
 	void Window::ExportLocalization(wi::Localization& localization) const

@@ -1,19 +1,10 @@
 name: Build
 
+on:
+  push:
+    branches: [ master ]
 
 jobs:
-
-  content:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Package Content
-      uses: actions/upload-artifact@v2
-      with:
-        name: Content
-        path: |
-          Content/models
-          Content/scripts
 
   windows:
     runs-on: windows-latest
@@ -95,7 +86,7 @@ jobs:
     - name: Package Editor
       uses: actions/upload-artifact@v2
       with:
-        name: Editor (Linux - Ubuntu)
+        name: Editor (Linux)
         path: |
           Documentation/
           terrain/
@@ -104,6 +95,18 @@ jobs:
           config.ini
           startup.lua
           WickedEngineEditor
+
+  content:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Package Content
+      uses: actions/upload-artifact@v2
+      with:
+        name: Content
+        path: |
+          Content/models
+          Content/scripts
 
   
   #linux-steamdeck:

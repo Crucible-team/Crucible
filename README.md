@@ -1,20 +1,28 @@
-<img align="left" src="Content/crucible.svg" width="180px"/>
+<img align="left" src="Content/logo_small.png" width="180px"/>
 
-# CrucibleEngine
+# Wicked Engine
+
+[![Github Build Status](https://github.com/turanszkij/WickedEngine/workflows/Build/badge.svg)](https://github.com/turanszkij/WickedEngine/actions)
+[![Discord chat](https://img.shields.io/discord/602811659224088577?logo=discord)](https://discord.gg/CFjRYmE)
+<a href="https://twitter.com/intent/follow?screen_name=turanszkij"><img src="https://img.shields.io/twitter/follow/turanszkij.svg?style=social" alt="follow on Twitter"></a>
+<br/>
+[![Steam](https://img.shields.io/badge/-Steam-383838.svg?style=for-the-badge&logo=steam)](https://store.steampowered.com/app/1967460/Wicked_Engine/)
+[![Store](https://img.shields.io/badge/-Microsoft_Store-748FB2.svg?style=for-the-badge&logo=microsoft)](https://www.microsoft.com/store/productId/9PPMV065W9QJ)
+
 
 <br/>
-<img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/npc.gif" width="320px"/>
-Crucible Engine is an engine focused on game development foundation using the <a href="https://github.com/turanszkij/WickedEngine">wicked engine</a> <br/>
-This project is hosted on <a href="https://github.com/Crucible-team/Crucible">GitHub</a>.
+<img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/videoprojectors.gif" width="320px"/>
+Wicked Engine is an open-source 3D engine with modern graphics. Use this as a C++ framework for your graphics projects, a standalone 3D editor, LUA scripting or just for learning.<br/>
+This project is hosted on <a href="https://github.com/turanszkij/WickedEngine/">GitHub</a>.
 
-- [Documentation](Content/Documentation/CrucibleEngine-Documentation.md)<br/>
+- [Documentation](Content/Documentation/WickedEngine-Documentation.md)<br/>
 - [Scripting API Documentation](Content/Documentation/ScriptingAPI-Documentation.md)<br/>
 - [Features](features.txt)<br/>
 - [Devblog](https://wickedengine.net/)<br/>
 - [Videos](https://www.youtube.com/playlist?list=PLLN-1FTGyLU_HJoC5zx6hJkB3D2XLiaxS)<br/>
 
-You can download the source code by using Git and cloning the repository, or downloading it as zip. You can also choose to download a pre-built version of the Editor or Tests applications, which will allow you to try out features, load content and execute LUA scripts.<br/>
-Tip: try loading models or scripts from the Content folder using the Editor app to see how everything works.
+You can get the full source code by using Git version control and cloning https://github.com/turanszkij/WickedEngine.git, or downloading it as zip. You can also download prebuilt and packaged version of the Editor here (requires Github sign in): [![Github Build Status](https://github.com/turanszkij/WickedEngine/workflows/Build/badge.svg)](https://github.com/turanszkij/WickedEngine/actions)
+<br/>
 <br/>
 
 <img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/swimming.gif" width="320px"/>
@@ -23,30 +31,26 @@ Tip: try loading models or scripts from the Content folder using the Editor app 
 - Windows 10 or newer
 - Linux
 - UWP
+- Xbox Series X|S
+- PlayStation 5 [in progress]
 
 ### How to build: 
 
 #### Windows
-To build Wicked Engine for Windows 10, use Visual Studio and the provided `WickedEngine.sln` solution file. There are a couple of projects that you can run up front: Editor, Tests and Template. You just have to set either as startup project and press F5 in Visual Studio to build and run. For optimal performance, choose `Release` mode, for the best debugging experience, choose `Debug` mode.
+To build Wicked Engine for Windows (10 or later), use the latest version of Visual Studio and the provided `WickedEngine.sln` solution file. By simply pressing F5, the Editor application will be built. There are other example projects that you can build as well within the solution.
 
 <img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/fighting_game.gif" width="320px"/>
 
-If you want to develop an application that uses Wicked Engine, you can build the WickedEngine static library project for the appropriate platform, such as `WickedEngine_Windows` and link against it. Including the `"WickedEngine.h"` header will attempt to link the binaries for the appropriate platform, but search directories should be set up beforehand. For example, you can set additional library directories to `$(SolutionDir)BUILD\$(Platform)\$(Configuration)` by default. For examples, see the `Template`, `Tests`, and `Editor` projects. 
-
-You can also download prebuilt and packaged versions of the Editor and Tests here (requires Github sign in): [![Github Build Status](https://github.com/turanszkij/WickedEngine/workflows/Build/badge.svg)](https://github.com/turanszkij/WickedEngine/actions)
-
-<img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/inverse_kinematics.gif" width="320px"/>
+If you want to develop a C++ application that uses Wicked Engine, you can build the WickedEngine static library project for the appropriate platform, such as `WickedEngine_Windows` and link against it. Including the `"WickedEngine.h"` header will attempt to link the binaries for the appropriate platform, but search directories should be set up beforehand. For example, you can set additional library directories to `$(SolutionDir)BUILD\$(Platform)\$(Configuration)` by default. For examples, see the `Template`, `Tests`, and `Editor` projects. 
 
 If you have questions or stuck, please use the `windows` communication channel on Discord: [![Discord chat](https://img.shields.io/discord/602811659224088577?logo=discord)](https://discord.gg/CFjRYmE)
 
-Note: Building 32-bit and ARM versions should be possible, but no longer provided by default. You will need to configure the solution for these platforms yourself if you want this. For ARM platform, also use the `-DBT_USE_DOUBLE_PRECISION=1` definition when compiling.
-
-Cmake: It is possible to build the windows version with Cmake, but the recommended way is to use the provided WickedEngine.sln file with Visual Studio.
+<img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/npc.gif" width="320px"/>
 
 #### Linux
-To build the engine for Linux, use Cmake. You can find a sample build script for Ubuntu 20.04 [here](.github/workflows/build.yml) (in the linux section). You might need to install some dependencies, such as Cmake (3.7 or newer), g++ compiler (C++ 17 compliant version) and SDL2. For Ubuntu 20.04, you can use the following commands to install dependencies:
+To build the engine for Linux, use Cmake. You can find a sample build script for Ubuntu [here](.github/workflows/build.yml) (in the linux section). On the Linux operating system, you will need to ensure some additional dependencies are installed, such as Cmake (3.7 or newer), g++ compiler (C++ 17 compliant version) and SDL2. For Ubuntu 20.04, you can use the following commands to install dependencies:
 
-<img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/grass.gif" width="320px"/>
+<img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/inverse_kinematics.gif" width="320px"/>
 
 ```bash
 sudo apt update
@@ -68,11 +72,24 @@ You can also download prebuilt and packaged versions of the Editor and Tests her
 If you have questions or stuck, please use the `linux` communication channel on Discord: [![Discord chat](https://img.shields.io/discord/602811659224088577?logo=discord)](https://discord.gg/CFjRYmE)
 
 
+#### UWP
+To build for UWP platform, use the latest version of Visual Studio and the provided `WickedEngine.sln` solution file. The WickedEngine_UWP Project will build the engine for UWP platform as static library. The Template_UWP and Editor_UWP are two applications that will work on UWP platform that you can try. But first you must also build the binary shaders and embed them into the executable. To build and embed shaders, run the `OfflineShaderCompiler` projects with the `hlsl6 shaderdump` command line arguments. Then Rebuild the WickedEngine_UWP to create the engine with embedded shaders included. Now you can build an UWP application and run it on PC or Xbox.
+
+ - To run the UWP application on **Xbox**, enable developer mode on your Xbox, and choose "Remote Machine" as a debugging target in Visual Studio. Enter the IP address of the Xbox into the Machine Name field of debugging project settings (make sure that you are modifying the debug settings for Remote Machine). The authentication mode should be set to "Universal (Unencrypted Protocol)" and upon launching the application from Visual Studio, you will need to enter the security PIN that you can view on the Xbox developer settings.<br/>
+**Note that to utilize the full performance of Xbox Series, it is required to build with the native Xbox SDK build tools instead of UWP**
+
+#### Xbox Series X|S
+To build for Xbox Series natively, download and install the Xbox SDK from your Xbox developer account. Using the latest version of Visual Studio, create a new static library project for the Xbox Series platform and reference the WickedEngine_SOURCE shared project. Xbox specific extension files required for building, or sample projects will be provided for registered Xbox developers on request.
+
+#### PlayStation 5
+To build for PlayStation 5, download and install the PlayStation 5 SDK from your PlayStation developer account. Using the latest Visual Studio, create a new PlayStation 5 static library project and reference the WickedEngine_SOURCE shared project. PlayStation 5 specific extension files requierd for building, or sample projects will be provided for registered PlayStation developers on request.
+
+
 ### Examples:
 
 #### Initialization (C++):
 
-<img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/character_lookat.gif" width="320px"/>
+<img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/grass.gif" width="320px"/>
 
 ```cpp
 // Include engine headers:
@@ -92,6 +109,8 @@ while(true) {
 
 #### Basics (C++):
 ```cpp
+application.Initialize(); // application will start initializing at this point (asynchronously). If you start calling engine functionality immediately before application.Run() gets called, then you must first initialize the application yourself.
+
 wi::initializer::InitializeComponentsImmediate(); // (Optional) allows to initialize all components immediately and block the application until finished. Otherwise the initialization will take place at the first application.Run() asynchronously. This is useful if you want to start using other parts of the engine before application.Run() is called.
 
 wi::RenderPath3D myGame; // Declare a game screen component, aka "RenderPath" (you could also override its Update(), Render() etc. functions). 
@@ -182,6 +201,8 @@ For further details, please check the scripting API documentation: [Wicked Engin
 ### Model import/export:
 The native model format is the <b>WISCENE</b> format. Any application using Wicked Engine can open this format efficiently.
 
+<img align="right" src="https://github.com/turanszkij/wickedengine-gifs/raw/main/character_lookat.gif" width="320px"/>
+
 In addition, the Editor supports the importing of some common model formats (the list will potentially grow): 
 - <b>OBJ</b>
 - <b>GLTF 2.0</b>
@@ -253,3 +274,4 @@ If you are having trouble getting the applications to run, make sure that you sa
 	- see if there is a wiBackLog.txt in your user temp folder (for example: C:\Users\username\AppData\Local\Temp), and request help on Discord or Github issue
 	- build the engine in Debug mode and try to run it, see where it crashes, provide call stack on Discord or Github issue
 	- run the engine with the `debugdevice` command argument and post the text from your console output window when the crash happens
+		- for very advanced users, using `gpuvalidation` with `debugdevice` will print additional graphics debug information

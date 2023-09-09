@@ -39,11 +39,33 @@
 		"SRV(t0, space = 11, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
 		"SRV(t0, space = 12, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
 		"SRV(t0, space = 13, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
-		"UAV(u0, space = 14, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
-		"UAV(u0, space = 15, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
-		"UAV(u0, space = 16, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
-		"UAV(u0, space = 17, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
-		"UAV(u0, space = 18, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)" \
+		"SRV(t0, space = 14, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 15, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 16, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 17, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 18, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 19, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 20, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 21, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 22, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 23, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 24, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 25, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 26, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 27, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 28, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 29, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 30, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 31, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 32, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"UAV(u0, space = 33, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 34, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 35, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 36, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 37, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 38, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 39, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)," \
+		"SRV(t0, space = 40, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)" \
 	"), " \
 	"StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
 	"StaticSampler(s101, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
@@ -56,7 +78,7 @@
 	"StaticSampler(s108, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_ANISOTROPIC)," \
 	"StaticSampler(s109, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, comparisonFunc = COMPARISON_GREATER_EQUAL),"
 
-
+#ifndef __PSSL__
 // These are static samplers, they don't need to be bound:
 //	They are also on slots that are not bindable as sampler bind slots must be in [0,15] range!
 SamplerState sampler_linear_clamp : register(s100);
@@ -69,8 +91,44 @@ SamplerState sampler_aniso_clamp : register(s106);
 SamplerState sampler_aniso_wrap : register(s107);
 SamplerState sampler_aniso_mirror : register(s108);
 SamplerComparisonState sampler_cmp_depth : register(s109);
+#endif // __PSSL__
 
-#ifdef SPIRV
+#if defined(__PSSL__)
+static const BindlessResource<SamplerState> bindless_samplers;
+static const BindlessResource<Texture2D> bindless_textures;
+static const BindlessResource<ByteAddressBuffer> bindless_buffers;
+static const BindlessResource<Buffer<uint>> bindless_buffers_uint;
+static const BindlessResource<Buffer<uint2>> bindless_buffers_uint2;
+static const BindlessResource<Buffer<uint3>> bindless_buffers_uint3;
+static const BindlessResource<Buffer<uint4>> bindless_buffers_uint4;
+static const BindlessResource<Buffer<float>> bindless_buffers_float;
+static const BindlessResource<Buffer<float2>> bindless_buffers_float2;
+static const BindlessResource<Buffer<float3>> bindless_buffers_float3;
+static const BindlessResource<Buffer<float4>> bindless_buffers_float4;
+static const BindlessResource<Texture2DArray> bindless_textures2DArray;
+static const BindlessResource<TextureCube> bindless_cubemaps;
+static const BindlessResource<TextureCubeArray> bindless_cubearrays;
+static const BindlessResource<Texture3D> bindless_textures3D;
+static const BindlessResource<Texture2D<float>> bindless_textures_float;
+static const BindlessResource<Texture2D<float2>> bindless_textures_float2;
+static const BindlessResource<Texture2D<uint>> bindless_textures_uint;
+static const BindlessResource<Texture2D<uint4>> bindless_textures_uint4;
+
+static const BindlessResource<RWTexture2D<float4>> bindless_rwtextures;
+static const BindlessResource<RWByteAddressBuffer> bindless_rwbuffers;
+static const BindlessResource<RWBuffer<uint>> bindless_rwbuffers_uint;
+static const BindlessResource<RWBuffer<uint2>> bindless_rwbuffers_uint2;
+static const BindlessResource<RWBuffer<uint3>> bindless_rwbuffers_uint3;
+static const BindlessResource<RWBuffer<uint4>> bindless_rwbuffers_uint4;
+static const BindlessResource<RWBuffer<float>> bindless_rwbuffers_float;
+static const BindlessResource<RWBuffer<float2>> bindless_rwbuffers_float2;
+static const BindlessResource<RWBuffer<float3>> bindless_rwbuffers_float3;
+static const BindlessResource<RWBuffer<float4>> bindless_rwbuffers_float4;
+static const BindlessResource<RWTexture2DArray<float4>> bindless_rwtextures2DArray;
+static const BindlessResource<RWTexture3D<float4>> bindless_rwtextures3D;
+static const BindlessResource<RWTexture2D<uint>> bindless_rwtextures_uint;
+
+#elif defined(__spirv__)
 // In Vulkan, we can manually overlap descriptor sets to reduce bindings:
 //	Note that HLSL register space declaration was not working correctly with overlapped spaces,
 //	But vk::binding works correctly in this case.
@@ -80,10 +138,18 @@ static const uint DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER = 2;
 static const uint DESCRIPTOR_SET_BINDLESS_SAMPLER = 3;
 static const uint DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE = 4;
 static const uint DESCRIPTOR_SET_BINDLESS_STORAGE_IMAGE = 5;
-static const uint DESCRIPTOR_SET_BINDLESS_ACCELERATION_STRUCTURE = 6;
+static const uint DESCRIPTOR_SET_BINDLESS_STORAGE_TEXEL_BUFFER = 6;
+static const uint DESCRIPTOR_SET_BINDLESS_ACCELERATION_STRUCTURE = 7;
 
 [[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] ByteAddressBuffer bindless_buffers[];
-[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<uint> bindless_ib[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<uint> bindless_buffers_uint[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<uint2> bindless_buffers_uint2[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<uint3> bindless_buffers_uint3[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<uint4> bindless_buffers_uint4[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<float> bindless_buffers_float[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<float2> bindless_buffers_float2[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<float3> bindless_buffers_float3[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_UNIFORM_TEXEL_BUFFER)]] Buffer<float4> bindless_buffers_float4[];
 [[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLER)]] SamplerState bindless_samplers[];
 [[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture2D bindless_textures[];
 [[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture2DArray bindless_textures2DArray[];
@@ -96,6 +162,14 @@ static const uint DESCRIPTOR_SET_BINDLESS_ACCELERATION_STRUCTURE = 6;
 [[vk::binding(0, DESCRIPTOR_SET_BINDLESS_SAMPLED_IMAGE)]] Texture2D<uint4> bindless_textures_uint4[];
 
 [[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] RWByteAddressBuffer bindless_rwbuffers[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_TEXEL_BUFFER)]] RWBuffer<uint> bindless_rwbuffers_uint[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_TEXEL_BUFFER)]] RWBuffer<uint2> bindless_rwbuffers_uint2[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_TEXEL_BUFFER)]] RWBuffer<uint3> bindless_rwbuffers_uint3[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_TEXEL_BUFFER)]] RWBuffer<uint4> bindless_rwbuffers_uint4[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_TEXEL_BUFFER)]] RWBuffer<float> bindless_rwbuffers_float[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_TEXEL_BUFFER)]] RWBuffer<float2> bindless_rwbuffers_float2[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_TEXEL_BUFFER)]] RWBuffer<float3> bindless_rwbuffers_float3[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_TEXEL_BUFFER)]] RWBuffer<float4> bindless_rwbuffers_float4[];
 [[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_IMAGE)]] RWTexture2D<float4> bindless_rwtextures[];
 [[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_IMAGE)]] RWTexture2DArray<float4> bindless_rwtextures2DArray[];
 [[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_IMAGE)]] RWTexture3D<float4> bindless_rwtextures3D[];
@@ -108,27 +182,69 @@ static const uint DESCRIPTOR_SET_BINDLESS_ACCELERATION_STRUCTURE = 6;
 SamplerState bindless_samplers[] : register(space1);
 Texture2D bindless_textures[] : register(space2);
 ByteAddressBuffer bindless_buffers[] : register(space3);
-Buffer<uint> bindless_ib[] : register(space4);
+Buffer<uint> bindless_buffers_uint[] : register(space4);
+Buffer<uint2> bindless_buffers_uint2[] : register(space5);
+Buffer<uint3> bindless_buffers_uint3[] : register(space6);
+Buffer<uint4> bindless_buffers_uint4[] : register(space7);
+Buffer<float> bindless_buffers_float[] : register(space8);
+Buffer<float2> bindless_buffers_float2[] : register(space9);
+Buffer<float3> bindless_buffers_float3[] : register(space10);
+Buffer<float4> bindless_buffers_float4[] : register(space11);
 #ifdef RTAPI
-RaytracingAccelerationStructure bindless_accelerationstructures[] : register(space5);
+RaytracingAccelerationStructure bindless_accelerationstructures[] : register(space12);
 #endif // RTAPI
-Texture2DArray bindless_textures2DArray[] : register(space6);
-TextureCube bindless_cubemaps[] : register(space7);
-TextureCubeArray bindless_cubearrays[] : register(space8);
-Texture3D bindless_textures3D[] : register(space9);
-Texture2D<float> bindless_textures_float[] : register(space10);
-Texture2D<float2> bindless_textures_float2[] : register(space11);
-Texture2D<uint> bindless_textures_uint[] : register(space12);
-Texture2D<uint4> bindless_textures_uint4[] : register(space13);
+Texture2DArray bindless_textures2DArray[] : register(space13);
+TextureCube bindless_cubemaps[] : register(space14);
+TextureCubeArray bindless_cubearrays[] : register(space15);
+Texture3D bindless_textures3D[] : register(space16);
+Texture2D<float> bindless_textures_float[] : register(space17);
+Texture2D<float2> bindless_textures_float2[] : register(space18);
+Texture2D<uint> bindless_textures_uint[] : register(space19);
+Texture2D<uint4> bindless_textures_uint4[] : register(space20);
 
-RWTexture2D<float4> bindless_rwtextures[] : register(space14);
-RWByteAddressBuffer bindless_rwbuffers[] : register(space15);
-RWTexture2DArray<float4> bindless_rwtextures2DArray[] : register(space16);
-RWTexture3D<float4> bindless_rwtextures3D[] : register(space17);
-RWTexture2D<uint> bindless_rwtextures_uint[] : register(space18);
-#endif // SPIRV
+RWTexture2D<float4> bindless_rwtextures[] : register(space21);
+RWByteAddressBuffer bindless_rwbuffers[] : register(space22);
+RWBuffer<uint> bindless_rwbuffers_uint[] : register(space23);
+RWBuffer<uint2> bindless_rwbuffers_uint2[] : register(space24);
+RWBuffer<uint3> bindless_rwbuffers_uint3[] : register(space25);
+RWBuffer<uint4> bindless_rwbuffers_uint4[] : register(space26);
+RWBuffer<float> bindless_rwbuffers_float[] : register(space27);
+RWBuffer<float2> bindless_rwbuffers_float2[] : register(space28);
+RWBuffer<float3> bindless_rwbuffers_float3[] : register(space29);
+RWBuffer<float4> bindless_rwbuffers_float4[] : register(space30);
+RWTexture2DArray<float4> bindless_rwtextures2DArray[] : register(space31);
+RWTexture3D<float4> bindless_rwtextures3D[] : register(space32);
+RWTexture2D<uint> bindless_rwtextures_uint[] : register(space33);
+
+#endif // __spirv__
 
 #include "ShaderInterop_Renderer.h"
+
+#if defined(__PSSL__)
+static const BindlessResource<StructuredBuffer<ShaderMeshInstance>> bindless_structured_meshinstance;
+static const BindlessResource<StructuredBuffer<ShaderGeometry>> bindless_structured_geometry;
+static const BindlessResource<StructuredBuffer<ShaderMeshlet>> bindless_structured_meshlet;
+static const BindlessResource<StructuredBuffer<ShaderMaterial>> bindless_structured_material;
+static const BindlessResource<StructuredBuffer<ShaderEntity>> bindless_structured_entity;
+static const BindlessResource<StructuredBuffer<float4x4>> bindless_structured_matrix;
+static const BindlessResource<StructuredBuffer<uint>> bindless_structured_uint;
+#elif defined(__spirv__)
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] StructuredBuffer<ShaderMeshInstance> bindless_structured_meshinstance[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] StructuredBuffer<ShaderGeometry> bindless_structured_geometry[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] StructuredBuffer<ShaderMeshlet> bindless_structured_meshlet[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] StructuredBuffer<ShaderMaterial> bindless_structured_material[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] StructuredBuffer<ShaderEntity> bindless_structured_entity[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] StructuredBuffer<float4x4> bindless_structured_matrix[];
+[[vk::binding(0, DESCRIPTOR_SET_BINDLESS_STORAGE_BUFFER)]] StructuredBuffer<uint> bindless_structured_uint[];
+#else
+StructuredBuffer<ShaderMeshInstance> bindless_structured_meshinstance[] : register(space34);
+StructuredBuffer<ShaderGeometry> bindless_structured_geometry[] : register(space35);
+StructuredBuffer<ShaderMeshlet> bindless_structured_meshlet[] : register(space36);
+StructuredBuffer<ShaderMaterial> bindless_structured_material[] : register(space37);
+StructuredBuffer<ShaderEntity> bindless_structured_entity[] : register(space38);
+StructuredBuffer<float4x4> bindless_structured_matrix[] : register(space39);
+StructuredBuffer<uint> bindless_structured_uint[] : register(space40);
+#endif // __spirv__
 
 inline FrameCB GetFrame()
 {
@@ -148,43 +264,35 @@ inline ShaderWeather GetWeather()
 }
 inline ShaderMeshInstance load_instance(uint instanceIndex)
 {
-	return bindless_buffers[GetScene().instancebuffer].Load<ShaderMeshInstance>(instanceIndex * sizeof(ShaderMeshInstance));
+	return bindless_structured_meshinstance[GetScene().instancebuffer][instanceIndex];
 }
 inline ShaderGeometry load_geometry(uint geometryIndex)
 {
-	return bindless_buffers[GetScene().geometrybuffer].Load<ShaderGeometry>(geometryIndex * sizeof(ShaderGeometry));
+	return bindless_structured_geometry[GetScene().geometrybuffer][geometryIndex];
 }
 inline ShaderMeshlet load_meshlet(uint meshletIndex)
 {
-	return bindless_buffers[GetScene().meshletbuffer].Load<ShaderMeshlet>(meshletIndex * sizeof(ShaderMeshlet));
+	return bindless_structured_meshlet[GetScene().meshletbuffer][meshletIndex];
 }
 inline ShaderMaterial load_material(uint materialIndex)
 {
-	return bindless_buffers[GetScene().materialbuffer].Load<ShaderMaterial>(materialIndex * sizeof(ShaderMaterial));
+	return bindless_structured_material[GetScene().materialbuffer][materialIndex];
 }
 uint load_entitytile(uint tileIndex)
 {
 #ifdef TRANSPARENT
-	return bindless_buffers[GetCamera().buffer_entitytiles_transparent_index].Load(tileIndex * sizeof(uint));
+	return bindless_structured_uint[GetCamera().buffer_entitytiles_transparent_index][tileIndex];
 #else
-	return bindless_buffers[GetCamera().buffer_entitytiles_opaque_index].Load(tileIndex * sizeof(uint));
+	return bindless_structured_uint[GetCamera().buffer_entitytiles_opaque_index][tileIndex];
 #endif // TRANSPARENT
 }
 inline ShaderEntity load_entity(uint entityIndex)
 {
-	return bindless_buffers[GetFrame().buffer_entity_index].Load<ShaderEntity>(entityIndex * sizeof(ShaderEntity));
+	return bindless_structured_entity[GetFrame().buffer_entity_index][entityIndex];
 }
 inline float4x4 load_entitymatrix(uint matrixIndex)
 {
-	// Workaround for: https://github.com/microsoft/DirectXShaderCompiler/issues/4738
-	ByteAddressBuffer buffer = bindless_buffers[GetFrame().buffer_entity_index];
-	const uint offset = sizeof(ShaderEntity) * SHADER_ENTITY_COUNT + matrixIndex * sizeof(float4x4);
-	return transpose(float4x4(
-		buffer.Load<float4>(offset + 0 * sizeof(float4)),
-		buffer.Load<float4>(offset + 1 * sizeof(float4)),
-		buffer.Load<float4>(offset + 2 * sizeof(float4)),
-		buffer.Load<float4>(offset + 3 * sizeof(float4))
-	));
+	return bindless_structured_matrix[GetFrame().buffer_entity_index][SHADER_ENTITY_COUNT + matrixIndex];
 }
 
 struct PrimitiveID

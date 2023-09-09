@@ -310,6 +310,8 @@ wi::vector<ShaderEntry> shaders = {
 	{"shadowGS_emulation", wi::graphics::ShaderStage::GS },
 	{"shadowGS_alphatest_emulation", wi::graphics::ShaderStage::GS },
 	{"shadowGS_transparent_emulation", wi::graphics::ShaderStage::GS },
+	{"objectGS_primitiveID_emulation", wi::graphics::ShaderStage::GS },
+	{"objectGS_primitiveID_emulation_alphatest", wi::graphics::ShaderStage::GS },
 	{"voxelGS", wi::graphics::ShaderStage::GS },
 	{"objectGS_voxelizer", wi::graphics::ShaderStage::GS },
 	{"objectVS_simple", wi::graphics::ShaderStage::VS },
@@ -366,9 +368,11 @@ int main(int argc, char* argv[])
 	std::cout << "\thlsl5 : \t\tCompile shaders to hlsl5 (dx11) format (using d3dcompiler)\n";
 	std::cout << "\thlsl6 : \t\tCompile shaders to hlsl6 (dx12) format (using dxcompiler)\n";
 	std::cout << "\tspirv : \t\tCompile shaders to spirv (vulkan) format (using dxcompiler)\n";
+	std::cout << "\thlsl6_xs : \t\tCompile shaders to hlsl6 Xbox Series native (dx12) format (requires Xbox SDK)\n";
+	std::cout << "\tps5 : \t\t\tCompile shaders to PlayStation 5 native format (requires PlayStation 5 SDK)\n";
 	std::cout << "\trebuild : \t\tAll shaders will be rebuilt, regardless if they are outdated or not\n";
-	std::cout << "\tdisable_optimization : \tShaders will be compiled without optimizations (this will improve shader debuggability, but reduce performance)\n";
-	std::cout << "\tstrip_reflection : \tReflection will be stripped from shader binary to reduce file size (this will reduce shader debuggability)\n";
+	std::cout << "\tdisable_optimization : \tShaders will be compiled without optimizations\n";
+	std::cout << "\tstrip_reflection : \tReflection will be stripped from shader binary to reduce file size\n";
 	std::cout << "\tshaderdump : \t\tShaders will be saved to wiShaderDump.h C++ header file (rebuild is assumed)\n";
 	std::cout << "Command arguments used: ";
 
@@ -388,6 +392,16 @@ int main(int argc, char* argv[])
 	{
 		targets.push_back({ ShaderFormat::SPIRV, "shaders/spirv/" });
 		std::cout << "spirv ";
+	}
+	if (wi::arguments::HasArgument("hlsl6_xs"))
+	{
+		targets.push_back({ ShaderFormat::HLSL6_XS, "shaders/hlsl6_xs/" });
+		std::cout << "hlsl6_xs ";
+	}
+	if (wi::arguments::HasArgument("ps5"))
+	{
+		targets.push_back({ ShaderFormat::PS5, "shaders/ps5/" });
+		std::cout << "ps5 ";
 	}
 
 	if (wi::arguments::HasArgument("shaderdump"))
@@ -469,6 +483,7 @@ int main(int argc, char* argv[])
 
 	std::cout << "[Wicked Engine Offline Shader Compiler] Searching for outdated shaders...\n";
 	wi::Timer timer;
+	static int errors = 0;
 
 	for (auto& target : targets)
 	{
@@ -524,6 +539,11 @@ int main(int argc, char* argv[])
 						// if shader format cannot support shader model, then we cancel the task without returning error
 						return;
 					}
+					if (target.format == ShaderFormat::PS5 && (input.minshadermodel >= ShaderModel::SM_6_5 || input.stage == ShaderStage::MS))
+					{
+						// TODO PS5 raytracing, mesh shader
+						return;
+					}
 
 					wi::shadercompiler::CompilerOutput output;
 					wi::shadercompiler::Compile(input, output);
@@ -548,17 +568,17 @@ int main(int argc, char* argv[])
 					{
 						locker.lock();
 						std::cerr << "shader compile FAILED: " << shaderbinaryfilename << "\n" << output.error_message;
+						errors++;
 						locker.unlock();
-						std::exit(1);
 					}
 
-					});
+				});
 			}
 		}
 	}
 	wi::jobsystem::Wait(ctx);
 
-	std::cout << "[Wicked Engine Offline Shader Compiler] Finished in " << std::setprecision(4) << timer.elapsed_seconds() << " seconds\n";
+	std::cout << "[Wicked Engine Offline Shader Compiler] Finished in " << std::setprecision(4) << timer.elapsed_seconds() << " seconds with " << errors << " errors\n";
 
 	if (shaderdump_enabled)
 	{
@@ -603,5 +623,5 @@ int main(int argc, char* argv[])
 
 	wi::jobsystem::ShutDown();
 
-	return 0;
+	return errors;
 }

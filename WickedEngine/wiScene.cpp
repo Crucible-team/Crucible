@@ -26,6 +26,87 @@ namespace wi::scene
 {
 	const uint32_t small_subtask_groupsize = 64u;
 
+	// Helper computes a point on a unit circle, aligned to the x/z plane and centered on the origin.
+	inline XMVECTOR GetCircleVector(size_t i, size_t tessellation) noexcept
+	{
+		const float angle = float(i) * XM_2PI / float(tessellation);
+		float dx, dz;
+
+		XMScalarSinCos(&dx, &dz, angle);
+
+		const XMVECTORF32 v = { { dx, 0, dz, 0 } };
+		return v;
+	}
+
+	inline XMVECTOR GetCircleTangent(size_t i, size_t tessellation) noexcept
+	{
+		const float angle = (float(i) * XM_2PI / float(tessellation)) + XM_PIDIV2;
+		float dx, dz;
+
+		XMScalarSinCos(&dx, &dz, angle);
+
+		const XMVECTORF32 v = { { dx, 0, dz, 0 } };
+		return v;
+	}
+
+	inline XMFLOAT2 GetUnitVectorAngle(float angle)
+	{
+		return XMFLOAT2(cos(angle), sin(angle));
+	}
+
+
+	// Helper creates a triangle fan to close the end of a cylinder / cone
+	void CreateCylinderCap(wi::vector<XMFLOAT3>& vertices, wi::vector<XMFLOAT3>& normals, wi::vector<XMFLOAT2>& texture, wi::vector<uint32_t>& indices, size_t tessellation, float height, float radius, bool isTop)
+	{
+		// Create cap indices.
+		for (size_t i = 0; i < tessellation - 2; i++)
+		{
+			size_t i1 = (i + 1) % tessellation;
+			size_t i2 = (i + 2) % tessellation;
+
+			if (isTop)
+			{
+				std::swap(i1, i2);
+			}
+
+			const size_t vbase = vertices.size();
+			indices.push_back(vbase);
+			indices.push_back(vbase + i1);
+			indices.push_back(vbase + i2);
+		}
+
+		// Which end of the cylinder is this?
+		XMVECTOR normal = g_XMIdentityR1;
+		XMVECTOR textureScale = g_XMNegativeOneHalf;
+
+		if (!isTop)
+		{
+			normal = XMVectorNegate(normal);
+			textureScale = XMVectorMultiply(textureScale, g_XMNegateX);
+		}
+
+		// Create cap vertices.
+		for (size_t i = 0; i < tessellation; i++)
+		{
+			const XMVECTOR circleVector = GetCircleVector(i, tessellation);
+
+			const XMVECTOR position = XMVectorAdd(XMVectorScale(circleVector, radius), XMVectorScale(normal, height));
+
+			const XMVECTOR textureCoordinate = XMVectorMultiplyAdd(XMVectorSwizzle<0, 2, 3, 3>(circleVector), textureScale, g_XMOneHalf);
+
+
+			XMFLOAT4 vpF;    //the float where we copy the v2 vector members
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+			vertices.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			XMStoreFloat4(&vpF, normal);   //the function used to copy
+			normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			XMStoreFloat4(&vpF, textureCoordinate);   //the function used to copy
+
+			texture.push_back(XMFLOAT2(vpF.x, vpF.y));
+
+		}
+	}
+
 	void Scene::Update(float dt)
 	{
 		this->dt = dt;
@@ -66,7 +147,7 @@ namespace wi::scene
 			desc.stride = sizeof(ShaderMeshInstance);
 			desc.size = desc.stride * instanceArraySize * 2; // *2 to grow fast
 			desc.bind_flags = BindFlag::SHADER_RESOURCE;
-			desc.misc_flags = ResourceMiscFlag::BUFFER_RAW;
+			desc.misc_flags = ResourceMiscFlag::BUFFER_STRUCTURED;
 			if (!device->CheckCapability(GraphicsDeviceCapability::CACHE_COHERENT_UMA))
 			{
 				// Non-UMA: separate Default usage buffer
@@ -99,7 +180,7 @@ namespace wi::scene
 			desc.stride = sizeof(ShaderMaterial);
 			desc.size = desc.stride * materialArraySize * 2; // *2 to grow fast
 			desc.bind_flags = BindFlag::SHADER_RESOURCE;
-			desc.misc_flags = ResourceMiscFlag::BUFFER_RAW;
+			desc.misc_flags = ResourceMiscFlag::BUFFER_STRUCTURED;
 			if (!device->CheckCapability(GraphicsDeviceCapability::CACHE_COHERENT_UMA))
 			{
 				// Non-UMA: separate Default usage buffer
@@ -253,7 +334,7 @@ namespace wi::scene
 			desc.stride = sizeof(ShaderGeometry);
 			desc.size = desc.stride * geometryArraySize * 2; // *2 to grow fast
 			desc.bind_flags = BindFlag::SHADER_RESOURCE;
-			desc.misc_flags = ResourceMiscFlag::BUFFER_RAW;
+			desc.misc_flags = ResourceMiscFlag::BUFFER_STRUCTURED;
 			if (!device->CheckCapability(GraphicsDeviceCapability::CACHE_COHERENT_UMA))
 			{
 				// Non-UMA: separate Default usage buffer
@@ -356,7 +437,7 @@ namespace wi::scene
 			desc.stride = sizeof(ShaderMeshlet);
 			desc.size = desc.stride * meshletCount * 2; // *2 to grow fast
 			desc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
-			desc.misc_flags = ResourceMiscFlag::BUFFER_RAW;
+			desc.misc_flags = ResourceMiscFlag::BUFFER_STRUCTURED;
 			bool success = device->CreateBuffer(&desc, nullptr, &meshletBuffer);
 			assert(success);
 			device->SetName(&meshletBuffer, "meshletBuffer");
@@ -571,7 +652,7 @@ namespace wi::scene
 				commands[3] = commands[0];
 				commands[3].sparse_resource = &ddgi.color_texture_rw[1];
 				commands[3].range_start_offsets = &tile_offset[1];
-				device->SparseUpdate(QUEUE_COMPUTE, commands, arraysize(commands));
+				device->SparseUpdate(QUEUE_GRAPHICS, commands, arraysize(commands));
 
 				tex.width = DDGI_DEPTH_TEXELS * ddgi.grid_dimensions.x * ddgi.grid_dimensions.y;
 				tex.height = DDGI_DEPTH_TEXELS * ddgi.grid_dimensions.z;
@@ -672,59 +753,64 @@ namespace wi::scene
 				GPUBufferDesc desc;
 				desc.usage = Usage::DEFAULT;
 				desc.bind_flags = BindFlag::INDEX_BUFFER | BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
-				desc.misc_flags = ResourceMiscFlag::BUFFER_RAW | ResourceMiscFlag::INDIRECT_ARGS;
+				desc.misc_flags = ResourceMiscFlag::BUFFER_RAW | ResourceMiscFlag::TYPED_FORMAT_CASTING | ResourceMiscFlag::INDIRECT_ARGS | ResourceMiscFlag::NO_DEFAULT_DESCRIPTORS;
 
 				const uint64_t alignment = device->GetMinOffsetAlignment(&desc);
 
 				desc.size =
+					AlignTo(AlignTo(sizeof(IndirectDrawArgsIndexedInstanced), alignment), sizeof(IndirectDrawArgsIndexedInstanced)) +			// indirect args, additional structured buffer alignment
 					AlignTo(allocated_impostor_capacity * sizeof(uint) * 6, alignment) +	// indices (must overestimate here for 32-bit indices, because we create 16 bit and 32 bit descriptors)
-					AlignTo(allocated_impostor_capacity * sizeof(uint4) * 4, alignment) +	// vertices
-					AlignTo(allocated_impostor_capacity * sizeof(uint2), alignment) +		// impostordata
-					AlignTo(sizeof(IndirectDrawArgsIndexedInstanced), alignment)			// indirect args
-					;
+					AlignTo(allocated_impostor_capacity * sizeof(MeshComponent::Vertex_POS) * 4, alignment) +	// vertices
+					AlignTo(allocated_impostor_capacity * sizeof(uint2), alignment)		// impostordata
+				;
 				device->CreateBuffer(&desc, nullptr, &impostorBuffer);
 				device->SetName(&impostorBuffer, "impostorBuffer");
 
 				uint64_t buffer_offset = 0ull;
 
+				const uint32_t indirect_stride = sizeof(IndirectDrawArgsIndexedInstanced);
+				buffer_offset = AlignTo(buffer_offset, sizeof(IndirectDrawArgsIndexedInstanced)); // additional structured buffer alignment
+				buffer_offset = AlignTo(buffer_offset, alignment);
+				impostor_indirect.offset = buffer_offset;
+				impostor_indirect.size = sizeof(IndirectDrawArgsIndexedInstanced);
+				impostor_indirect.subresource_uav = device->CreateSubresource(&impostorBuffer, SubresourceType::UAV, impostor_indirect.offset, impostor_indirect.size, nullptr, &indirect_stride);
+				buffer_offset += impostor_indirect.size;
+
+				buffer_offset = AlignTo(buffer_offset, alignment);
 				Format format32 = Format::R32_UINT;
 				Format format16 = Format::R16_UINT;
 				impostor_ib32.offset = buffer_offset;
 				impostor_ib32.size = allocated_impostor_capacity * sizeof(uint32_t) * 6;
 				impostor_ib16.offset = buffer_offset;
 				impostor_ib16.size = allocated_impostor_capacity * sizeof(uint16_t) * 6;
-				buffer_offset += AlignTo(impostor_ib32.size, alignment);
 				impostor_ib32.subresource_srv = device->CreateSubresource(&impostorBuffer, SubresourceType::SRV, impostor_ib32.offset, impostor_ib32.size, &format32);
 				impostor_ib32.subresource_uav = device->CreateSubresource(&impostorBuffer, SubresourceType::UAV, impostor_ib32.offset, impostor_ib32.size, &format32);
 				impostor_ib32.descriptor_srv = device->GetDescriptorIndex(&impostorBuffer, SubresourceType::SRV, impostor_ib32.subresource_srv);
 				impostor_ib32.descriptor_uav = device->GetDescriptorIndex(&impostorBuffer, SubresourceType::UAV, impostor_ib32.subresource_uav);
+				buffer_offset += impostor_ib32.size;
 
 				impostor_ib16.subresource_srv = device->CreateSubresource(&impostorBuffer, SubresourceType::SRV, impostor_ib16.offset, impostor_ib16.size, &format16);
 				impostor_ib16.subresource_uav = device->CreateSubresource(&impostorBuffer, SubresourceType::UAV, impostor_ib16.offset, impostor_ib16.size, &format16);
 				impostor_ib16.descriptor_srv = device->GetDescriptorIndex(&impostorBuffer, SubresourceType::SRV, impostor_ib16.subresource_srv);
 				impostor_ib16.descriptor_uav = device->GetDescriptorIndex(&impostorBuffer, SubresourceType::UAV, impostor_ib16.subresource_uav);
 
+				buffer_offset = AlignTo(buffer_offset, alignment);
 				impostor_vb.offset = buffer_offset;
-				impostor_vb.size = allocated_impostor_capacity * sizeof(uint4) * 4;
-				buffer_offset += AlignTo(impostor_vb.size, alignment);
-				impostor_vb.subresource_srv = device->CreateSubresource(&impostorBuffer, SubresourceType::SRV, impostor_vb.offset, impostor_vb.size);
-				impostor_vb.subresource_uav = device->CreateSubresource(&impostorBuffer, SubresourceType::UAV, impostor_vb.offset, impostor_vb.size);
+				impostor_vb.size = allocated_impostor_capacity * sizeof(MeshComponent::Vertex_POS) * 4;
+				impostor_vb.subresource_srv = device->CreateSubresource(&impostorBuffer, SubresourceType::SRV, impostor_vb.offset, impostor_vb.size, &MeshComponent::Vertex_POS::FORMAT);
+				impostor_vb.subresource_uav = device->CreateSubresource(&impostorBuffer, SubresourceType::UAV, impostor_vb.offset, impostor_vb.size, &MeshComponent::Vertex_POS::FORMAT);
 				impostor_vb.descriptor_srv = device->GetDescriptorIndex(&impostorBuffer, SubresourceType::SRV, impostor_vb.subresource_srv);
 				impostor_vb.descriptor_uav = device->GetDescriptorIndex(&impostorBuffer, SubresourceType::UAV, impostor_vb.subresource_uav);
+				buffer_offset += impostor_vb.size;
 
+				buffer_offset = AlignTo(buffer_offset, alignment);
 				impostor_data.offset = buffer_offset;
 				impostor_data.size = allocated_impostor_capacity * sizeof(uint2);
-				buffer_offset += AlignTo(impostor_data.size, alignment);
 				impostor_data.subresource_srv = device->CreateSubresource(&impostorBuffer, SubresourceType::SRV, impostor_data.offset, impostor_data.size);
 				impostor_data.subresource_uav = device->CreateSubresource(&impostorBuffer, SubresourceType::UAV, impostor_data.offset, impostor_data.size);
 				impostor_data.descriptor_srv = device->GetDescriptorIndex(&impostorBuffer, SubresourceType::SRV, impostor_data.subresource_srv);
 				impostor_data.descriptor_uav = device->GetDescriptorIndex(&impostorBuffer, SubresourceType::UAV, impostor_data.subresource_uav);
-
-				const uint32_t indirect_stride = sizeof(IndirectDrawArgsIndexedInstanced);
-				impostor_indirect.offset = buffer_offset;
-				impostor_indirect.size = sizeof(IndirectDrawArgsIndexedInstanced);
-				buffer_offset += AlignTo(impostor_data.size, alignment);
-				impostor_indirect.subresource_uav = device->CreateSubresource(&impostorBuffer, SubresourceType::UAV, impostor_indirect.offset, impostor_indirect.size, nullptr, &indirect_stride);
+				buffer_offset += impostor_data.size;
 
 			}
 		}
@@ -1307,6 +1393,8 @@ namespace wi::scene
 		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
 		subset.indexCount = uint32_t(mesh.indices.size());
 		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
 		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
 
 		// vertex buffer GPU data will be packed and uploaded here:
@@ -1314,6 +1402,1917 @@ namespace wi::scene
 
 		return entity;
 	}
+
+	Entity Scene::Entity_CreateCylinder(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		const uint32_t segmentCount = 12;
+		const uint32_t cylinder_triangleCount = segmentCount * 2;
+		const uint32_t cone_triangleCount = segmentCount;
+		const uint32_t vertexCount = (cylinder_triangleCount + cone_triangleCount) * 3;
+
+		const float origin_size = 0.2f;
+		const float cone_length = 0.75f;
+		const float axis_length = 1;
+		float cylinder_length = axis_length;
+
+		const float PI = 3.1415926f;
+		float sectorStep = 2 * PI / segmentCount;
+		float sectorAngle;  // radian
+
+		std::vector<float> unitCircleVertices;
+		for (int i = 0; i <= segmentCount; ++i)
+		{
+			sectorAngle = i * sectorStep;
+			unitCircleVertices.push_back(cos(sectorAngle)); // x
+			unitCircleVertices.push_back(sin(sectorAngle)); // y
+			unitCircleVertices.push_back(0);                // z
+		}
+
+		std::vector<float> vertices;
+		std::vector<float> normals;
+		std::vector<float> texCoords;
+
+		// put side vertices to arrays
+		for (int i = 0; i < 2; ++i)
+		{
+			float h = -cylinder_length / 2.0f + i * cylinder_length;           // z value; -h/2 to h/2
+			float t = 1.0f - i;                              // vertical tex coord; 1 to 0
+
+			for (int j = 0, k = 0; j <= segmentCount; ++j, k += 3)
+			{
+				float ux = unitCircleVertices[k];
+				float uy = unitCircleVertices[k + 1];
+				float uz = unitCircleVertices[k + 2];
+				// position vector
+				vertices.push_back(ux * origin_size);             // vx
+				vertices.push_back(uy * origin_size);             // vy
+				vertices.push_back(h);                       // vz
+				// normal vector
+				normals.push_back(ux);                       // nx
+				normals.push_back(uy);                       // ny
+				normals.push_back(uz);                       // nz
+				// texture coordinate
+				texCoords.push_back((float)j / segmentCount); // s
+				texCoords.push_back(t);                      // t
+			}
+		}
+
+		// the starting index for the base/top surface
+		//NOTE: it is used for generating indices later
+		int baseCenterIndex = (int)vertices.size() / 3;
+		int topCenterIndex = baseCenterIndex + segmentCount + 1; // include center vertex
+
+		// put base and top vertices to arrays
+		for (int i = 0; i < 2; ++i)
+		{
+			float h = -cylinder_length / 2.0f + i * cylinder_length;           // z value; -h/2 to h/2
+			float nz = -1 + i * 2;                           // z value of normal; -1 to 1
+
+			// center point
+			vertices.push_back(0);     vertices.push_back(0);     vertices.push_back(h);
+			normals.push_back(0);      normals.push_back(0);      normals.push_back(nz);
+			texCoords.push_back(0.5f); texCoords.push_back(0.5f);
+
+			for (int j = 0, k = 0; j < segmentCount; ++j, k += 3)
+			{
+				float ux = unitCircleVertices[k];
+				float uy = unitCircleVertices[k + 1];
+				// position vector
+				vertices.push_back(ux * origin_size);             // vx
+				vertices.push_back(uy * origin_size);             // vy
+				vertices.push_back(h);                       // vz
+				// normal vector
+				normals.push_back(0);                        // nx
+				normals.push_back(0);                        // ny
+				normals.push_back(nz);                       // nz
+				// texture coordinate
+				texCoords.push_back(-ux * 0.5f + 0.5f);      // s
+				texCoords.push_back(-uy * 0.5f + 0.5f);      // t
+			}
+		}
+
+
+		// generate CCW index list of cylinder triangles
+		std::vector<int> indices;
+		int k1 = 0;                         // 1st vertex index at base
+		int k2 = segmentCount + 1;           // 1st vertex index at top
+
+		// indices for the side surface
+		for (int i = 0; i < segmentCount; ++i, ++k1, ++k2)
+		{
+			// 2 triangles per sector
+			// k1 => k1+1 => k2
+			indices.push_back(k1);
+			indices.push_back(k1 + 1);
+			indices.push_back(k2);
+
+			// k2 => k1+1 => k2+1
+			indices.push_back(k2);
+			indices.push_back(k1 + 1);
+			indices.push_back(k2 + 1);
+		}
+
+		// indices for the base surface
+		//NOTE: baseCenterIndex and topCenterIndices are pre-computed during vertex generation
+		//      please see the previous code snippet
+		for (int i = 0, k = baseCenterIndex + 1; i < segmentCount; ++i, ++k)
+		{
+			if (i < segmentCount - 1)
+			{
+				indices.push_back(baseCenterIndex);
+				indices.push_back(k + 1);
+				indices.push_back(k);
+			}
+			else // last triangle
+			{
+				indices.push_back(baseCenterIndex);
+				indices.push_back(baseCenterIndex + 1);
+				indices.push_back(k);
+			}
+		}
+
+		// indices for the top surface
+		for (int i = 0, k = topCenterIndex + 1; i < segmentCount; ++i, ++k)
+		{
+			if (i < segmentCount - 1)
+			{
+				indices.push_back(topCenterIndex);
+				indices.push_back(k);
+				indices.push_back(k + 1);
+			}
+			else // last triangle
+			{
+				indices.push_back(topCenterIndex);
+				indices.push_back(k);
+				indices.push_back(topCenterIndex + 1);
+			}
+		}
+
+
+		// initial transform matrix cols
+		float tx[] = { 1.0f, 0.0f, 0.0f };    // x-axis (left)
+		float ty[] = { 0.0f, 1.0f, 0.0f };    // y-axis (up)
+		float tz[] = { 0.0f, 0.0f, 1.0f };    // z-axis (forward)
+
+
+		int from = 3;
+		int to = 2;
+
+		// X -> Y
+		if (from == 1 && to == 2)
+		{
+			tx[0] = 0.0f; tx[1] = 1.0f;
+			ty[0] = -1.0f; ty[1] = 0.0f;
+		}
+		// X -> Z
+		else if (from == 1 && to == 3)
+		{
+			tx[0] = 0.0f; tx[2] = 1.0f;
+			tz[0] = -1.0f; tz[2] = 0.0f;
+		}
+		// Y -> X
+		else if (from == 2 && to == 1)
+		{
+			tx[0] = 0.0f; tx[1] = -1.0f;
+			ty[0] = 1.0f; ty[1] = 0.0f;
+		}
+		// Y -> Z
+		else if (from == 2 && to == 3)
+		{
+			ty[1] = 0.0f; ty[2] = 1.0f;
+			tz[1] = -1.0f; tz[2] = 0.0f;
+		}
+		//  Z -> X
+		else if (from == 3 && to == 1)
+		{
+			tx[0] = 0.0f; tx[2] = -1.0f;
+			tz[0] = 1.0f; tz[2] = 0.0f;
+		}
+		// Z -> Y
+		else
+		{
+			ty[1] = 0.0f; ty[2] = -1.0f;
+			tz[1] = 1.0f; tz[2] = 0.0f;
+		}
+
+		int count = vertices.size();
+		float vx, vy, vz;
+		float nx, ny, nz;
+		for (std::size_t i = 0, j = 0; i < count; i += 3, j += 8)
+		{
+			// transform vertices
+			vx = vertices[i];
+			vy = vertices[i + 1];
+			vz = vertices[i + 2];
+			vertices[i] = tx[0] * vx + ty[0] * vy + tz[0] * vz;   // x
+			vertices[i + 1] = tx[1] * vx + ty[1] * vy + tz[1] * vz;   // y
+			vertices[i + 2] = tx[2] * vx + ty[2] * vy + tz[2] * vz;   // z
+
+			// transform normals
+			nx = normals[i];
+			ny = normals[i + 1];
+			nz = normals[i + 2];
+			normals[i] = tx[0] * nx + ty[0] * ny + tz[0] * nz;   // nx
+			normals[i + 1] = tx[1] * nx + ty[1] * ny + tz[1] * nz;   // ny
+			normals[i + 2] = tx[2] * nx + ty[2] * ny + tz[2] * nz;   // nz
+
+		}
+
+		//revrse the normals,
+		count = normals.size();
+		for (size_t i = 0, j = 3; i < count; i += 3, j += 8)
+		{
+			normals[i] *= -1;
+			normals[i + 1] *= -1;
+			normals[i + 2] *= -1;
+		}
+
+		// also reverse triangle windings
+		unsigned int tmp;
+		count = indices.size();
+		for (size_t i = 0; i < count; i += 3)
+		{
+			tmp = indices[i];
+			indices[i] = indices[i + 2];
+			indices[i + 2] = tmp;
+		}
+
+		for (int j = 0; j < vertices.size(); j += 3)
+		{
+			
+			mesh.vertex_positions.push_back(XMFLOAT3(vertices[j],vertices[j + 1],vertices[j + 2]));
+			
+		}
+
+		for (int j = 0; j < normals.size(); j += 3)
+		{
+			
+			mesh.vertex_normals.push_back(XMFLOAT3(normals[j], normals[j + 1], normals[j + 2]));
+
+			
+		}
+
+		for (int i = 0; i < texCoords.size(); i += 2)
+		{
+			
+			// texture coordinate
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(texCoords[i], texCoords[i + 1]));
+		}
+
+		for (int i = 0; i < indices.size(); i++)
+		{
+			mesh.indices.push_back(indices[i]);
+		}
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_SMOOTH_FAST);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+	Entity Scene::Entity_CreateCircle(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		float radiusInner = 0.0;
+
+		float thickness = 0.5;
+
+		int angularSegments = 12;
+
+		float RadiusOuter = radiusInner + thickness;
+
+		int VertexCount = angularSegments * 2;
+		
+		int vCount = VertexCount;
+
+
+		std::vector<XMFLOAT3> vertices;
+		std::vector<XMFLOAT3> normals;
+		std::vector<float> texCoords;
+		std::vector<uint32_t> indicies;
+
+		for (int i = 0; i < angularSegments + 1; i++)
+		{
+			float t = i / (float)angularSegments;
+			float angRad = t * 6.28318530718f;
+
+			XMFLOAT2 dir = GetUnitVectorAngle(angRad);
+
+			vertices.emplace_back(XMFLOAT3(dir.x * RadiusOuter, dir.y * RadiusOuter, 0.0f));
+			vertices.emplace_back(XMFLOAT3(dir.x * radiusInner, dir.y * radiusInner, 0.0f));
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(t, 1));
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(t, 0));
+		}
+
+		for (int i = 0; i < angularSegments; i++)
+		{
+			int Rootindex = i * 2;
+
+			int indexInnerRoot = Rootindex + 1;
+			int indexOuterNext = Rootindex + 2;
+			int indexInnerNext = Rootindex + 3;
+
+			indicies.emplace_back(Rootindex);
+			indicies.emplace_back(indexOuterNext);
+			indicies.emplace_back(indexInnerNext);
+
+			indicies.emplace_back(Rootindex);
+			indicies.emplace_back(indexInnerNext);
+			indicies.emplace_back(indexInnerRoot);
+
+		}
+
+		mesh.vertex_positions = vertices;
+
+		mesh.indices = indicies;
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_HARD);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+
+	Entity Scene::Entity_CreatePipe(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		SplineComponent& spline = splines.Create(entity);
+
+		ShapeComponent& shape = shapes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		float radiusInner = 0.0;
+
+		float thickness = 0.5;
+
+		int edgeRIngcount = 24;
+
+		int angularSegments = 24;
+
+		float RadiusOuter = radiusInner + thickness;
+
+		int VertexCount = edgeRIngcount * 2;
+
+		int vCount = VertexCount;
+
+
+		
+
+		
+		//Road shape
+
+		/*shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{XMFLOAT2(3,0), XMFLOAT2(0,1), 0});
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(3,0), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(-0.70710678118f ,0.70710678118f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(4,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(5,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(5,1), XMFLOAT2(1.0f ,0.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(1.0f ,0.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(5,-1), XMFLOAT2(0.0f ,-1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(0.0f ,-1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-5,-1), XMFLOAT2(-1.0f ,0.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(-1.0f ,0.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-5,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-4,1), XMFLOAT2(0.0f ,1.0f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-4,1), XMFLOAT2(0.70710678118f ,0.70710678118f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(-3,0), XMFLOAT2(0.70710678118f ,0.70710678118f), 0 });
+		shape.mesh2dvtex.push_back(wi::scene::ShapeComponent:vtex{ XMFLOAT2(-3,0), XMFLOAT2(0.0f ,1.0f), 0 });
+
+
+		shape.lineIndices.push_back(15);
+		shape.lineIndices.push_back(0);
+		shape.lineIndices.push_back(1);
+		shape.lineIndices.push_back(2);
+		shape.lineIndices.push_back(3);
+		shape.lineIndices.push_back(4);
+		shape.lineIndices.push_back(5);
+		shape.lineIndices.push_back(6);
+		shape.lineIndices.push_back(7);
+		shape.lineIndices.push_back(8);
+		shape.lineIndices.push_back(9);
+		shape.lineIndices.push_back(10);
+		shape.lineIndices.push_back(11);
+		shape.lineIndices.push_back(12);
+		shape.lineIndices.push_back(13);
+		shape.lineIndices.push_back(14);*/
+
+
+		//Circle shape
+
+		for (int i = 0; i < angularSegments + 1; i++)
+		{
+			float t = i / (float)edgeRIngcount;
+			float angRad = t * 6.28318530718f;
+
+			XMFLOAT2 dir = GetUnitVectorAngle(angRad);
+
+			shape.mesh2dvtex.push_back(wi::scene::ShapeComponent::vtex{ XMFLOAT2(dir.x * RadiusOuter,dir.y * RadiusOuter), XMFLOAT2(0.0f ,1.0f), 0 });
+			//spline.mesh2dvtex.push_back(wi::scene::SplineComponent::vtex{ XMFLOAT2(dir.x * radiusInner,dir.y * radiusInner), XMFLOAT2(0.0f ,1.0f), 0 });
+
+		}
+		for (int i = 0; i < angularSegments; i++)
+		{
+			int Rootindex = i * 1;
+
+			int indexInnerRoot = Rootindex + 1;
+			int indexOuterNext = Rootindex + 1;
+			int indexInnerNext = Rootindex + 3;
+
+			shape.lineIndices.push_back(Rootindex);
+			shape.lineIndices.push_back(indexOuterNext);
+			//indicies.emplace_back(indexInnerNext);
+
+			//indicies.emplace_back(Rootindex);
+			//indicies.emplace_back(indexInnerNext);
+			//indicies.emplace_back(indexInnerRoot);
+
+		}
+
+		
+
+		for (size_t i = 0; i < 8; i++)
+		{
+			spline.path.emplace(std::to_string(spline.path.size() + 1), XMFLOAT3(wi::random::GetRandom(20.0f, 200.0f), wi::random::GetRandom(20.0f,200.0f), wi::random::GetRandom(20.0f, 200.0f)));
+		}
+		
+		std::vector<XMFLOAT3> vertices;
+		std::vector<XMFLOAT3> normals;
+		std::vector<float> texCoords;
+		std::vector<uint32_t> indicies;
+
+		std::vector<XMFLOAT3> splineverts;
+		for (auto i = spline.path.begin(); i != spline.path.end(); i++)
+		{
+			splineverts.push_back(i->second);
+		}
+
+
+		for (int ring = 0; ring < edgeRIngcount; ring++)
+		{
+			float t =( ring/  (edgeRIngcount - 3.0f) )* splineverts.size();
+
+			for (int i = 0; i < shape.mesh2dvtex.size(); i++)
+			{
+
+				XMFLOAT3 scal = {1,1,1};
+				XMFLOAT3 tan;
+				XMFLOAT4 rot;
+				XMStoreFloat4(&rot, spline.GetOrintation(splineverts, t));
+				XMVECTOR S_local = XMLoadFloat3(&scal);
+				XMVECTOR R_local = XMLoadFloat4(&rot);
+				XMFLOAT3 sPoint = spline.GetSplinePointCat(splineverts, t);
+				XMVECTOR T_local = XMLoadFloat3(&sPoint);
+				//XMFLOAT3 T_local2 = spline.GetSplinePointCat(splineverts, t);
+
+				XMMATRIX world = XMMatrixScalingFromVector(S_local) * XMMatrixRotationQuaternion(R_local) * XMMatrixTranslationFromVector(T_local);
+
+				XMVECTOR S, R, T;
+				XMMatrixDecompose(&S, &R, &T, world);
+
+				XMFLOAT3 TT;
+
+				XMStoreFloat3(&TT, T);
+
+				XMFLOAT3 a = XMFLOAT3(shape.mesh2dvtex[i].point.x + TT.x, shape.mesh2dvtex[i].point.y + TT.y, TT.z);
+
+				//XMVECTOR norm = XMVectorMultiply(XMLoadFloat4(&rot), spline.mesh2dvtex[i].normal)
+
+				vertices.push_back(a);
+			}
+		}
+
+		//triangles
+
+		for (int ring = 0; ring < edgeRIngcount - 1; ring++)
+		{
+			int RootIndex = ring * shape.mesh2dvtex.size();
+			int RootIndexNext = (ring +1 ) * shape.mesh2dvtex.size();
+
+			for (int line= 0; line < shape.lineIndices.size(); line +=2)
+			{
+				int LineIndexA = shape.lineIndices[line];
+				int LineIndexB = shape.lineIndices[line +1];
+
+				int currentA = RootIndex + LineIndexA;
+				int currentB = RootIndex + LineIndexB;
+				int nextA = RootIndexNext + LineIndexA;
+				int nextB = RootIndexNext + LineIndexB;
+
+				indicies.emplace_back(currentA);
+				indicies.emplace_back(nextA);
+				indicies.emplace_back(nextB);
+
+				indicies.emplace_back(currentA);
+				indicies.emplace_back(nextB);
+				indicies.emplace_back(currentB);
+
+			}
+		}
+
+
+		/*for (int i = 0; i < edgeRIngcount + 1; i++)
+		{
+			float t = i / (float)edgeRIngcount;
+			float angRad = t * 6.28318530718f;
+
+			XMFLOAT2 dir = GetUnitVectorAngle(angRad);
+
+			vertices.emplace_back(XMFLOAT3(dir.x * RadiusOuter, dir.y * RadiusOuter, 0.0f));
+			vertices.emplace_back(XMFLOAT3(dir.x * radiusInner, dir.y * radiusInner, 0.0f));
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(t, 1));
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(t, 0));
+		}
+
+		for (int i = 0; i < edgeRIngcount; i++)
+		{
+			int Rootindex = i * 2;
+
+			int indexInnerRoot = Rootindex + 1;
+			int indexOuterNext = Rootindex + 2;
+			int indexInnerNext = Rootindex + 3;
+
+			indicies.emplace_back(Rootindex);
+			indicies.emplace_back(indexOuterNext);
+			indicies.emplace_back(indexInnerNext);
+
+			indicies.emplace_back(Rootindex);
+			indicies.emplace_back(indexInnerNext);
+			indicies.emplace_back(indexInnerRoot);
+
+		}*/
+
+		mesh.vertex_positions = vertices;
+
+		mesh.indices = indicies;
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_HARD);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+
+	Entity Scene::Entity_CreateSphere(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		const uint32_t segmentCount = 32;
+		const uint32_t stackCount = 16;
+		const uint32_t cylinder_triangleCount = segmentCount * 2;
+		const uint32_t cone_triangleCount = segmentCount;
+		const uint32_t vertexCount = (cylinder_triangleCount + cone_triangleCount) * 3;
+
+		const float origin_size = 0.2f;
+		const float cone_length = 0.75f;
+		const float axis_length = 1;
+		float cylinder_length = axis_length;
+
+		const float PI = 3.1415926f;
+
+		std::vector<float> vertices;
+		std::vector<float> normals;
+		std::vector<float> texCoords;
+
+		float x, y, z, xy;                              // vertex position
+		float nx, ny, nz, lengthInv = 1.0f / origin_size;    // vertex normal
+		float s, t;                                     // vertex texCoord
+
+		float sectorStep = 2 * PI / segmentCount;
+		float stackStep = PI / stackCount;
+		float sectorAngle, stackAngle;
+
+		for (int i = 0; i <= stackCount; ++i)
+		{
+			stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+			xy = origin_size * cosf(stackAngle);             // r * cos(u)
+			z = origin_size * sinf(stackAngle);              // r * sin(u)
+
+			// add (sectorCount+1) vertices per stack
+			// first and last vertices have same position and normal, but different tex coords
+			for (int j = 0; j <= segmentCount; ++j)
+			{
+				sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+
+				// vertex position (x, y, z)
+				x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
+				y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
+				vertices.push_back(x);
+				vertices.push_back(y);
+				vertices.push_back(z);
+
+				// normalized vertex normal (nx, ny, nz)
+				nx = x * lengthInv;
+				ny = y * lengthInv;
+				nz = z * lengthInv;
+				normals.push_back(nx);
+				normals.push_back(ny);
+				normals.push_back(nz);
+
+				// vertex tex coord (s, t) range between [0, 1]
+				s = (float)j / segmentCount;
+				t = (float)i / stackCount;
+				texCoords.push_back(s);
+				texCoords.push_back(t);
+			}
+		}
+
+		// generate CCW index list of sphere triangles
+// k1--k1+1
+// |  / |
+// | /  |
+// k2--k2+1
+		std::vector<int> indices;
+		int k1, k2;
+		for (int i = 0; i < stackCount; ++i)
+		{
+			k1 = i * (segmentCount + 1);     // beginning of current stack
+			k2 = k1 + segmentCount + 1;      // beginning of next stack
+
+			for (int j = 0; j < segmentCount; ++j, ++k1, ++k2)
+			{
+				// 2 triangles per sector excluding first and last stacks
+				// k1 => k2 => k1+1
+				if (i != 0)
+				{
+					indices.push_back(k1);
+					indices.push_back(k2);
+					indices.push_back(k1 + 1);
+				}
+
+				// k1+1 => k2 => k2+1
+				if (i != (stackCount - 1))
+				{
+					indices.push_back(k1 + 1);
+					indices.push_back(k2);
+					indices.push_back(k2 + 1);
+				}
+
+			}
+		}
+
+
+		// initial transform matrix cols
+		float tx[] = { 1.0f, 0.0f, 0.0f };    // x-axis (left)
+		float ty[] = { 0.0f, 1.0f, 0.0f };    // y-axis (up)
+		float tz[] = { 0.0f, 0.0f, 1.0f };    // z-axis (forward)
+
+
+		int from = 3;
+		int to = 2;
+
+		// X -> Y
+		if (from == 1 && to == 2)
+		{
+			tx[0] = 0.0f; tx[1] = 1.0f;
+			ty[0] = -1.0f; ty[1] = 0.0f;
+		}
+		// X -> Z
+		else if (from == 1 && to == 3)
+		{
+			tx[0] = 0.0f; tx[2] = 1.0f;
+			tz[0] = -1.0f; tz[2] = 0.0f;
+		}
+		// Y -> X
+		else if (from == 2 && to == 1)
+		{
+			tx[0] = 0.0f; tx[1] = -1.0f;
+			ty[0] = 1.0f; ty[1] = 0.0f;
+		}
+		// Y -> Z
+		else if (from == 2 && to == 3)
+		{
+			ty[1] = 0.0f; ty[2] = 1.0f;
+			tz[1] = -1.0f; tz[2] = 0.0f;
+		}
+		//  Z -> X
+		else if (from == 3 && to == 1)
+		{
+			tx[0] = 0.0f; tx[2] = -1.0f;
+			tz[0] = 1.0f; tz[2] = 0.0f;
+		}
+		// Z -> Y
+		else
+		{
+			ty[1] = 0.0f; ty[2] = -1.0f;
+			tz[1] = 1.0f; tz[2] = 0.0f;
+		}
+
+		int count = vertices.size();
+		float vx, vy, vz;
+		for (std::size_t i = 0, j = 0; i < count; i += 3, j += 8)
+		{
+			// transform vertices
+			vx = vertices[i];
+			vy = vertices[i + 1];
+			vz = vertices[i + 2];
+			vertices[i] = tx[0] * vx + ty[0] * vy + tz[0] * vz;   // x
+			vertices[i + 1] = tx[1] * vx + ty[1] * vy + tz[1] * vz;   // y
+			vertices[i + 2] = tx[2] * vx + ty[2] * vy + tz[2] * vz;   // z
+
+			// transform normals
+			nx = normals[i];
+			ny = normals[i + 1];
+			nz = normals[i + 2];
+			normals[i] = tx[0] * nx + ty[0] * ny + tz[0] * nz;   // nx
+			normals[i + 1] = tx[1] * nx + ty[1] * ny + tz[1] * nz;   // ny
+			normals[i + 2] = tx[2] * nx + ty[2] * ny + tz[2] * nz;   // nz
+
+		}
+
+
+		//revrse the normals,
+		count = normals.size();
+		for (size_t i = 0, j = 3; i < count; i += 3, j += 8)
+		{
+			normals[i] *= -1;
+			normals[i + 1] *= -1;
+			normals[i + 2] *= -1;
+		}
+
+		// also reverse triangle windings
+		unsigned int tmp;
+		count = indices.size();
+		for (size_t i = 0; i < count; i += 3)
+		{
+			tmp = indices[i];
+			indices[i] = indices[i + 2];
+			indices[i + 2] = tmp;
+		}
+
+		for (int j = 0; j < vertices.size(); j += 3)
+		{
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vertices[j], vertices[j + 1], vertices[j + 2]));
+
+		}
+
+		for (int j = 0; j < normals.size(); j += 3)
+		{
+
+			mesh.vertex_normals.push_back(XMFLOAT3(normals[j], normals[j + 1], normals[j + 2]));
+
+
+		}
+
+		for (int i = 0; i < texCoords.size(); i += 2)
+		{
+
+			// texture coordinate
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(texCoords[i], texCoords[i + 1]));
+		}
+
+		for (int i = 0; i < indices.size(); i++)
+		{
+			mesh.indices.push_back(indices[i]);
+		}
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_SMOOTH_FAST);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+
+	Entity Scene::Entity_CreateRussainElpisoid(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		uint32_t segmentCount = 8;
+		uint32_t stackCount = 20;
+
+		float inner_size = 0.5f;
+		float outer_size = 2.0f;
+
+
+		float radius = 0.5f;
+		float tubeRadius = 2.0f;
+		uint32_t segments = 8;
+		uint32_t sides = 20;
+
+		const float PI = 3.1415926f;
+
+
+
+		for (int i = 0; i < segments; ++i) {
+			float theta = 2.0f * PI * i / segments;
+			float cosTheta = std::cos(theta);
+			float sinTheta = std::sin(theta);
+
+			for (int j = 0; j < sides; ++j) {
+				float phi = 2.0f * PI * j / sides;
+				float cosPhi = std::cos(phi);
+				float sinPhi = std::sin(phi);
+
+				float x = (radius + tubeRadius * cosPhi) * cosTheta;
+				float y = (radius + tubeRadius * cosPhi) * sinTheta;
+				float z = tubeRadius * sinPhi;
+
+				float nx = cosTheta * cosPhi;
+				float ny = sinTheta * cosPhi;
+				float nz = sinPhi;
+
+				float u = 1.0f - static_cast<float>(i) / segments;
+				float v = 1.0f - static_cast<float>(j) / sides;
+
+				mesh.vertex_positions.push_back({ x, y, z });
+				mesh.vertex_normals.push_back({ nx, ny, nz });
+				mesh.vertex_uvset_0.push_back({ u, v });
+			}
+		}
+
+
+		for (int i = 0; i < segments; ++i) {
+			for (int j = 0; j < sides; ++j) {
+				unsigned int p1 = i * sides + j;
+				unsigned int p2 = (i + 1) % segments * sides + j;
+				unsigned int p3 = i * sides + (j + 1) % sides;
+				unsigned int p4 = (i + 1) % segments * sides + (j + 1) % sides;
+
+				mesh.indices.push_back(p1);
+				mesh.indices.push_back(p2);
+				mesh.indices.push_back(p3);
+
+				mesh.indices.push_back(p3);
+				mesh.indices.push_back(p2);
+				mesh.indices.push_back(p4);
+			}
+		}
+
+		mesh.ComputeNormals(mesh.COMPUTE_NORMALS_SMOOTH_FAST);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+	Entity Scene::Entity_CreateTorus(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		uint32_t segmentCount = 8;
+		uint32_t stackCount = 20;
+
+		float inner_size = 0.5f;
+		float outer_size = 2.0f;
+
+
+		float radius = 0.5f;
+		float diameter = 1.0f;
+		float tubeRadius = 2.0f;
+		float thickness = 0.333f;
+		uint32_t segments = 8;
+		uint32_t sides = 20;
+
+		const float PI = 3.1415926f;
+
+		int tessellation = 20;
+
+		/*if (tessellation < 3)
+			throw std::invalid_argument("tesselation parameter must be at least 3");*/
+
+		const size_t stride = tessellation + 1;
+
+		// First we loop around the main ring of the torus.
+		for (size_t i = 0; i <= tessellation; i++)
+		{
+			const float u = float(i) / float(tessellation);
+
+			const float outerAngle = float(i) * XM_2PI / float(tessellation) - XM_PIDIV2;
+
+			// Create a transform matrix that will align geometry to
+			// slice perpendicularly though the current ring position.
+			const XMMATRIX transform = XMMatrixTranslation(diameter / 2, 0, 0) * XMMatrixRotationY(outerAngle);
+
+			// Now we loop along the other axis, around the side of the tube.
+			for (size_t j = 0; j <= tessellation; j++)
+			{
+				const float v = 1 - float(j) / float(tessellation);
+
+				const float innerAngle = float(j) * XM_2PI / float(tessellation) + XM_PI;
+				float dx, dy;
+
+				XMScalarSinCos(&dy, &dx, innerAngle);
+
+				// Create a vertex.
+				XMVECTOR normal = XMVectorSet(dx, dy, 0, 0);
+				XMVECTOR position = XMVectorScale(normal, thickness / 2);
+				const XMVECTOR textureCoordinate = XMVectorSet(u, v, 0, 0);
+
+				position = XMVector3Transform(position, transform);
+				normal = XMVector3TransformNormal(normal, transform);
+
+
+				XMFLOAT4 vpF;    //the float where we copy the v2 vector members
+				XMStoreFloat4(&vpF, position);   //the function used to copy
+
+				mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+				XMFLOAT4 vnF;    //the float where we copy the v2 vector members
+				XMStoreFloat4(&vnF, normal);   //the function used to copy
+
+				XMFLOAT4 vuvF;    //the float where we copy the v2 vector members
+				XMStoreFloat4(&vuvF, textureCoordinate);   //the function used to copy
+
+				mesh.vertex_normals.push_back(XMFLOAT3(vnF.x, vnF.y, vnF.z));
+				mesh.vertex_uvset_0.push_back(XMFLOAT2(vuvF.x, vuvF.y));
+
+				// And create indices for two triangles.
+				const size_t nextI = (i + 1) % stride;
+				const size_t nextJ = (j + 1) % stride;
+
+				mesh.indices.push_back(i * stride + j);
+				mesh.indices.push_back(i * stride + nextJ);
+				mesh.indices.push_back(nextI * stride + j);
+
+
+				mesh.indices.push_back(i * stride + nextJ);
+				mesh.indices.push_back(nextI * stride + nextJ);
+				mesh.indices.push_back(nextI * stride + j);
+
+			}
+		}
+
+		// Build RH above
+		/*if (!rhcoords)
+			ReverseWinding(indices, vertices);*/
+
+		//mesh.ComputeNormals(mesh.COMPUTE_NORMALS_SMOOTH_FAST);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+
+	Entity Scene::Entity_CreateTetrahedron(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		uint32_t segmentCount = 8;
+		uint32_t stackCount = 20;
+
+		float inner_size = 0.5f;
+		float outer_size = 2.0f;
+
+
+		float radius = 0.5f;
+		float diameter = 1.0f;
+		float tubeRadius = 2.0f;
+		float thickness = 0.333f;
+		uint32_t segments = 8;
+		uint32_t sides = 20;
+
+		const float PI = 3.1415926f;
+
+		int tessellation = 20;
+		float size = 2.0f;
+
+		constexpr float SQRT2 = 1.41421356237309504880f;
+		constexpr float SQRT3 = 1.73205080756887729352f;
+		constexpr float SQRT6 = 2.44948974278317809820f;
+
+		static const XMVECTORF32 verts[4] =
+		{
+			{ {              0.f,          0.f,        1.f, 0 } },
+			{ {  2.f * SQRT2 / 3.f,          0.f, -1.f / 3.f, 0 } },
+			{ {     -SQRT2 / 3.f,  SQRT6 / 3.f, -1.f / 3.f, 0 } },
+			{ {     -SQRT2 / 3.f, -SQRT6 / 3.f, -1.f / 3.f, 0 } }
+		};
+
+		static const uint32_t faces[4 * 3] =
+		{
+			0, 1, 2,
+			0, 2, 3,
+			0, 3, 1,
+			1, 3, 2,
+		};
+
+		for (size_t j = 0; j < std::size(faces); j += 3)
+		{
+			const uint32_t v0 = faces[j];
+			const uint32_t v1 = faces[j + 1];
+			const uint32_t v2 = faces[j + 2];
+
+			XMVECTOR normal = XMVector3Cross(
+				XMVectorSubtract(verts[v1].v, verts[v0].v),
+				XMVectorSubtract(verts[v2].v, verts[v0].v));
+			normal = XMVector3Normalize(normal);
+
+			const size_t base = mesh.vertex_positions.size();
+			mesh.indices.push_back(base);
+			mesh.indices.push_back( base + 1);
+			mesh.indices.push_back( base + 2);
+
+			// Duplicate vertices to use face normals
+			XMVECTOR position = XMVectorScale(verts[v0], size);
+
+			XMFLOAT4 vpF;    //the float where we copy the v2 vector members
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			XMStoreFloat4(&vpF, normal);
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(0, 0));
+
+			position = XMVectorScale(verts[v1], size);
+
+			XMStoreFloat4(&vpF, position);
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			XMStoreFloat4(&vpF, normal);
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(1, 0));
+
+			position = XMVectorScale(verts[v2], size);
+			XMStoreFloat4(&vpF, position);
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			XMStoreFloat4(&vpF, normal);
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(0, 1));
+		}
+
+		//revrse the normals,
+		int count = mesh.vertex_normals.size();
+		/*for (size_t i = 0;i < count; i++)
+		{
+			XMVECTOR temp = XMVectorSet(mesh.vertex_normals[i].x, mesh.vertex_normals[i].y, mesh.vertex_normals[i].z,0);
+
+			XMVECTOR negative = XMVectorReplicate(-1);
+			XMVECTOR temp2 = XMVectorMultiply(temp, negative);
+			XMFLOAT3 vec;
+			XMStoreFloat3(&vec, temp2);
+			mesh.vertex_normals[i] = vec;
+		}*/
+
+		// also reverse triangle windings
+		unsigned int tmp;
+		count = mesh.indices.size();
+		for (size_t i = 0; i < count; i += 3)
+		{
+			tmp = mesh.indices[i];
+			mesh.indices[i] = mesh.indices[i + 2];
+			mesh.indices[i + 2] = tmp;
+		}
+
+		//mesh.ComputeNormals(mesh.COMPUTE_NORMALS_HARD);
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+	Entity Scene::Entity_CreateOctahedron(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+
+		float size = 2.0f;
+
+		const float PI = 3.1415926f;
+
+
+		static const XMVECTORF32 verts[6] =
+		{
+			{ {  1,  0,  0, 0 } },
+			{ { -1,  0,  0, 0 } },
+			{ {  0,  1,  0, 0 } },
+			{ {  0, -1,  0, 0 } },
+			{ {  0,  0,  1, 0 } },
+			{ {  0,  0, -1, 0 } }
+		};
+
+		static const uint32_t faces[8 * 3] =
+		{
+			4, 0, 2,
+			4, 2, 1,
+			4, 1, 3,
+			4, 3, 0,
+			5, 2, 0,
+			5, 1, 2,
+			5, 3, 1,
+			5, 0, 3
+		};
+
+		for (size_t j = 0; j < std::size(faces); j += 3)
+		{
+			const uint32_t v0 = faces[j];
+			const uint32_t v1 = faces[j + 1];
+			const uint32_t v2 = faces[j + 2];
+
+			XMVECTOR normal = XMVector3Cross(
+				XMVectorSubtract(verts[v1].v, verts[v0].v),
+				XMVectorSubtract(verts[v2].v, verts[v0].v));
+			normal = XMVector3Normalize(normal);
+
+			const size_t base = mesh.vertex_positions.size();
+			mesh.indices.push_back( base);
+			mesh.indices.push_back(base + 1);
+			mesh.indices.push_back(base + 2);
+
+			// Duplicate vertices to use face normals
+			XMVECTOR position = XMVectorScale(verts[v0], size);
+
+
+			XMFLOAT4 vpF;    //the float where we copy the v2 vector members
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(0, 0));
+
+			position = XMVectorScale(verts[v1], size);
+
+
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(1, 0));
+
+
+			position = XMVectorScale(verts[v2], size);
+
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(0, 1));
+		}
+
+		int count = 0;
+		// also reverse triangle windings
+		unsigned int tmp;
+		count = mesh.indices.size();
+		for (size_t i = 0; i < count; i += 3)
+		{
+			tmp = mesh.indices[i];
+			mesh.indices[i] = mesh.indices[i + 2];
+			mesh.indices[i + 2] = tmp;
+		}
+		//mesh.FlipNormals();
+
+		//mesh.ComputeNormals(mesh.COMPUTE_NORMALS_HARD);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+	Entity Scene::Entity_CreateDodecahedron(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+		constexpr float SQRT3 = 1.73205080756887729352f;
+		constexpr float a = 1.f / SQRT3;
+		constexpr float b = 0.356822089773089931942f; // sqrt( ( 3 - sqrt(5) ) / 6 )
+		constexpr float c = 0.934172358962715696451f; // sqrt( ( 3 + sqrt(5) ) / 6 );
+
+		float size = 2.0f;
+
+		static const XMVECTORF32 verts[20] =
+		{
+			{ {  a,  a,  a, 0 } },
+			{ {  a,  a, -a, 0 } },
+			{ {  a, -a,  a, 0 } },
+			{ {  a, -a, -a, 0 } },
+			{ { -a,  a,  a, 0 } },
+			{ { -a,  a, -a, 0 } },
+			{ { -a, -a,  a, 0 } },
+			{ { -a, -a, -a, 0 } },
+			{ {  b,  c,  0, 0 } },
+			{ { -b,  c,  0, 0 } },
+			{ {  b, -c,  0, 0 } },
+			{ { -b, -c,  0, 0 } },
+			{ {  c,  0,  b, 0 } },
+			{ {  c,  0, -b, 0 } },
+			{ { -c,  0,  b, 0 } },
+			{ { -c,  0, -b, 0 } },
+			{ {  0,  b,  c, 0 } },
+			{ {  0, -b,  c, 0 } },
+			{ {  0,  b, -c, 0 } },
+			{ {  0, -b, -c, 0 } }
+		};
+
+		static const uint32_t faces[12 * 5] =
+		{
+			0, 8, 9, 4, 16,
+			0, 16, 17, 2, 12,
+			12, 2, 10, 3, 13,
+			9, 5, 15, 14, 4,
+			3, 19, 18, 1, 13,
+			7, 11, 6, 14, 15,
+			0, 12, 13, 1, 8,
+			8, 1, 18, 5, 9,
+			16, 4, 14, 6, 17,
+			6, 11, 10, 2, 17,
+			7, 15, 5, 18, 19,
+			7, 19, 3, 10, 11,
+		};
+
+		static const XMVECTORF32 textureCoordinates[5] =
+		{
+			{ {  0.654508f, 0.0244717f, 0, 0 } },
+			{ { 0.0954915f,  0.206107f, 0, 0 } },
+			{ { 0.0954915f,  0.793893f, 0, 0 } },
+			{ {  0.654508f,  0.975528f, 0, 0 } },
+			{ {        1.f,       0.5f, 0, 0 } }
+		};
+
+		static const uint32_t textureIndex[12][5] =
+		{
+			{ 0, 1, 2, 3, 4 },
+			{ 2, 3, 4, 0, 1 },
+			{ 4, 0, 1, 2, 3 },
+			{ 1, 2, 3, 4, 0 },
+			{ 2, 3, 4, 0, 1 },
+			{ 0, 1, 2, 3, 4 },
+			{ 1, 2, 3, 4, 0 },
+			{ 4, 0, 1, 2, 3 },
+			{ 4, 0, 1, 2, 3 },
+			{ 1, 2, 3, 4, 0 },
+			{ 0, 1, 2, 3, 4 },
+			{ 2, 3, 4, 0, 1 },
+		};
+
+		size_t t = 0;
+		for (size_t j = 0; j < std::size(faces); j += 5, ++t)
+		{
+			const uint32_t v0 = faces[j];
+			const uint32_t v1 = faces[j + 1];
+			const uint32_t v2 = faces[j + 2];
+			const uint32_t v3 = faces[j + 3];
+			const uint32_t v4 = faces[j + 4];
+
+			XMVECTOR normal = XMVector3Cross(
+				XMVectorSubtract(verts[v1].v, verts[v0].v),
+				XMVectorSubtract(verts[v2].v, verts[v0].v));
+			normal = XMVector3Normalize(normal);
+
+			const size_t base = mesh.vertex_positions.size();
+
+			mesh.indices.push_back( base);
+			mesh.indices.push_back(base + 1);
+			mesh.indices.push_back(base + 2);
+
+			mesh.indices.push_back(base);
+			mesh.indices.push_back(base + 2);
+			mesh.indices.push_back(base + 3);
+
+			mesh.indices.push_back(base);
+			mesh.indices.push_back(base + 3);
+			mesh.indices.push_back(base + 4);
+
+			// Duplicate vertices to use face normals
+			XMVECTOR position = XMVectorScale(verts[v0], size);
+
+
+			XMFLOAT4 vpF;    //the float where we copy the v2 vector members
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, textureCoordinates[textureIndex[t][0]]);
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(vpF.x, vpF.y));
+
+
+			position = XMVectorScale(verts[v1], size);
+
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, textureCoordinates[textureIndex[t][1]]);
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(vpF.x, vpF.y));
+
+			position = XMVectorScale(verts[v2], size);
+
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, textureCoordinates[textureIndex[t][2]]);
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(vpF.x, vpF.y));
+
+
+			position = XMVectorScale(verts[v3], size);
+
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, textureCoordinates[textureIndex[t][3]]);
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(vpF.x, vpF.y));
+
+
+			position = XMVectorScale(verts[v4], size);
+
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, textureCoordinates[textureIndex[t][4]]);
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(vpF.x, vpF.y));
+		}
+
+		int count = 0;
+		// also reverse triangle windings
+		unsigned int tmp;
+		count = mesh.indices.size();
+		for (size_t i = 0; i < count; i += 3)
+		{
+			tmp = mesh.indices[i];
+			mesh.indices[i] = mesh.indices[i + 2];
+			mesh.indices[i + 2] = tmp;
+		}
+
+		//mesh.FlipNormals();
+
+		//mesh.ComputeNormals(mesh.COMPUTE_NORMALS_HARD);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+	Entity Scene::Entity_CreateIcosahedron(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		float size = 2.0f;
+
+		constexpr float  t = 1.618033988749894848205f; // (1 + sqrt(5)) / 2
+		constexpr float t2 = 1.519544995837552493271f; // sqrt( 1 + sqr( (1 + sqrt(5)) / 2 ) )
+
+		static const XMVECTORF32 verts[12] =
+		{
+			{ {    t / t2,  1.f / t2,       0, 0 } },
+			{ {   -t / t2,  1.f / t2,       0, 0 } },
+			{ {    t / t2, -1.f / t2,       0, 0 } },
+			{ {   -t / t2, -1.f / t2,       0, 0 } },
+			{ {  1.f / t2,       0,    t / t2, 0 } },
+			{ {  1.f / t2,       0,   -t / t2, 0 } },
+			{ { -1.f / t2,       0,    t / t2, 0 } },
+			{ { -1.f / t2,       0,   -t / t2, 0 } },
+			{ {       0,    t / t2,  1.f / t2, 0 }  },
+			{ {       0,   -t / t2,  1.f / t2, 0 } },
+			{ {       0,    t / t2, -1.f / t2, 0 } },
+			{ {       0,   -t / t2, -1.f / t2, 0 } }
+		};
+
+		static const uint32_t faces[20 * 3] =
+		{
+			0, 8, 4,
+			0, 5, 10,
+			2, 4, 9,
+			2, 11, 5,
+			1, 6, 8,
+			1, 10, 7,
+			3, 9, 6,
+			3, 7, 11,
+			0, 10, 8,
+			1, 8, 10,
+			2, 9, 11,
+			3, 11, 9,
+			4, 2, 0,
+			5, 0, 2,
+			6, 1, 3,
+			7, 3, 1,
+			8, 6, 4,
+			9, 4, 6,
+			10, 5, 7,
+			11, 7, 5
+		};
+
+		for (size_t j = 0; j < std::size(faces); j += 3)
+		{
+			const uint32_t v0 = faces[j];
+			const uint32_t v1 = faces[j + 1];
+			const uint32_t v2 = faces[j + 2];
+
+			XMVECTOR normal = XMVector3Cross(
+				XMVectorSubtract(verts[v1].v, verts[v0].v),
+				XMVectorSubtract(verts[v2].v, verts[v0].v));
+			normal = XMVector3Normalize(normal);
+
+			const size_t base = mesh.vertex_positions.size();
+			mesh.indices.push_back(base);
+			mesh.indices.push_back(base + 1);
+			mesh.indices.push_back(base + 2);
+
+			// Duplicate vertices to use face normals
+			XMVECTOR position = XMVectorScale(verts[v0], size);
+
+			XMFLOAT4 vpF;
+
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(0, 0));
+
+
+			position = XMVectorScale(verts[v1], size);
+
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(1, 0));
+
+			position = XMVectorScale(verts[v2], size);
+
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(0, 1));
+
+		}
+
+		int count = 0;
+		// also reverse triangle windings
+		unsigned int tmp;
+		count = mesh.indices.size();
+		for (size_t i = 0; i < count; i += 3)
+		{
+			tmp = mesh.indices[i];
+			mesh.indices[i] = mesh.indices[i + 2];
+			mesh.indices[i + 2] = tmp;
+		}
+
+		//mesh.FlipNormals();
+
+		//mesh.ComputeNormals(mesh.COMPUTE_NORMALS_HARD);
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
+	Entity Scene::Entity_CreateCone(
+		const std::string& name
+	)
+	{
+		Entity entity = CreateEntity();
+
+		if (!name.empty())
+		{
+			names.Create(entity) = name;
+		}
+
+		layers.Create(entity);
+
+		transforms.Create(entity);
+
+		ObjectComponent& object = objects.Create(entity);
+
+		MeshComponent& mesh = meshes.Create(entity);
+
+		// object references the mesh entity (there can be multiple objects referencing one mesh):
+		object.meshID = entity;
+
+		float diameter = 5.0f;
+		float height = 5.0f;
+
+		int tessellation = 12;
+
+		if (tessellation < 3)
+			tessellation = 3;
+
+		height /= 2;
+
+		const XMVECTOR topOffset = XMVectorScale(g_XMIdentityR1, height);
+
+		const float radius = diameter / 2;
+		const size_t stride = tessellation + 1;
+
+		// Create a ring of triangles around the outside of the cone.
+		for (size_t i = 0; i <= tessellation; i++)
+		{
+			const XMVECTOR circlevec = GetCircleVector(i, tessellation);
+
+			const XMVECTOR sideOffset = XMVectorScale(circlevec, radius);
+
+			const float u = float(i) / float(tessellation);
+
+			const XMVECTOR textureCoordinate = XMLoadFloat(&u);
+
+			const XMVECTOR pt = XMVectorSubtract(sideOffset, topOffset);
+
+			XMVECTOR normal = XMVector3Cross(
+				GetCircleTangent(i, tessellation),
+				XMVectorSubtract(topOffset, pt));
+			normal = XMVector3Normalize(normal);
+
+			//VertexPositionNormalTexture(topOffset, normal, g_XMZero)
+
+			XMFLOAT4 vpF;    //the float where we copy the v2 vector members
+			XMStoreFloat4(&vpF, topOffset);   //the function used to copy
+			// Duplicate the top vertex for distinct normals
+			
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x,vpF.y,vpF.z));
+
+			XMStoreFloat4(&vpF, normal);
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			XMStoreFloat4(&vpF, XMVectorAdd(textureCoordinate, g_XMIdentityR1));
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(vpF.x, vpF.y));
+
+			mesh.indices.push_back(i * 2);
+			mesh.indices.push_back( (i * 2 + 3) % (stride * 2));
+			mesh.indices.push_back((i * 2 + 1) % (stride * 2));
+		}
+
+		bool isTop = false;
+		// Create cap indices.
+		for (size_t i = 0; i < tessellation - 2; i++)
+		{
+			size_t i1 = (i + 1) % tessellation;
+			size_t i2 = (i + 2) % tessellation;
+
+			if (isTop)
+			{
+				std::swap(i1, i2);
+			}
+
+			const size_t vbase = mesh.vertex_positions.size();
+			mesh.indices.push_back(vbase);
+			mesh.indices.push_back(vbase + i1);
+			mesh.indices.push_back(vbase + i2);
+		}
+
+		// Which end of the cylinder is this?
+		XMVECTOR normal = g_XMIdentityR1;
+		XMVECTOR textureScale = g_XMNegativeOneHalf;
+
+		if (!isTop)
+		{
+			normal = XMVectorNegate(normal);
+			textureScale = XMVectorMultiply(textureScale, g_XMNegateX);
+		}
+
+		// Create cap vertices.
+		for (size_t i = 0; i < tessellation; i++)
+		{
+			const XMVECTOR circleVector = GetCircleVector(i, tessellation);
+
+			const XMVECTOR position = XMVectorAdd(XMVectorScale(circleVector, radius), XMVectorScale(normal, height));
+
+			const XMVECTOR textureCoordinate = XMVectorMultiplyAdd(XMVectorSwizzle<0, 2, 3, 3>(circleVector), textureScale, g_XMOneHalf);
+
+
+			XMFLOAT4 vpF;    //the float where we copy the v2 vector members
+			XMStoreFloat4(&vpF, position);   //the function used to copy
+			mesh.vertex_positions.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			XMStoreFloat4(&vpF, normal);   //the function used to copy
+			mesh.vertex_normals.push_back(XMFLOAT3(vpF.x, vpF.y, vpF.z));
+			XMStoreFloat4(&vpF, textureCoordinate);   //the function used to copy
+
+			mesh.vertex_uvset_0.push_back(XMFLOAT2(vpF.x, vpF.y));
+
+		}
+
+
+		// Subset maps a part of the mesh to a material:
+		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
+		subset.indexCount = uint32_t(mesh.indices.size());
+		materials.Create(entity);
+		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
+
+		// vertex buffer GPU data will be packed and uploaded here:
+		mesh.CreateRenderData();
+
+		return entity;
+	}
+
 	Entity Scene::Entity_CreatePlane(
 		const std::string& name
 	)
@@ -1366,6 +3365,8 @@ namespace wi::scene
 		MeshComponent::MeshSubset& subset = mesh.subsets.emplace_back();
 		subset.indexCount = uint32_t(mesh.indices.size());
 		materials.Create(entity);
+		MaterialComponent* material = materials.GetComponent(entity);
+		material->textures[MaterialComponent::BASECOLORMAP].resource.SetTexture(*wi::texturehelper::getWhite());
 		subset.materialID = entity; // the material component is created on the same entity as the mesh component, though it is not required as it could also use a different material entity
 
 		// vertex buffer GPU data will be packed and uploaded here:
@@ -1454,7 +3455,8 @@ namespace wi::scene
 				{
 					assert(channel.samplerIndex < (int)animation.samplers.size());
 					const AnimationComponent::AnimationSampler& sampler = animation.samplers[channel.samplerIndex];
-					const AnimationDataComponent* animationdata = animation_datas.GetComponent(sampler.data);
+					const Scene* data_scene = sampler.scene == nullptr ? this : (const Scene*)sampler.scene;
+					const AnimationDataComponent* animationdata = data_scene->animation_datas.GetComponent(sampler.data);
 					if (animationdata == nullptr)
 					{
 						continue;
@@ -1956,7 +3958,7 @@ namespace wi::scene
 							{
 								// Retargeting transfer from source to destination:
 								const AnimationComponent::RetargetSourceData& retarget = animation.retargets[channel.retargetIndex];
-								TransformComponent* source_transform = transforms.GetComponent(retarget.source);
+								TransformComponent* source_transform = data_scene->transforms.GetComponent(retarget.source);
 								if (source_transform != nullptr)
 								{
 									XMMATRIX dstRelativeMatrix = XMLoadFloat4x4(&retarget.dstRelativeMatrix);
@@ -2030,7 +4032,7 @@ namespace wi::scene
 							{
 								// Retargeting transfer from source to destination:
 								const AnimationComponent::RetargetSourceData& retarget = animation.retargets[channel.retargetIndex];
-								TransformComponent* source_transform = transforms.GetComponent(retarget.source);
+								TransformComponent* source_transform = data_scene->transforms.GetComponent(retarget.source);
 								if (source_transform != nullptr)
 								{
 									XMMATRIX dstRelativeMatrix = XMLoadFloat4x4(&retarget.dstRelativeMatrix);
@@ -2056,7 +4058,7 @@ namespace wi::scene
 							{
 								// Retargeting transfer from source to destination:
 								const AnimationComponent::RetargetSourceData& retarget = animation.retargets[channel.retargetIndex];
-								TransformComponent* source_transform = transforms.GetComponent(retarget.source);
+								TransformComponent* source_transform = data_scene->transforms.GetComponent(retarget.source);
 								if (source_transform != nullptr)
 								{
 									XMMATRIX dstRelativeMatrix = XMLoadFloat4x4(&retarget.dstRelativeMatrix);
@@ -3244,7 +5246,7 @@ namespace wi::scene
 
 				ShaderTransform& shadertransform = armature.boneData[boneIndex];
 				shadertransform.Create(mat);
-				if (dt > 0)
+				if (skinningDataMapped != nullptr)
 				{
 					std::memcpy(gpu_dst + boneIndex, &shadertransform, sizeof(shadertransform));
 				}
@@ -3286,7 +5288,7 @@ namespace wi::scene
 			mesh._flags &= ~MeshComponent::TLAS_FORCE_DOUBLE_SIDED;
 
 			mesh.active_morph_count = 0;
-			if (dt > 0 && !mesh.morph_targets.empty())
+			if (skinningDataMapped != nullptr && !mesh.morph_targets.empty())
 			{
 				mesh.morphGPUOffset = skinningAllocator.fetch_add(uint32_t(mesh.morph_targets.size() * sizeof(MorphTargetGPU)));
 				MorphTargetGPU* gpu_dst = (MorphTargetGPU*)((uint8_t*)skinningDataMapped + mesh.morphGPUOffset);
@@ -4027,8 +6029,7 @@ namespace wi::scene
 			GraphicsDevice* device = wi::graphics::GetDevice();
 
 			constexpr Format format = Format::BC6H_UF16;
-			constexpr uint32_t blocks = envmapRes / GetFormatBlockSize(format);
-			constexpr uint32_t mip_count = GetMipCount(blocks, blocks);
+			constexpr uint32_t mip_count = GetMipCount(envmapRes, envmapRes);
 
 			TextureDesc desc;
 			desc.array_size = 6;
@@ -4563,6 +6564,7 @@ namespace wi::scene
 	}
 	void Scene::RunScriptUpdateSystem(wi::jobsystem::context& ctx)
 	{
+		auto range = wi::profiler::BeginRangeCPU("Script Components");
 		for (size_t i = 0; i < scripts.GetCount(); ++i)
 		{
 			ScriptComponent& script = scripts[i];
@@ -4572,10 +6574,14 @@ namespace wi::scene
 			{
 				if (script.script.empty() && script.resource.IsValid())
 				{
-					script.script += script.resource.GetScript();
-					wi::lua::AttachScriptParameters(script.script, script.filename, wi::lua::GeneratePID(), "local function GetEntity() return " + std::to_string(entity) + "; end;", "");
+					std::string str = script.resource.GetScript();
+					wi::lua::AttachScriptParameters(str, script.filename, wi::lua::GeneratePID(), "local function GetEntity() return " + std::to_string(entity) + "; end;", "");
+					wi::lua::CompileText(str, script.script);
 				}
-				wi::lua::RunText(script.script);
+				if (!script.script.empty())
+				{
+					wi::lua::RunBinaryData(script.script.data(), script.script.size(), script.filename.c_str());
+				}
 
 				if (script.IsPlayingOnlyOnce())
 				{
@@ -4583,6 +6589,7 @@ namespace wi::scene
 				}
 			}
 		}
+		wi::profiler::EndRange(range);
 	}
 
 	Scene::RayIntersectionResult Scene::Intersects(const Ray& ray, uint32_t filterMask, uint32_t layerMask, uint32_t lod) const
@@ -5606,9 +7613,12 @@ namespace wi::scene
 		return parentMatrix;
 	}
 
-	Entity Scene::RetargetAnimation(Entity dst, Entity src, bool bake_data)
+	Entity Scene::RetargetAnimation(Entity dst, Entity src, bool bake_data, const Scene* src_scene)
 	{
-		const AnimationComponent* animation_source = animations.GetComponent(src);
+		if (src_scene == nullptr)
+			src_scene = this;
+
+		const AnimationComponent* animation_source = src_scene->animations.GetComponent(src);
 		if (animation_source == nullptr)
 			return INVALID_ENTITY;
 		const HumanoidComponent* humanoid_dest = humanoids.GetComponent(dst);
@@ -5627,9 +7637,9 @@ namespace wi::scene
 		for (auto& channel : animation_source->channels)
 		{
 			bool found = false;
-			for (size_t i = 0; (i < humanoids.GetCount()) && !found; ++i)
+			for (size_t i = 0; (i < src_scene->humanoids.GetCount()) && !found; ++i)
 			{
-				const HumanoidComponent& humanoid_source = humanoids[i];
+				const HumanoidComponent& humanoid_source = src_scene->humanoids[i];
 				for (size_t humanoidBoneIndex = 0; humanoidBoneIndex < arraysize(humanoid_source.bones); ++humanoidBoneIndex)
 				{
 					Entity bone_source = humanoid_source.bones[humanoidBoneIndex];
@@ -5649,12 +7659,13 @@ namespace wi::scene
 						auto& retarget_sampler = animation.samplers.emplace_back();
 						retarget_sampler = sampler;
 						retarget_sampler.backwards_compatibility_data = {};
+						retarget_sampler.scene = src_scene == this ? nullptr : src_scene;
 
-						TransformComponent* transform_source = transforms.GetComponent(bone_source);
+						TransformComponent* transform_source = src_scene->transforms.GetComponent(bone_source);
 						TransformComponent* transform_dest = transforms.GetComponent(bone_dest);
 						if (transform_source != nullptr && transform_dest != nullptr)
 						{
-							XMMATRIX srcParentMatrix = ComputeParentMatrixRecursive(bone_source);
+							XMMATRIX srcParentMatrix = src_scene->ComputeParentMatrixRecursive(bone_source);
 							XMMATRIX srcMatrix = transform_source->GetLocalMatrix() * srcParentMatrix;
 							XMMATRIX inverseSrcMatrix = XMMatrixInverse(nullptr, srcMatrix);
 

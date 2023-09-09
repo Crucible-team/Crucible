@@ -50,6 +50,7 @@ set (SOURCE_FILES
 	#ModelImporter_VMF.cpp
 	HealthWindow.cpp
 	ArmorWindow.cpp
+	SplineWindow.cpp
 )
 
 add_subdirectory(meshoptimizer)
@@ -84,7 +85,7 @@ add_custom_command(
 	TARGET JOE POST_BUILD
 	# Copy shader compiler library in the source folder
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/WickedEngine/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/WickedEngine/shaders ${CMAKE_CURRENT_BINARY_DIR}/Data/shaders
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/WickedEngine/shaders ${CMAKE_CURRENT_BINARY_DIR}/Data/shadersrc
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/terrain ${CMAKE_CURRENT_BINARY_DIR}/Data/terrain
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/languages ${CMAKE_CURRENT_BINARY_DIR}/Data/languages
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/fonts ${CMAKE_CURRENT_BINARY_DIR}/Data/fonts
@@ -106,6 +107,7 @@ install(TARGETS JOE RUNTIME DESTINATION ${EDITOR_INSTALL_FOLDER})
 # install editor assets
 # mandatory terrain folder
 install(DIRECTORY
+		"${CMAKE_CURRENT_SOURCE_DIR}/Data"
 		"${CMAKE_CURRENT_SOURCE_DIR}/terrain"
 		"${CMAKE_CURRENT_SOURCE_DIR}/languages"
 		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"

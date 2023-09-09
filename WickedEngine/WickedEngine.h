@@ -47,7 +47,6 @@
 #include "wiEnums.h"
 #include "wiInitializer.h"
 #include "wiLua.h"
-#include "wiLuna.h"
 #include "wiGraphics.h"
 #include "wiGraphicsDevice.h"
 #include "wiGUI.h"
@@ -74,13 +73,21 @@
 #include "wiLocalization.h"
 #include "wiVideo.h"
 
-#ifdef _WIN32
+#ifdef PLATFORM_WINDOWS_DESKTOP
+#pragma comment(lib,"WickedEngine_Windows.lib")
+#endif // PLATFORM_WINDOWS_DESKTOP
+
 #ifdef PLATFORM_UWP
 #pragma comment(lib,"WickedEngine_UWP.lib")
-#else
-#pragma comment(lib,"WickedEngine_Windows.lib")
 #endif // PLATFORM_UWP
-#endif // _WIN32
+
+#ifdef PLATFORM_XBOX
+#pragma comment(lib,"WickedEngine_XBOX.lib")
+#endif // PLATFORM_XBOX
+
+#ifdef PLATFORM_PS5
+#pragma comment(lib,"WickedEngine_PS5.a")
+#endif // PLATFORM_PS5
 
 
 // After version 0.59.11, namespaces were refactored into nested namespaces under the wi:: root namespace.

@@ -46,6 +46,7 @@ public:
 	wi::gui::Button bugButton;
 	wi::gui::Button aboutButton;
 	wi::gui::Button exitButton;
+	wi::gui::Window aboutWindow;
 	wi::gui::Label aboutLabel;
 
 	OptionsWindow optionsWnd;
@@ -133,10 +134,11 @@ public:
 	void SaveAs();
 	bool deleting = false;
 
-	std::string save_text = "";
+	std::string save_text_message = "";
+	std::string save_text_filename = "";
 	float save_text_alpha = 0; // seconds until save text disappears
 	wi::Color save_text_color = wi::Color::White();
-	void PostSaveText(const std::string& text);
+	void PostSaveText(const std::string& message, const std::string& filename = "", float time_seconds = 4);
 
 	std::string last_script_path;
 

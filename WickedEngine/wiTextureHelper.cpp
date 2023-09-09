@@ -146,25 +146,22 @@ namespace wi::texturehelper
 
 		// Blue Noise:
 		{
-			uint8_t blueNoise[128][128][4] = {};
+			wi::vector<wi::Color> bluenoise(128 * 128);
 
-			for (int x = 0; x < 128; ++x)
+			for (int y = 0; y < 128; ++y)
 			{
-				for (int y = 0; y < 128; ++y)
+				for (int x = 0; x < 128; ++x)
 				{
-					float const f0 = samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_1spp(x, y, 0, 0);
-					float const f1 = samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_1spp(x, y, 0, 1);
-					float const f2 = samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_1spp(x, y, 0, 2);
-					float const f3 = samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_1spp(x, y, 0, 3);
+					const float f0 = samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_1spp(x, y, 0, 0);
+					const float f1 = samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_1spp(x, y, 0, 1);
+					const float f2 = samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_1spp(x, y, 0, 2);
+					const float f3 = samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_1spp(x, y, 0, 3);
 
-					blueNoise[x][y][0] = static_cast<uint8_t>(f0 * 0xFF);
-					blueNoise[x][y][1] = static_cast<uint8_t>(f1 * 0xFF);
-					blueNoise[x][y][2] = static_cast<uint8_t>(f2 * 0xFF);
-					blueNoise[x][y][3] = static_cast<uint8_t>(f3 * 0xFF);
+					bluenoise[x + y * 128] = wi::Color::fromFloat4(XMFLOAT4(f0, f1, f2, f3));
 				}
 			}
 
-			CreateTexture(helperTextures[HELPERTEXTURE_BLUENOISE], (uint8_t*)blueNoise, 128, 128, Format::R8G8B8A8_UNORM);
+			CreateTexture(helperTextures[HELPERTEXTURE_BLUENOISE], (uint8_t*)bluenoise.data(), 128, 128, Format::R8G8B8A8_UNORM);
 			device->SetName(&helperTextures[HELPERTEXTURE_BLUENOISE], "HELPERTEXTURE_BLUENOISE");
 		}
 
@@ -256,7 +253,14 @@ namespace wi::texturehelper
 	}
 
 
-	bool CreateTexture(wi::graphics::Texture& texture, const uint8_t* data, uint32_t width, uint32_t height, Format format)
+	bool CreateTexture(
+		Texture& texture,
+		const uint8_t* data,
+		uint32_t width,
+		uint32_t height,
+		Format format,
+		Swizzle swizzle
+	)
 	{
 		if (data == nullptr)
 		{
@@ -264,20 +268,149 @@ namespace wi::texturehelper
 		}
 		GraphicsDevice* device = wi::graphics::GetDevice();
 
-		TextureDesc textureDesc;
-		textureDesc.width = width;
-		textureDesc.height = height;
-		textureDesc.mip_levels = 1;
-		textureDesc.array_size = 1;
-		textureDesc.format = format;
-		textureDesc.sample_count = 1;
-		textureDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+		TextureDesc desc;
+		desc.width = width;
+		desc.height = height;
+		desc.mip_levels = 1;
+		desc.array_size = 1;
+		desc.format = format;
+		desc.sample_count = 1;
+		desc.bind_flags = BindFlag::SHADER_RESOURCE;
+		desc.swizzle = swizzle;
 
 		SubresourceData InitData;
 		InitData.data_ptr = data;
 		InitData.row_pitch = width * GetFormatStride(format) / GetFormatBlockSize(format);
 
-		return device->CreateTexture(&textureDesc, &InitData, &texture);
+		return device->CreateTexture(&desc, &InitData, &texture);
+	}
+
+	Texture CreateGradientTexture(
+		GradientType type,
+		uint32_t width,
+		uint32_t height,
+		const XMFLOAT2& uv_start,
+		const XMFLOAT2& uv_end,
+		GradientFlags flags,
+		Swizzle swizzle
+	)
+	{
+		wi::vector<uint8_t> data(width * height);
+
+		switch (type)
+		{
+		default:
+		case GradientType::Linear:
+		{
+			const XMVECTOR a = XMLoadFloat2(&uv_start);
+			const XMVECTOR b = XMLoadFloat2(&uv_end);
+			const float distance = XMVectorGetX(XMVector3Length(b - a));
+			for (uint32_t y = 0; y < height; ++y)
+			{
+				for (uint32_t x = 0; x < width; ++x)
+				{
+					const XMFLOAT2 uv = XMFLOAT2(float(x) / float(width - 1), float(y) / float(height - 1));
+					const XMVECTOR point_on_line = wi::math::ClosestPointOnLineSegment(a, b, XMLoadFloat2(&uv));
+					const float uv_distance = XMVectorGetX(XMVector3Length(point_on_line - a));
+					float gradient = wi::math::saturate(wi::math::InverseLerp(0, distance, uv_distance));
+					if (has_flag(flags, GradientFlags::Inverse))
+					{
+						gradient = 1 - gradient;
+					}
+					if (has_flag(flags, GradientFlags::Smoothstep))
+					{
+						gradient = wi::math::SmoothStep(0, 1, gradient);
+					}
+					data[x + y * width] = uint8_t(gradient * 255);
+				}
+			}
+		}
+		break;
+
+		case GradientType::Circular:
+		{
+			const XMVECTOR a = XMLoadFloat2(&uv_start);
+			const XMVECTOR b = XMLoadFloat2(&uv_end);
+			const float distance = XMVectorGetX(XMVector3Length(b - a));
+			for (uint32_t y = 0; y < height; ++y)
+			{
+				for (uint32_t x = 0; x < width; ++x)
+				{
+					const XMFLOAT2 uv = XMFLOAT2(float(x) / float(width - 1), float(y) / float(height - 1));
+					const float uv_distance = wi::math::Clamp(XMVectorGetX(XMVector3Length(XMLoadFloat2(&uv) - a)), 0, distance);
+					float gradient = wi::math::saturate(wi::math::InverseLerp(0, distance, uv_distance));
+					if (has_flag(flags, GradientFlags::Inverse))
+					{
+						gradient = 1 - gradient;
+					}
+					if (has_flag(flags, GradientFlags::Smoothstep))
+					{
+						gradient = wi::math::SmoothStep(0, 1, gradient);
+					}
+					data[x + y * width] = uint8_t(gradient * 255);
+				}
+			}
+		}
+		break;
+
+		case GradientType::Angular:
+		{
+			XMFLOAT2 direction;
+			XMStoreFloat2(&direction, XMVector2Normalize(XMLoadFloat2(&uv_end) - XMLoadFloat2(&uv_start)));
+			for (uint32_t y = 0; y < height; ++y)
+			{
+				for (uint32_t x = 0; x < width; ++x)
+				{
+					const XMFLOAT2 uv = XMFLOAT2(float(x) / float(width - 1), float(y) / float(height - 1));
+					const XMFLOAT2 coord = XMFLOAT2(uv.x - uv_start.x, uv.y - uv_start.y);
+					float gradient = wi::math::GetAngle(direction, coord) / XM_2PI;
+					if (has_flag(flags, GradientFlags::Inverse))
+					{
+						gradient = 1 - gradient;
+					}
+					if (has_flag(flags, GradientFlags::Smoothstep))
+					{
+						gradient = wi::math::SmoothStep(0, 1, gradient);
+					}
+					data[x + y * width] = uint8_t(gradient * 255);
+				}
+			}
+		}
+		break;
+
+		}
+
+		Texture texture;
+		CreateTexture(texture, data.data(), width, height, Format::R8_UNORM, swizzle);
+		return texture;
+	}
+
+	Texture CreateCircularProgressGradientTexture(
+		uint32_t width,
+		uint32_t height,
+		const XMFLOAT2& direction,
+		bool counter_clockwise,
+		Swizzle swizzle
+	)
+	{
+		wi::vector<uint8_t> data(width * height);
+		for (uint32_t y = 0; y < height; ++y)
+		{
+			for (uint32_t x = 0; x < width; ++x)
+			{
+				const XMFLOAT2 coord = XMFLOAT2(float(x) / float(width - 1) * 2 - 1, -(float(y) / float(height - 1) * 2 - 1));
+				float gradient = wi::math::GetAngle(direction, coord) / XM_2PI;
+				if (counter_clockwise)
+				{
+					gradient = 1 - gradient;
+				}
+				data[x + y * width] = uint8_t(gradient * 255);
+			}
+		}
+
+		Texture texture;
+		CreateTexture(texture, data.data(), width, height, Format::R8_UNORM, swizzle);
+		return texture;
 	}
 
 }

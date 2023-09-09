@@ -363,9 +363,9 @@ namespace vulkan_internal
 		switch (value)
 		{
 		case ShaderStage::MS:
-			return VK_SHADER_STAGE_MESH_BIT_NV;
+			return VK_SHADER_STAGE_MESH_BIT_EXT;
 		case ShaderStage::AS:
-			return VK_SHADER_STAGE_TASK_BIT_NV;
+			return VK_SHADER_STAGE_TASK_BIT_EXT;
 		case ShaderStage::VS:
 			return VK_SHADER_STAGE_VERTEX_BIT;
 		case ShaderStage::HS:
@@ -405,7 +405,8 @@ namespace vulkan_internal
 
 		if (has_flag(value, ResourceState::SHADER_RESOURCE) ||
 			has_flag(value, ResourceState::SHADER_RESOURCE_COMPUTE) ||
-			has_flag(value, ResourceState::UNORDERED_ACCESS))
+			has_flag(value, ResourceState::UNORDERED_ACCESS) ||
+			has_flag(value, ResourceState::CONSTANT_BUFFER))
 		{
 			flags |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		}
@@ -434,10 +435,6 @@ namespace vulkan_internal
 		if (has_flag(value, ResourceState::INDEX_BUFFER))
 		{
 			flags |= VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
-		}
-		if (has_flag(value, ResourceState::CONSTANT_BUFFER))
-		{
-			flags |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		}
 		if (has_flag(value, ResourceState::INDIRECT_ARGUMENT))
 		{
@@ -1089,7 +1086,7 @@ namespace vulkan_internal
 
 	inline const std::string GetCachePath()
 	{
-		return wi::helper::GetTempDirectoryPath() + "/wiPipelineCache_Vulkan";
+		return wi::helper::GetCacheDirectoryPath() + "/wiPipelineCache_Vulkan";
 	}
 
 	bool CreateSwapChainInternal(
@@ -1173,7 +1170,10 @@ namespace vulkan_internal
 				//	the color space change will not be applied
 				res = vkDeviceWaitIdle(device);
 				assert(res == VK_SUCCESS);
-				vkDestroySwapchainKHR(device, internal_state->swapChain, nullptr);
+				{
+					std::scoped_lock lock(allocationhandler->destroylocker);
+					allocationhandler->destroyer_swapchains.emplace_back(internal_state->swapChain, allocationhandler->framecount);
+				}
 				internal_state->swapChain = nullptr;
 			}
 		}
@@ -1233,7 +1233,8 @@ namespace vulkan_internal
 
 		if (createInfo.oldSwapchain != VK_NULL_HANDLE)
 		{
-			vkDestroySwapchainKHR(device, createInfo.oldSwapchain, nullptr);
+			std::scoped_lock lock(allocationhandler->destroylocker);
+			allocationhandler->destroyer_swapchains.emplace_back(createInfo.oldSwapchain, allocationhandler->framecount);
 		}
 
 		res = vkGetSwapchainImagesKHR(device, internal_state->swapChain, &imageCount, nullptr);
@@ -1299,7 +1300,7 @@ using namespace vulkan_internal;
 	{
 		if (queue == VK_NULL_HANDLE)
 			return;
-		std::scoped_lock lock(locker);
+		std::scoped_lock lock(*locker);
 
 		VkSubmitInfo2 submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
@@ -1489,7 +1490,7 @@ using namespace vulkan_internal;
 			submitInfo.signalSemaphoreInfoCount = 1;
 			submitInfo.pSignalSemaphoreInfos = signalSemaphoreInfos;
 
-			std::scoped_lock lock(device->queues[QUEUE_COPY].locker);
+			std::scoped_lock lock(*device->queues[QUEUE_COPY].locker);
 			res = vkQueueSubmit2(device->queues[QUEUE_COPY].queue, 1, &submitInfo, VK_NULL_HANDLE);
 			assert(res == VK_SUCCESS);
 		}
@@ -1518,7 +1519,7 @@ using namespace vulkan_internal;
 			}
 			submitInfo.pSignalSemaphoreInfos = signalSemaphoreInfos;
 
-			std::scoped_lock lock(device->queues[QUEUE_GRAPHICS].locker);
+			std::scoped_lock lock(*device->queues[QUEUE_GRAPHICS].locker);
 			res = vkQueueSubmit2(device->queues[QUEUE_GRAPHICS].queue, 1, &submitInfo, VK_NULL_HANDLE);
 			assert(res == VK_SUCCESS);
 		}
@@ -1535,7 +1536,7 @@ using namespace vulkan_internal;
 			submitInfo.signalSemaphoreInfoCount = 0;
 			submitInfo.pSignalSemaphoreInfos = nullptr;
 
-			std::scoped_lock lock(device->queues[QUEUE_VIDEO_DECODE].locker);
+			std::scoped_lock lock(*device->queues[QUEUE_VIDEO_DECODE].locker);
 			res = vkQueueSubmit2(device->queues[QUEUE_VIDEO_DECODE].queue, 1, &submitInfo, VK_NULL_HANDLE);
 			assert(res == VK_SUCCESS);
 		}
@@ -1552,7 +1553,7 @@ using namespace vulkan_internal;
 			submitInfo.signalSemaphoreInfoCount = 0;
 			submitInfo.pSignalSemaphoreInfos = nullptr;
 
-			std::scoped_lock lock(device->queues[QUEUE_COMPUTE].locker);
+			std::scoped_lock lock(*device->queues[QUEUE_COMPUTE].locker);
 			res = vkQueueSubmit2(device->queues[QUEUE_COMPUTE].queue, 1, &submitInfo, cmd.fence); // final submit also signals fence!
 			assert(res == VK_SUCCESS);
 		}
@@ -2326,6 +2327,8 @@ using namespace vulkan_internal;
 	{
 		wi::Timer timer;
 
+		wi::unordered_map<uint32_t, std::shared_ptr<std::mutex>> queue_lockers;
+
 		TOPLEVEL_ACCELERATION_STRUCTURE_INSTANCE_SIZE = sizeof(VkAccelerationStructureInstanceKHR);
 
 		validationMode = validationMode_;
@@ -2374,16 +2377,12 @@ using namespace vulkan_internal;
 				debugUtils = true;
 				instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 			}
-			else if (strcmp(availableExtension.extensionName, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME) == 0)
-			{
-				instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-			}
 			else if (strcmp(availableExtension.extensionName, VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME) == 0)
 			{
 				instanceExtensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
 			}
 		}
-		
+
 		instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
@@ -2505,10 +2504,11 @@ using namespace vulkan_internal;
 			wi::vector<const char*> enabled_deviceExtensions;
 
 			bool h264_decode_extension = false;
+			bool suitable = false;
 
-			for (const auto& dev : devices)
-			{
-				bool suitable = true;
+
+			auto checkPhysicalDeviceAndFillProperties2 = [&](VkPhysicalDevice dev) {
+				suitable = true;
 
 				uint32_t extensionCount;
 				VkResult res = vkEnumerateDeviceExtensionProperties(dev, nullptr, &extensionCount, nullptr);
@@ -2525,7 +2525,7 @@ using namespace vulkan_internal;
 					}
 				}
 				if (!suitable)
-					continue;
+					return;
 
 				h264_decode_extension = false;
 
@@ -2649,7 +2649,21 @@ using namespace vulkan_internal;
 					h264_decode_extension = true;
 				}
 
+				*properties_chain = nullptr;
+				*features_chain = nullptr;
 				vkGetPhysicalDeviceProperties2(dev, &properties2);
+
+			};
+
+			bool properties2_matches_physical_device = false;
+
+			for (const auto& dev : devices)
+			{
+				properties2_matches_physical_device = false;
+				checkPhysicalDeviceAndFillProperties2(dev);
+
+				if (!suitable)
+					continue;
 
 				bool priority = properties2.properties.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 				if (preference == GPUPreference::Integrated)
@@ -2659,6 +2673,7 @@ using namespace vulkan_internal;
 				if (priority || physicalDevice == VK_NULL_HANDLE)
 				{
 					physicalDevice = dev;
+					properties2_matches_physical_device = true;
 					if (priority)
 					{
 						break; // if this is prioritized GPU type, look no further
@@ -2671,6 +2686,12 @@ using namespace vulkan_internal;
 				assert(0);
 				wi::helper::messageBox("Failed to find a suitable GPU!");
 				wi::platform::Exit();
+			}
+
+			if (!properties2_matches_physical_device) {
+				// this redoes a few checks, but since this code path is only
+				// executed once, it doesn't affect execution time all that much
+				checkPhysicalDeviceAndFillProperties2(physicalDevice);
 			}
 
 			assert(properties2.properties.limits.timestampComputeAndGraphics == VK_TRUE);
@@ -2947,6 +2968,7 @@ using namespace vulkan_internal;
 			float queuePriority = 1.0f;
 			for (uint32_t queueFamily : uniqueQueueFamilies)
 			{
+				queue_lockers.emplace(queueFamily, std::make_shared<std::mutex>());
 				VkDeviceQueueCreateInfo queueCreateInfo = {};
 				queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 				queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -2987,9 +3009,15 @@ using namespace vulkan_internal;
 			}
 
 			queues[QUEUE_GRAPHICS].queue = graphicsQueue;
+			queues[QUEUE_GRAPHICS].locker = queue_lockers[graphicsFamily];
 			queues[QUEUE_COMPUTE].queue = computeQueue;
+			queues[QUEUE_COMPUTE].locker = queue_lockers[computeFamily];
 			queues[QUEUE_COPY].queue = copyQueue;
+			queues[QUEUE_COPY].locker = queue_lockers[copyFamily];
 			queues[QUEUE_VIDEO_DECODE].queue = videoQueue;
+			if (videoFamily != VK_QUEUE_FAMILY_IGNORED) {
+			    queues[QUEUE_VIDEO_DECODE].locker = queue_lockers[videoFamily];
+			}
 
 			VkSemaphoreTypeCreateInfo timelineCreateInfo = {};
 			timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
@@ -3293,8 +3321,12 @@ using namespace vulkan_internal;
 		pso_dynamicStates.push_back(VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE);
 
 		dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicStateInfo.dynamicStateCount = (uint32_t)pso_dynamicStates.size();
 		dynamicStateInfo.pDynamicStates = pso_dynamicStates.data();
+		dynamicStateInfo.dynamicStateCount = (uint32_t)pso_dynamicStates.size();
+
+		dynamicStateInfo_MeshShader.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicStateInfo_MeshShader.pDynamicStates = pso_dynamicStates.data();
+		dynamicStateInfo_MeshShader.dynamicStateCount = (uint32_t)pso_dynamicStates.size() - 1; // don't include VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE for mesh shader
 
 		// Note: limiting descriptors by constant amount is needed, because the bindless sets are bound to multiple slots to match DX12 layout
 		//	And binding to multiple slot adds up towards limits, so the limits will be quickly reached for some descriptor types
@@ -3538,6 +3570,7 @@ using namespace vulkan_internal;
 		for (auto& queue : queues)
 		{
 			vkDestroySemaphore(device, queue.semaphore, nullptr);
+			queue.locker.reset();
 		}
 
 		for (uint32_t fr = 0; fr < BUFFERCOUNT; ++fr)
@@ -3953,13 +3986,16 @@ using namespace vulkan_internal;
 		}
 
 		// Create resource views if needed
-		if (has_flag(desc->bind_flags, BindFlag::SHADER_RESOURCE))
+		if (!has_flag(desc->misc_flags, ResourceMiscFlag::NO_DEFAULT_DESCRIPTORS))
 		{
-			CreateSubresource(buffer, SubresourceType::SRV, 0);
-		}
-		if (has_flag(desc->bind_flags, BindFlag::UNORDERED_ACCESS))
-		{
-			CreateSubresource(buffer, SubresourceType::UAV, 0);
+			if (has_flag(desc->bind_flags, BindFlag::SHADER_RESOURCE))
+			{
+				CreateSubresource(buffer, SubresourceType::SRV, 0);
+			}
+			if (has_flag(desc->bind_flags, BindFlag::UNORDERED_ACCESS))
+			{
+				CreateSubresource(buffer, SubresourceType::UAV, 0);
+			}
 		}
 
 		return res == VK_SUCCESS;
@@ -4173,6 +4209,8 @@ using namespace vulkan_internal;
 
 			if (texture->desc.usage == Usage::READBACK || texture->desc.usage == Usage::UPLOAD)
 			{
+				// Note: we are creating a buffer instead of linear image because linear image cannot have mips
+				//	With a buffer, we can tightly pack mips linearly into a buffer so it won't have that limitation
 				VkBufferCreateInfo bufferInfo = {};
 				bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 				bufferInfo.size = 0;
@@ -4208,32 +4246,6 @@ using namespace vulkan_internal;
 				res = vmaCreateBuffer(allocationhandler->allocator, &bufferInfo, &allocInfo, &internal_state->staging_resource, &internal_state->allocation, nullptr);
 				assert(res == VK_SUCCESS);
 
-				imageInfo.tiling = VK_IMAGE_TILING_LINEAR;
-				imageInfo.mipLevels = 1; // set miplevels to 1 for linear tiling resource (this resource is just temporary)
-				VkImage image;
-				res = vkCreateImage(device, &imageInfo, nullptr, &image);
-				assert(res == VK_SUCCESS);
-
-				VkSubresourceLayout subresourcelayout = {};
-
-				if (texture->desc.usage == Usage::UPLOAD)
-				{
-					const uint32_t block_size = GetFormatBlockSize(desc->format);
-					const uint32_t num_blocks_x = std::max(1u, desc->width / block_size);
-					const uint32_t num_blocks_y = std::max(1u, desc->height / block_size);
-					const uint32_t rowpitch = num_blocks_x * GetFormatStride(desc->format);
-					const uint32_t slicepitch = rowpitch * num_blocks_y;
-					subresourcelayout.rowPitch = (VkDeviceSize)rowpitch;
-					subresourcelayout.depthPitch = (VkDeviceSize)slicepitch;
-					subresourcelayout.arrayPitch = (VkDeviceSize)slicepitch;
-				}
-				else
-				{
-					VkImageSubresource subresource = {};
-					subresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-					vkGetImageSubresourceLayout(device, image, &subresource, &subresourcelayout);
-				}
-
 				if (texture->desc.usage == Usage::READBACK || texture->desc.usage == Usage::UPLOAD)
 				{
 					texture->mapped_data = internal_state->allocation->GetMappedData();
@@ -4244,8 +4256,8 @@ using namespace vulkan_internal;
 					size_t subresourceDataOffset = 0;
 					for (uint32_t layer = 0; layer < texture->desc.array_size; ++layer)
 					{
-						uint32_t rowpitch = (uint32_t)subresourcelayout.rowPitch;
-						uint32_t slicepitch = (uint32_t)subresourcelayout.depthPitch;
+						uint32_t rowpitch = (uint32_t)num_blocks_x * GetFormatStride(desc->format); // the buffer is tightly packed, no padding in row pitch
+						uint32_t slicepitch = (uint32_t)rowpitch * num_blocks_y;
 						uint32_t mip_width = num_blocks_x;
 						for (uint32_t mip = 0; mip < texture->desc.mip_levels; ++mip)
 						{
@@ -4262,16 +4274,13 @@ using namespace vulkan_internal;
 					texture->mapped_subresources = internal_state->mapped_subresources.data();
 					texture->mapped_subresource_count = internal_state->mapped_subresources.size();
 				}
-
-				vkDestroyImage(device, image, nullptr);
-				return res == VK_SUCCESS;
 			}
 			else
 			{
 				res = vmaCreateImage(allocationhandler->allocator, &imageInfo, &allocInfo, &internal_state->resource, &internal_state->allocation, nullptr);
+				assert(res == VK_SUCCESS);
 			}
 		}
-		assert(res == VK_SUCCESS);
 
 		// Issue data copy on request:
 		if (initial_data != nullptr)
@@ -4396,7 +4405,7 @@ using namespace vulkan_internal;
 				copyAllocator.submit(cmd);
 			}
 		}
-		else if(texture->desc.layout != ResourceState::UNDEFINED)
+		else if(texture->desc.layout != ResourceState::UNDEFINED && internal_state->resource != VK_NULL_HANDLE)
 		{
 			VkImageMemoryBarrier2 barrier = {};
 			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -4437,21 +4446,24 @@ using namespace vulkan_internal;
 			copyAllocator.submit(cmd);
 		}
 
-		if (has_flag(texture->desc.bind_flags, BindFlag::RENDER_TARGET))
+		if (!has_flag(desc->misc_flags, ResourceMiscFlag::NO_DEFAULT_DESCRIPTORS))
 		{
-			CreateSubresource(texture, SubresourceType::RTV, 0, -1, 0, -1);
-		}
-		if (has_flag(texture->desc.bind_flags, BindFlag::DEPTH_STENCIL))
-		{
-			CreateSubresource(texture, SubresourceType::DSV, 0, -1, 0, -1);
-		}
-		if (has_flag(texture->desc.bind_flags, BindFlag::SHADER_RESOURCE))
-		{
-			CreateSubresource(texture, SubresourceType::SRV, 0, -1, 0, -1);
-		}
-		if (has_flag(texture->desc.bind_flags, BindFlag::UNORDERED_ACCESS))
-		{
-			CreateSubresource(texture, SubresourceType::UAV, 0, -1, 0, -1);
+			if (has_flag(texture->desc.bind_flags, BindFlag::RENDER_TARGET))
+			{
+				CreateSubresource(texture, SubresourceType::RTV, 0, -1, 0, -1);
+			}
+			if (has_flag(texture->desc.bind_flags, BindFlag::DEPTH_STENCIL))
+			{
+				CreateSubresource(texture, SubresourceType::DSV, 0, -1, 0, -1);
+			}
+			if (has_flag(texture->desc.bind_flags, BindFlag::SHADER_RESOURCE))
+			{
+				CreateSubresource(texture, SubresourceType::SRV, 0, -1, 0, -1);
+			}
+			if (has_flag(texture->desc.bind_flags, BindFlag::UNORDERED_ACCESS))
+			{
+				CreateSubresource(texture, SubresourceType::UAV, 0, -1, 0, -1);
+			}
 		}
 
 		if (has_flag(texture->desc.misc_flags, ResourceMiscFlag::VIDEO_DECODE))
@@ -4501,10 +4513,10 @@ using namespace vulkan_internal;
 		switch (stage)
 		{
 		case ShaderStage::MS:
-			internal_state->stageInfo.stage = VK_SHADER_STAGE_MESH_BIT_NV;
+			internal_state->stageInfo.stage = VK_SHADER_STAGE_MESH_BIT_EXT;
 			break;
 		case ShaderStage::AS:
-			internal_state->stageInfo.stage = VK_SHADER_STAGE_TASK_BIT_NV;
+			internal_state->stageInfo.stage = VK_SHADER_STAGE_TASK_BIT_EXT;
 			break;
 		case ShaderStage::VS:
 			internal_state->stageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -4565,6 +4577,9 @@ using namespace vulkan_internal;
 
 			for (auto& x : bindings)
 			{
+				// This has some issues atm with some specific shader, recheck in the future with different compiler version
+				//if (x->accessed == 0)
+				//	continue;
 				const bool bindless = x->set > 0;
 
 				if (bindless)
@@ -4581,9 +4596,7 @@ using namespace vulkan_internal;
 				descriptor.descriptorType = (VkDescriptorType)x->descriptor_type;
 
 				if (bindless)
-				{
 					continue;
-				}
 
 				auto& imageViewType = internal_state->imageViewTypes.emplace_back();
 				imageViewType = VK_IMAGE_VIEW_TYPE_MAX_ENUM;
@@ -5531,7 +5544,14 @@ using namespace vulkan_internal;
 
 		pipelineInfo.pTessellationState = &tessellationInfo;
 
-		pipelineInfo.pDynamicState = &dynamicStateInfo;
+		if (pso->desc.ms == nullptr)
+		{
+			pipelineInfo.pDynamicState = &dynamicStateInfo;
+		}
+		else
+		{
+			pipelineInfo.pDynamicState = &dynamicStateInfo_MeshShader;
+		}
 
 		if (renderpass_info != nullptr)
 		{
@@ -7362,7 +7382,7 @@ using namespace vulkan_internal;
 		// Queue command:
 		{
 			CommandQueue& q = queues[queue];
-			std::scoped_lock lock(q.locker);
+			std::scoped_lock lock(*q.locker);
 			assert(q.sparse_binding_supported);
 
 			VkResult res = vkQueueBindSparse(q.queue, (uint32_t)sparse_infos.size(), sparse_infos.data(), VK_NULL_HANDLE);
@@ -7384,13 +7404,12 @@ using namespace vulkan_internal;
 		commandlist.renderpass_barriers_begin.clear();
 		commandlist.renderpass_barriers_end.clear();
 		auto internal_state = to_internal(swapchain);
-		commandlist.prev_swapchains.push_back(*swapchain);
 
 		internal_state->locker.lock();
 		VkResult res = vkAcquireNextImageKHR(
 			device,
 			internal_state->swapChain,
-			0xFFFFFFFFFFFFFFFF,
+			UINT64_MAX,
 			internal_state->swapchainAcquireSemaphore,
 			VK_NULL_HANDLE,
 			&internal_state->swapChainImageIndex
@@ -7402,6 +7421,16 @@ using namespace vulkan_internal;
 			// Handle outdated error in acquire:
 			if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR)
 			{
+				// we need to create a new semaphore or jump through a few hoops to
+				// wait for the current one to be unsignalled before we can use it again
+				// creating a new one is easiest. See also:
+				// https://github.com/KhronosGroup/Vulkan-Docs/issues/152
+				// https://www.khronos.org/blog/resolving-longstanding-issues-with-wsi
+				{
+					std::scoped_lock lock(allocationhandler->destroylocker);
+					allocationhandler->destroyer_semaphores.emplace_back(internal_state->swapchainAcquireSemaphore, allocationhandler->framecount);
+				}
+				internal_state->swapchainAcquireSemaphore = VK_NULL_HANDLE;
 				if (CreateSwapChainInternal(internal_state, physicalDevice, device, allocationhandler))
 				{
 					RenderPassBegin(swapchain, cmd);
@@ -7410,13 +7439,14 @@ using namespace vulkan_internal;
 			}
 			assert(0);
 		}
+		commandlist.prev_swapchains.push_back(*swapchain);
 		
 		VkRenderingInfo info = {};
 		info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 		info.renderArea.offset.x = 0;
 		info.renderArea.offset.y = 0;
-		info.renderArea.extent.width = swapchain->desc.width;
-		info.renderArea.extent.height = swapchain->desc.height;
+		info.renderArea.extent.width = std::min(swapchain->desc.width, internal_state->swapChainExtent.width);
+		info.renderArea.extent.height = std::min(swapchain->desc.height, internal_state->swapChainExtent.height);
 		info.layerCount = 1;
 
 		VkRenderingAttachmentInfo color_attachment = {};
@@ -8633,15 +8663,15 @@ using namespace vulkan_internal;
 				if (has_flag(desc.misc_flags, ResourceMiscFlag::RAY_TRACING))
 				{
 					assert(CheckCapability(GraphicsDeviceCapability::RAYTRACING));
-					barrierdesc.srcStageMask |= _ParseResourceState(ResourceState::RAYTRACING_ACCELERATION_STRUCTURE);
-					barrierdesc.dstStageMask |= _ParseResourceState(ResourceState::RAYTRACING_ACCELERATION_STRUCTURE);
+					barrierdesc.srcStageMask |= _ConvertPipelineStage(ResourceState::RAYTRACING_ACCELERATION_STRUCTURE);
+					barrierdesc.dstStageMask |= _ConvertPipelineStage(ResourceState::RAYTRACING_ACCELERATION_STRUCTURE);
 				}
 
 				if (has_flag(desc.misc_flags, ResourceMiscFlag::PREDICATION))
 				{
 					assert(CheckCapability(GraphicsDeviceCapability::PREDICATION));
-					barrierdesc.srcStageMask |= _ParseResourceState(ResourceState::PREDICATION);
-					barrierdesc.dstStageMask |= _ParseResourceState(ResourceState::PREDICATION);
+					barrierdesc.srcStageMask |= _ConvertPipelineStage(ResourceState::PREDICATION);
+					barrierdesc.dstStageMask |= _ConvertPipelineStage(ResourceState::PREDICATION);
 				}
 
 				bufferBarriers.push_back(barrierdesc);
@@ -8982,8 +9012,8 @@ using namespace vulkan_internal;
 			dpb.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_KHR;
 			dpb.pStdReferenceInfo = &ref;
 
-			ref.flags.bottom_field_flag = 1;
-			ref.flags.top_field_flag = 1;
+			ref.flags.bottom_field_flag = 0;
+			ref.flags.top_field_flag = 0;
 			ref.flags.is_non_existing = 0;
 			ref.flags.used_for_long_term_reference = 0;
 			ref.FrameNum = op->dpb_framenum[i];

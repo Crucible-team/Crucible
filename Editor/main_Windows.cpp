@@ -55,15 +55,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	wi::arguments::Parse(lpCmdLine); // if you wish to use command line arguments, here is a good place to parse them...
 
-	
-	
+
+
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_WICKEDENGINEGAME, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
-	
+
 
 	Gameconfig::getInstance().get_game_directories(wi::helper::GetCurrentPath() + "/games");
 
@@ -80,13 +80,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 			Gameconfig::getInstance().config.GetSection(name.c_str()).Set("gamepath", name2);
 			Gameconfig::getInstance().config.Commit();
-			
-			
+
+
 			//wi::backlog::post("game: " + name + " , " + name2);
 		}
 		Gameconfig::getInstance().config.Commit();
-		
-		
+
+
 		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shadersourcepath"))
 		{
 			std::string path = Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shadersourcepath");
@@ -96,35 +96,35 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		else
 		{
-			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + "\\Data\\shaders\\");
+			wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + "\\Data\\shadersrc\\");
 		}
 
-		
-		
+
+
 		if (Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).Has("shaderpath"))
 		{
 			std::string path = Gameconfig::getInstance().config.GetSection(Gameconfig::getInstance().currentgame.c_str()).GetText("shaderpath");
 			wi::helper::MakePathRelative(wi::helper::GetCurrentPath(),path);
-			
+
 			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + path);
 		}
 		else
 		{
-			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "\\shaders\\");
-			
+			wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "\\Data\\shaders\\");
+
 		}
-	
+
 
 		wi::backlog::post("gameconfig.ini loaded in " + std::to_string(timer.elapsed_milliseconds()) + " milliseconds\n");
 	}
 	else
 	{
-		wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + "/Data/shaders/");
-		wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/shaders/");
+		wi::renderer::SetShaderSourcePath(wi::helper::GetCurrentPath() + "/Data/shadersrc/");
+		wi::renderer::SetShaderPath(wi::helper::GetCurrentPath() + "/Data/shaders/");
 	}
 
 	Gameconfig::getInstance().config.Commit();
-	
+
 
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))
@@ -200,7 +200,7 @@ BOOL CreateEditorWindow(int nCmdShow)
 		borderless = Editor::getInstance().config.GetBool("borderless");
 		Editor::getInstance().allow_hdr = Editor::getInstance().config.GetBool("allow_hdr");
 
-		
+
 
 		wi::backlog::post("config.ini loaded in " + std::to_string(timer.elapsed_milliseconds()) + " milliseconds\n");
 	}
@@ -311,7 +311,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
-        } 
+        }
         break;
 	case WM_SIZE:
 	case WM_DPICHANGED:

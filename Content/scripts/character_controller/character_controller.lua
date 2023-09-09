@@ -291,12 +291,12 @@ local function LoadAnimations(model_name)
 		DANCE = anim_scene.Entity_FindByName("dance"),
 		WAVE = anim_scene.Entity_FindByName("wave"),
 	}
-	scene.Merge(anim_scene)
+	return anim_scene
 end
 
 local character_capsules = {}
 
-local function Character(model_name, start_position, face, controllable)
+local function Character(model_name, start_position, face, controllable, anim_scene)
 	local self = {
 		model = INVALID_ENTITY,
 		target_rot_horizontal = 0,
@@ -329,6 +329,7 @@ local function Character(model_name, start_position, face, controllable)
 		position = Vector(),
 		controllable = true,
 		fixed_update_remain = 0,
+		timestep_occured = false,
 		root_bone_offset = 0,
 		foot_placed_left = false,
 		foot_placed_right = false,
@@ -408,15 +409,15 @@ local function Character(model_name, start_position, face, controllable)
 
 			self.root = scene.Entity_FindByName("Root", self.model)
 			
-			self.anims[States.IDLE] = scene.RetargetAnimation(self.humanoid, animations.IDLE, false)
-			self.anims[States.WALK] = scene.RetargetAnimation(self.humanoid, animations.WALK, false)
-			self.anims[States.JOG] = scene.RetargetAnimation(self.humanoid, animations.JOG, false)
-			self.anims[States.RUN] = scene.RetargetAnimation(self.humanoid, animations.RUN, false)
-			self.anims[States.JUMP] = scene.RetargetAnimation(self.humanoid, animations.JUMP, false)
-			self.anims[States.SWIM_IDLE] = scene.RetargetAnimation(self.humanoid, animations.SWIM_IDLE, false)
-			self.anims[States.SWIM] = scene.RetargetAnimation(self.humanoid, animations.SWIM, false)
-			self.anims[States.DANCE] = scene.RetargetAnimation(self.humanoid, animations.DANCE, false)
-			self.anims[States.WAVE] = scene.RetargetAnimation(self.humanoid, animations.WAVE, false)
+			self.anims[States.IDLE] = scene.RetargetAnimation(self.humanoid, animations.IDLE, false, anim_scene)
+			self.anims[States.WALK] = scene.RetargetAnimation(self.humanoid, animations.WALK, false, anim_scene)
+			self.anims[States.JOG] = scene.RetargetAnimation(self.humanoid, animations.JOG, false, anim_scene)
+			self.anims[States.RUN] = scene.RetargetAnimation(self.humanoid, animations.RUN, false, anim_scene)
+			self.anims[States.JUMP] = scene.RetargetAnimation(self.humanoid, animations.JUMP, false, anim_scene)
+			self.anims[States.SWIM_IDLE] = scene.RetargetAnimation(self.humanoid, animations.SWIM_IDLE, false, anim_scene)
+			self.anims[States.SWIM] = scene.RetargetAnimation(self.humanoid, animations.SWIM, false, anim_scene)
+			self.anims[States.DANCE] = scene.RetargetAnimation(self.humanoid, animations.DANCE, false, anim_scene)
+			self.anims[States.WAVE] = scene.RetargetAnimation(self.humanoid, animations.WAVE, false, anim_scene)
 			
 			local model_transform = scene.Component_GetTransform(self.model)
 			model_transform.ClearTransform()
@@ -602,7 +603,7 @@ local function Character(model_name, start_position, face, controllable)
 					end
 				end
 
-			else
+			elseif not(conversation.override_input and conversation.character == self) then
 
 				-- NPC patrol behavior:
 				local patrol_count = len(self.patrol_waypoints)
@@ -708,8 +709,10 @@ local function Character(model_name, start_position, face, controllable)
 			self.fixed_update_remain = self.fixed_update_remain + dt
 			local fixed_update_fps = 120
 			local fixed_dt = 1.0 / fixed_update_fps
+			self.timestep_occured = false;
 
 			while self.fixed_update_remain >= fixed_dt do
+				self.timestep_occured = true;
 				self.fixed_update_remain = self.fixed_update_remain - fixed_dt
 				
 				capsulepos = vector.Add(capsulepos, vector.Multiply(self.velocity, fixed_dt))
@@ -784,10 +787,40 @@ local function Character(model_name, start_position, face, controllable)
 
 			character_capsules[self.model] = capsule
 			self.position = model_transform.GetPosition()
+
+			-- If camera is inside character capsule, fade out the character, otherwise fade in:
+			if capsule.Intersects(GetCamera().GetPosition()) then
+				for i,entity in ipairs(scene.Entity_GetObjectArray()) do
+					if scene.Entity_IsDescendant(entity, self.model) then
+						local object = scene.Component_GetObject(entity)
+						local color = object.GetColor()
+						local opacity = color.GetW()
+						opacity = math.lerp(opacity, 0, 0.1)
+						color.SetW(opacity)
+						object.SetColor(color)
+					end
+				end
+			else
+				for i,entity in ipairs(scene.Entity_GetObjectArray()) do
+					if scene.Entity_IsDescendant(entity, self.model) then
+						local object = scene.Component_GetObject(entity)
+						local color = object.GetColor()
+						local opacity = color.GetW()
+						opacity = math.lerp(opacity, 1, 0.1)
+						color.SetW(opacity)
+						object.SetColor(color)
+					end
+				end
+			end
 			
 		end,
 
 		Update_IK = function(self)
+			-- Make sure we only update IK as often as we check for ground collisions etc.
+			-- in Update. Otherwise, when the framerate is higher than the step rate, 
+			-- self.velocity is unreliable
+			if not self.timestep_occured then return end;
+
 			-- IK foot placement:
 			local base_y = self.position.GetY()
 			local ik_foot = INVALID_ENTITY
@@ -952,6 +985,7 @@ local ResolveCharacters = function(characterA, characterB)
 			local facing_amount = vector.Dot(characterB.face, vector.Subtract(characterA.position, characterB.position).Normalize())
 			if #characterA.dialogs > 0 and conversation.state == ConversationState.Disabled and facing_amount > 0.8 then
 				if input.Press(KEYBOARD_BUTTON_ENTER) or input.Press(GAMEPAD_BUTTON_2) then
+					characterA.face_next = vector.Subtract(headB, headA):Normalize()
 					conversation:Enter(characterA)
 				end
 				DrawDebugText("", vector.Add(headA, Vector(0,0.4)), Vector(1,1,1,1), 0.1, DEBUG_TEXT_DEPTH_TEST | DEBUG_TEXT_CAMERA_FACING)
@@ -1112,19 +1146,19 @@ LoadScene(script_dir() .. "assets/level.wiscene")
 --LoadScene(script_dir() .. "assets/waypoints.wiscene", matrix.Translation(Vector(1,0,2)))
 --dofile(script_dir() .. "../dungeon_generator/dungeon_generator.lua")
 
-LoadAnimations(script_dir() .. "assets/animations.wiscene")
+local anim_scene = LoadAnimations(script_dir() .. "assets/animations.wiscene")
 
-local player = Character(script_dir() .. "assets/character.wiscene", Vector(0,0.5,0), Vector(0,0,1), true)
+local player = Character(script_dir() .. "assets/character.wiscene", Vector(0,0.5,0), Vector(0,0,1), true, anim_scene)
 local npcs = {
 	-- Patrolling NPC IDs: 1,2,3
-	Character(script_dir() .. "assets/character.wiscene", Vector(4,0.1,4), Vector(0,0,-1), false),
-	Character(script_dir() .. "assets/character.wiscene", Vector(-8,1,4), Vector(-1,0,0), false),
-	Character(script_dir() .. "assets/character.wiscene", Vector(-2,0.1,8), Vector(-1,0,0), false),
+	Character(script_dir() .. "assets/character.wiscene", Vector(4,0.1,4), Vector(0,0,-1), false, anim_scene),
+	Character(script_dir() .. "assets/character.wiscene", Vector(-8,1,4), Vector(-1,0,0), false, anim_scene),
+	Character(script_dir() .. "assets/character.wiscene", Vector(-2,0.1,8), Vector(-1,0,0), false, anim_scene),
 
 	-- stationary NPC IDs: 3,4....
-	Character(script_dir() .. "assets/character.wiscene", Vector(-1,0.1,-6), Vector(0,0,1), false),
-	--Character(script_dir() .. "assets/character.wiscene", Vector(10.8,0.1,4.1), Vector(0,0,-1), false),
-	--Character(script_dir() .. "assets/character.wiscene", Vector(11.1,4,7.2), Vector(-1,0,0), false),
+	Character(script_dir() .. "assets/character.wiscene", Vector(-1,0.1,-6), Vector(0,0,1), false, anim_scene),
+	--Character(script_dir() .. "assets/character.wiscene", Vector(10.8,0.1,4.1), Vector(0,0,-1), false, anim_scene),
+	--Character(script_dir() .. "assets/character.wiscene", Vector(11.1,4,7.2), Vector(-1,0,0), false, anim_scene),
 }
 
 local camera = ThirdPersonCamera(player)

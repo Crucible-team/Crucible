@@ -32,7 +32,17 @@ void OptionsWindow::Create(EditorComponent* _editor)
 	newCombo.AddItem("HairParticle " ICON_HAIR, 11);
 	newCombo.AddItem("Camera " ICON_CAMERA, 12);
 	newCombo.AddItem("Cube " ICON_CUBE, 13);
+	newCombo.AddItem("Cylinder " ICON_FA_CIRCLE, 20);
+	newCombo.AddItem("Sphere " ICON_FA_CIRCLE, 21);
+	newCombo.AddItem("Torus " ICON_FA_CIRCLE, 22);
+	newCombo.AddItem("Tetrahedron " ICON_FA_CIRCLE, 23);
+	//newCombo.AddItem("Cone " ICON_FA_CIRCLE, 24);
+	newCombo.AddItem("Octahedron " ICON_FA_CIRCLE, 25);
+	newCombo.AddItem("Dodecahedro " ICON_FA_CIRCLE, 26);
+	newCombo.AddItem("Icosahedron " ICON_FA_CIRCLE, 27);
 	newCombo.AddItem("Plane " ICON_SQUARE, 14);
+	newCombo.AddItem("Circle " ICON_FA_CIRCLE, 28);
+	newCombo.AddItem("Pipe " ICON_FA_CIRCLE, 29);
 	newCombo.AddItem("Animation " ICON_ANIMATION, 15);
 	newCombo.AddItem("Script " ICON_SCRIPT, 16);
 	newCombo.AddItem("Collider " ICON_COLLIDER, 17);
@@ -159,6 +169,47 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			pick.entity = scene.Entity_CreateCube("cube");
 			pick.subsetIndex = 0;
 			break;
+		case 20:
+			pick.entity = scene.Entity_CreateCylinder("cylinder");
+			pick.subsetIndex = 0;
+			break;
+
+		case 21:
+			pick.entity = scene.Entity_CreateSphere("sphere");
+			pick.subsetIndex = 0;
+			break;
+		case 22:
+			pick.entity = scene.Entity_CreateTorus("torus");
+			pick.subsetIndex = 0;
+			break;
+		case 23:
+			pick.entity = scene.Entity_CreateTetrahedron("tetrahedron");
+			pick.subsetIndex = 0;
+			break;
+		/*case 24:
+			pick.entity = scene.Entity_CreateCone("cone");
+			pick.subsetIndex = 0;
+			break;*/
+		case 25:
+			pick.entity = scene.Entity_CreateOctahedron("octahedron");
+			pick.subsetIndex = 0;
+			break;
+		case 26:
+			pick.entity = scene.Entity_CreateDodecahedron("dodecahedron");
+			pick.subsetIndex = 0;
+			break;
+		case 27:
+			pick.entity = scene.Entity_CreateIcosahedron("icosahedron");
+			pick.subsetIndex = 0;
+			break;
+		case 28:
+			pick.entity = scene.Entity_CreateCircle("circle");
+			pick.subsetIndex = 0;
+			break;
+		case 29:
+			pick.entity = scene.Entity_CreatePipe("pipe");
+			pick.subsetIndex = 0;
+			break;
 		case 14:
 			pick.entity = scene.Entity_CreatePlane("plane");
 			pick.subsetIndex = 0;
@@ -185,6 +236,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			scene.terrains.Create(pick.entity) = editor->componentsWnd.terrainWnd.terrain_preset;
 			scene.names.Create(pick.entity) = "terrain";
 			break;
+		
 		default:
 			break;
 		}
@@ -296,6 +348,9 @@ void OptionsWindow::Create(EditorComponent* _editor)
 		//	We don't delete here, because this callback will execute once for each item
 		editor->deleting = true;
 	});
+	/*entityTree.OnDragStart[this](wi::gui::EventArgs args) {
+	}*/
+
 	AddWidget(&entityTree);
 
 	graphicsWnd.Create(editor);

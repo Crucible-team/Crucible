@@ -1025,6 +1025,7 @@ namespace wi::renderer
 
 	// Gets pick ray according to the current screen resolution and pointer coordinates. Can be used as input into RayIntersectWorld()
 	wi::primitive::Ray GetPickRay(long cursorX, long cursorY, const wi::Canvas& canvas, const wi::scene::CameraComponent& camera = wi::scene::GetCamera());
+	XMFLOAT2 Project_Pos(XMFLOAT3 pos, const wi::Canvas& canvas, const wi::scene::CameraComponent& camera = wi::scene::GetCamera());
 
 
 	// Add box to render in next frame. It will be rendered in DrawDebugWorld()

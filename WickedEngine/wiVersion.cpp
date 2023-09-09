@@ -1,4 +1,7 @@
 #include "wiVersion.h"
+#if defined(CRUCIBLE_NIGHTLY)
+#include "cmake_genvars.h"
+#endif
 
 #include <string>
 
@@ -9,10 +12,12 @@ namespace wi::version
 	// minor features, major updates, breaking compatibility changes
 	const int minor = 71;
 	// minor bug fixes, alterations, refactors, updates
-	const int revision = 241;
-
+	const int revision = 279;
+	#if defined(CRUCIBLE_NIGHTLY)
+	const std::string version_string = std::string("nightly_") + kGitHash + std::string("-") + kTimestamp;
+	#else
 	const std::string version_string = std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(revision);
-
+	#endif
 	int GetMajor()
 	{
 		return major;
@@ -89,6 +94,7 @@ Contributors
 	- Fixes
 - Dennis Brakhane | https://github.com/brakhane
 	- Added Liberation Sans default font
+	- Vulkan improvements
 - Cop46 | https://github.com/Cop46
 	- Brightness, Contrast, Saturation post process
 
@@ -131,6 +137,13 @@ Patreon supporters
 - Dominik Madarász
 - Segfault
 - Mike amanfo
+- Dennis Brakhane
+- rookie
+- Peter Moore
+- therealjtgill
+- Nicolas Embleton
+- Desuuc
+- radino1977
 		)";
 
 		return credits;

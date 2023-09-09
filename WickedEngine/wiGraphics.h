@@ -52,10 +52,12 @@ namespace wi::graphics
 	};
 	enum class ShaderFormat
 	{
-		NONE,	// Not used
-		HLSL5,	// DXBC
-		HLSL6,	// DXIL
-		SPIRV,	// SPIR-V
+		NONE,		// Not used
+		HLSL5,		// DXBC
+		HLSL6,		// DXIL
+		SPIRV,		// SPIR-V
+		HLSL6_XS,	// XBOX Series Native
+		PS5,		// Playstation 5
 	};
 	enum class ShaderModel
 	{
@@ -399,7 +401,9 @@ namespace wi::graphics
 		SPARSE_TILE_POOL = SPARSE_TILE_POOL_BUFFER | SPARSE_TILE_POOL_TEXTURE_NON_RT_DS | SPARSE_TILE_POOL_TEXTURE_RT_DS, // buffer only, makes it suitable for containing tile memory for all kinds of sparse resources. Requires GraphicsDeviceCapability::GENERIC_SPARSE_TILE_POOL to be supported
 		TYPED_FORMAT_CASTING = 1 << 11,	// enable casting formats between same type and different modifiers: eg. UNORM -> SRGB
 		TYPELESS_FORMAT_CASTING = 1 << 12,	// enable casting formats to other formats that have the same bit-width and channel layout: eg. R32_FLOAT -> R32_UINT
-		VIDEO_DECODE = 1 << 15,	// resource is usabe in video decoding operations
+		VIDEO_DECODE = 1 << 13,	// resource is usabe in video decoding operations
+		NO_DEFAULT_DESCRIPTORS = 1 << 14, // skips creation of default descriptors for resources
+		TEXTURE_COMPATIBLE_COMPRESSION = 1 << 15, // optimization that can enable sampling from compressed textures
 	};
 
 	enum class GraphicsDeviceCapability
@@ -427,6 +431,7 @@ namespace wi::graphics
 		STENCIL_RESOLVE_MIN_MAX = 1 << 19,
 		CACHE_COHERENT_UMA = 1 << 20,	// https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_feature_data_architecture
 		VIDEO_DECODE_H264 = 1 << 21,
+		R9G9B9E5_SHAREDEXP_RENDERABLE = 1 << 22, // indicates supporting R9G9B9E5_SHAREDEXP format for rendering to
 	};
 
 	enum class ResourceState
@@ -1054,6 +1059,8 @@ namespace wi::graphics
 				case RenderPassImage::Type::DEPTH_STENCIL:
 					info.ds_format = desc.format;
 					info.sample_count = desc.sample_count;
+					break;
+				default:
 					break;
 				}
 			}
@@ -1721,14 +1728,17 @@ namespace wi::graphics
 		return ret;
 	}
 
-	constexpr uint32_t AlignTo(uint32_t value, uint32_t alignment)
+	template<typename T>
+	constexpr T AlignTo(T value, T alignment)
 	{
-		return ((value + alignment - 1) / alignment) * alignment;
+		return ((value + alignment - T(1)) / alignment) * alignment;
 	}
-	constexpr uint64_t AlignTo(uint64_t value, uint64_t alignment)
+	template<typename T>
+	constexpr bool IsAligned(T value, T alignment)
 	{
-		return ((value + alignment - 1) / alignment) * alignment;
+		return value == AlignTo(value, alignment);
 	}
+
 	constexpr uint32_t GetMipCount(uint32_t width, uint32_t height, uint32_t depth = 1u, uint32_t min_dimension = 1u, uint32_t required_alignment = 1u)
 	{
 		uint32_t mips = 1;
