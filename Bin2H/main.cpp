@@ -25,7 +25,7 @@ int main( int argc, char *argv[])
 		arg3 = argv[3];
 		arg4 = argv[4];
 
-		if(argc = 3){
+		if(argc = 4){
 			chan = 4; //default for these headers is 4 channels.
 		}
 		else{
