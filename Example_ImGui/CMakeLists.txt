@@ -32,7 +32,7 @@ if (WIN32)
 	add_executable(Example_ImGui WIN32 ${SOURCE_FILES})
 
 	target_link_libraries(Example_ImGui PUBLIC
-		WickedEngine_Windows
+		Crucible_Windows
 	)
 	set(LIB_DXCOMPILER "dxcompiler.dll")
 else()
@@ -43,10 +43,10 @@ else()
 	add_executable(Example_ImGui ${SOURCE_FILES})
 
 	target_link_libraries(Example_ImGui PUBLIC
-		WickedEngine
+		Crucible
 		Threads::Threads
 	)
-	
+
 	# Copy shaders to build and source folders just to be safe:
 	add_custom_command(
 		TARGET Example_ImGui POST_BUILD
@@ -65,6 +65,6 @@ endif ()
 # Copy content to build folder:
 add_custom_command(
 	TARGET Example_ImGui POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/WickedEngine/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Content ${CMAKE_CURRENT_BINARY_DIR}/../Content
 )

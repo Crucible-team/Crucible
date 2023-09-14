@@ -5,14 +5,14 @@ include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 include(../cmake/CheckGit.cmake)
 set(INSTALL_LOCAL_CONFIGDIR "${CMAKE_BINARY_DIR}/cmake")
-set(INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/WickedEngine")
+set(INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/Crucible")
 
-if (WICKED_DYNAMIC_LIBRARY)
-	set(WICKED_LIBRARY_TYPE SHARED)
-	message(STATUS "Building WickedEngine as a shared library")
+if (CRUCIBLE_DYNAMIC_LIBRARY)
+	set(CRUCIBLE_LIBRARY_TYPE SHARED)
+	message(STATUS "Building Crucible as a shared library")
 else()
-	set(WICKED_LIBRARY_TYPE STATIC)
-	message(STATUS "Building WickedEngine as a static library")
+	set(CRUCIBLE_LIBRARY_TYPE STATIC)
+	message(STATUS "Crucible as a static library")
 endif()
 
 if(CRUCIBLE_NIGHTLY_VERSIONING)
@@ -23,9 +23,9 @@ endif()
 
 if (WIN32)
 	# TODO: Choose whether to use SDL2 on windows as well
-	set(TARGET_NAME WickedEngine_Windows)
+	set(TARGET_NAME Crucible_Windows)
 else ()
-	set(TARGET_NAME WickedEngine_Linux)
+	set(TARGET_NAME Crucible_Linux)
 	find_package(SDL2 REQUIRED)
 	find_package(OpenImageDenoise "${MIN_OpenImageDenoise_VERSION}" QUIET)
 	find_package(Threads REQUIRED)
@@ -160,7 +160,7 @@ set(HEADER_FILES
 		wiKeyValue.h
 		)
 
-add_library(${TARGET_NAME} ${WICKED_LIBRARY_TYPE}
+add_library(${TARGET_NAME} ${CRUCIBLE_LIBRARY_TYPE}
 	wiLoadingScreen.cpp
 	wiLoadingScreen_BindLua.cpp
 	wiApplication.cpp
@@ -235,22 +235,22 @@ add_library(${TARGET_NAME} ${WICKED_LIBRARY_TYPE}
 	wiKeyValue.cpp
 	${HEADER_FILES}
 )
-add_library(WickedEngine ALIAS ${TARGET_NAME})
+add_library(Crucible ALIAS ${TARGET_NAME})
 set_target_properties(${TARGET_NAME} PROPERTIES PUBLIC_HEADER "${HEADER_FILES}")
 
 target_include_directories(${TARGET_NAME} SYSTEM PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine>
+	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Crucible>
 )
 
-set(WICKEDENGINE_STATIC_LIBRARIES
+set(CRUCIBLE_STATIC_LIBRARIES
 	Bullet
 	LUA
 	Utility
 )
 
 if(CRUCIBLE_NIGHTLY_VERSIONING)
-set(WICKEDENGINE_STATIC_LIBRARIES ${WICKEDENGINE_STATIC_LIBRARIES} cmake_genvars)
+set(CRUCIBLE_STATIC_LIBRARIES ${CRUCIBLE_STATIC_LIBRARIES} cmake_genvars)
 endif()
 
 if (WIN32)
@@ -271,7 +271,7 @@ else ()
 		SDL2::SDL2
 		$<$<BOOL:${OpenImageDenoise_FOUND}>:OpenImageDenoise> # links OpenImageDenoise only if it's found
 	)
-	set(WICKEDENGINE_STATIC_LIBRARIES ${WICKEDENGINE_STATIC_LIBRARIES} FAudio)
+	set(CRUCIBLE_STATIC_LIBRARIES ${CRUCIBLE_STATIC_LIBRARIES} FAudio)
 
 	# add some warnings and set them as errors
 	# read more details here: https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html
@@ -293,7 +293,7 @@ else ()
 	set(LIBDXCOMPILER "libdxcompiler.so")
 endif()
 
-target_link_libraries(${TARGET_NAME} PUBLIC ${WICKEDENGINE_STATIC_LIBRARIES})
+target_link_libraries(${TARGET_NAME} PUBLIC ${CRUCIBLE_STATIC_LIBRARIES})
 
 if (PLATFORM MATCHES "SDL2")
 	target_compile_definitions(${TARGET_NAME} PUBLIC SDL2=1)
@@ -301,13 +301,13 @@ endif()
 
 add_library(dxcompiler SHARED IMPORTED)
 set_property(TARGET dxcompiler PROPERTY
-		IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/WickedEngine/${LIBDXCOMPILER} )
+		IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/Crucible/${LIBDXCOMPILER} )
 
 # Copy the shader library next to the executable
 add_custom_command(
 		TARGET ${TARGET_NAME} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/WickedEngine/${LIBDXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
-		COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/WickedEngine/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/${LIBDXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
+		COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/Crucible/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
 )
 
 # OFFLINE SHADER COMPILER
@@ -319,10 +319,10 @@ target_link_libraries(offlineshadercompiler
 		PUBLIC ${TARGET_NAME})
 
 install(TARGETS offlineshadercompiler
-		RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/WickedEngine")
+		RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/Crucible")
 
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/Content"
-		DESTINATION "${CMAKE_INSTALL_LIBDIR}/WickedEngine")
+		DESTINATION "${CMAKE_INSTALL_LIBDIR}/Crucible")
 
 #### LOCAL FOLDER INSTALLATION
 # Create importable target here
@@ -331,47 +331,47 @@ install(DIRECTORY "${CMAKE_SOURCE_DIR}/Content"
 set_target_properties("${TARGET_NAME}" PROPERTIES EXPORT_NAME "${TARGET_NAME}")
 
 
-install(TARGETS "${TARGET_NAME}" ${WICKEDENGINE_STATIC_LIBRARIES}
+install(TARGETS "${TARGET_NAME}" ${CRUCIBLE_STATIC_LIBRARIES}
 		EXPORT Engine-Targets
 		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/WickedEngine"
-		PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine")
+		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/Crucible"
+		PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible")
 
 install(FILES ${LIBDXCOMPILER}
-		DESTINATION "${CMAKE_INSTALL_LIBDIR}/WickedEngine")
+		DESTINATION "${CMAKE_INSTALL_LIBDIR}/Crucible")
 
 export(EXPORT Engine-Targets
-		FILE "${CMAKE_BINARY_DIR}/cmake/WickedEngineTargets.cmake"
-		NAMESPACE WickedEngine::
+		FILE "${CMAKE_BINARY_DIR}/cmake/CrucibleTargets.cmake"
+		NAMESPACE Crucible::
 		)
 
 install(EXPORT Engine-Targets
-		FILE WickedEngineTargets.cmake
-		NAMESPACE WickedEngine::
+		FILE CrucibleTargets.cmake
+		NAMESPACE Crucible::
 		DESTINATION ${INSTALL_CONFIGDIR})
 
 set(_CONFIG_INSTALL_DIR_INCLUDE "${CMAKE_SOURCE_DIR}")
 set(_CONFIG_INSTALL_DIR_LIB "${CMAKE_SOURCE_DIR}")
 configure_package_config_file(
-		${CMAKE_CURRENT_SOURCE_DIR}/WickedEngineConfig.cmake.in
-		${CMAKE_BINARY_DIR}/cmake/WickedEngineConfig.cmake
+		${CMAKE_CURRENT_SOURCE_DIR}/CrucibleConfig.cmake.in
+		${CMAKE_BINARY_DIR}/cmake/CrucibleConfig.cmake
 		INSTALL_DESTINATION ${INSTALL_LOCAL_CONFIGDIR}
 )
 set(_CONFIG_INSTALL_DIR_INCLUDE "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
 set(_CONFIG_INSTALL_DIR_LIB "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 configure_package_config_file(
-		${CMAKE_CURRENT_SOURCE_DIR}/WickedEngineConfig.cmake.in
-		${CMAKE_BINARY_DIR}/cmake/install/WickedEngineConfig.cmake
+		${CMAKE_CURRENT_SOURCE_DIR}/CrucibleConfig.cmake.in
+		${CMAKE_BINARY_DIR}/cmake/install/CrucibleConfig.cmake
 		INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
 )
 
-install(FILES ${CMAKE_BINARY_DIR}/cmake/install/WickedEngineConfig.cmake
+install(FILES ${CMAKE_BINARY_DIR}/cmake/install/CrucibleConfig.cmake
 		DESTINATION ${INSTALL_CONFIGDIR}
 )
 
 # Shaders
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/shaders
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine"
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible"
 		PATTERN "spirv" EXCLUDE
 		PATTERN "hlsl6" EXCLUDE
 		PATTERN "*.vcxitems*" EXCLUDE

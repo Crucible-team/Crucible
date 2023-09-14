@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.8)
 
-option(WICKED_DYNAMIC_LIBRARY "Build WickedEngine as a dynamic library" OFF)
+option(CRUCIBLE_DYNAMIC_LIBRARY "Build Crucible as a dynamic library" OFF)
 
-option(WICKED_EDITOR "Build WickedEngine editor" ON)
-option(WICKED_TESTS "Build WickedEngine tests" ON)
-option(WICKED_IMGUI_EXAMPLE "Build WickedEngine imgui example" ON)
-option(WICKED_LINUX_TEMPLATE "Build WickedEngine Linux template" ON)
+option(CRUCIBLE_EDITOR "Build Crucible editor (JOE)" ON)
+option(CRUCIBLE_TESTS "Build Crucible tests" ON)
+option(CRUCIBLE_IMGUI_EXAMPLE "Build Crucible imgui example" ON)
+option(CRUCIBLE_LINUX_TEMPLATE "Build Crucible Linux template" ON)
 option(BIN_2_HEADER "Bin to Header utility for Crucible assets" OFF)
 option(CRUCIBLE_NIGHTLY_VERSIONING "Nightly versioning scheme (timestamp - commit hash)" OFF)
 
@@ -17,35 +17,35 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Use solution folders to organize projects
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-project(WickedEngine)
+project(Crucible)
 
 if (WIN32)
     set(PLATFORM "Windows")
     add_compile_definitions(WIN32=1)
     # add_compile_definitions(_WIN32=1) this is a given from the compiler
-    set(DXC_TARGET "${CMAKE_CURRENT_SOURCE_DIR}/WickedEngine/dxc.exe")
+    set(DXC_TARGET "${CMAKE_CURRENT_SOURCE_DIR}/Crucible/dxc.exe")
 elseif(UNIX)
     set(PLATFORM "SDL2")
     add_compile_definitions(SDL2=1)
     set(DXC_TARGET "dxc")
 endif()
 
-add_subdirectory(WickedEngine)
+add_subdirectory(Crucible)
 
-if (WICKED_EDITOR)
+if (CRUCIBLE_EDITOR)
     add_subdirectory(Editor)
 endif()
 
-if (WICKED_TESTS)
+if (CRUCIBLE_TESTS)
     add_subdirectory(Tests)
 endif()
 
-if (WICKED_IMGUI_EXAMPLE)
+if (CRUCIBLE_IMGUI_EXAMPLE)
     add_subdirectory(Example_ImGui)
     add_subdirectory(Example_ImGui_Docking)
 endif()
 
-if (WICKED_LINUX_TEMPLATE)
+if (CRUCIBLE_LINUX_TEMPLATE)
     add_subdirectory(Template_Linux)
 endif()
 
