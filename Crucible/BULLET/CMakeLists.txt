@@ -7,7 +7,7 @@ set(Bullet_HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/btBulletDynamicsCommon.h
 )
 install(FILES ${Bullet_HEADERS}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/")
 
 set(Bullet_HEADERS_CollisionBroadphaseCollision
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletCollision/BroadphaseCollision/btAxisSweep3.h
@@ -24,7 +24,7 @@ set(Bullet_HEADERS_CollisionBroadphaseCollision
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h
         )
 install(FILES ${Bullet_HEADERS_CollisionBroadphaseCollision}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletCollision/BroadphaseCollision/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletCollision/BroadphaseCollision/")
 
 set(Bullet_HEADERS_DynamicsCollisionDispatch
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletCollision/CollisionDispatch/SphereTriangleDetector.h
@@ -57,7 +57,7 @@ set(Bullet_HEADERS_DynamicsCollisionDispatch
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletCollision/CollisionDispatch/btUnionFind.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsCollisionDispatch}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletCollision/CollisionDispatch/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletCollision/CollisionDispatch/")
 
 set(Bullet_HEADERS_DynamicsCollisionShapes
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletCollision/CollisionShapes/btBox2dShape.h
@@ -102,7 +102,7 @@ set(Bullet_HEADERS_DynamicsCollisionShapes
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletCollision/CollisionShapes/btUniformScalingShape.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsCollisionShapes}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletCollision/CollisionShapes/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletCollision/CollisionShapes/")
 
 
 set(Bullet_HEADERS_DynamicsGimpact
@@ -136,7 +136,7 @@ set(Bullet_HEADERS_DynamicsGimpact
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletCollision/Gimpact/gim_tri_collision.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsGimpact}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletCollision/Gimpact/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletCollision/Gimpact/")
 
 
 set(Bullet_HEADERS_DynamicsNarrowPhaseCollision
@@ -159,7 +159,7 @@ set(Bullet_HEADERS_DynamicsNarrowPhaseCollision
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsNarrowPhaseCollision}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletCollision/NarrowPhaseCollision/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletCollision/NarrowPhaseCollision/")
 
 
 set(Bullet_HEADERS_DynamicsCharacter
@@ -167,7 +167,7 @@ set(Bullet_HEADERS_DynamicsCharacter
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletDynamics/Character/btKinematicCharacterController.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsCharacter}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletDynamics/Character/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletDynamics/Character/")
 
 
 set(Bullet_HEADERS_DynamicsConstraintSolver
@@ -192,7 +192,7 @@ set(Bullet_HEADERS_DynamicsConstraintSolver
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletDynamics/ConstraintSolver/btUniversalConstraint.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsConstraintSolver}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletDynamics/ConstraintSolver/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletDynamics/ConstraintSolver/")
 
 
 set(Bullet_HEADERS_DynamicsDyn
@@ -203,7 +203,7 @@ set(Bullet_HEADERS_DynamicsDyn
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsDyn}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletDynamics/Dynamics/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletDynamics/Dynamics/")
 
 
 set(Bullet_HEADERS_DynamicsFeatherstone
@@ -219,7 +219,7 @@ set(Bullet_HEADERS_DynamicsFeatherstone
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletDynamics/Featherstone/btMultiBodySolverConstraint.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsFeatherstone}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletDynamics/Featherstone/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletDynamics/Featherstone/")
 
 
 set(Bullet_HEADERS_DynamicsMLCPSolvers
@@ -231,7 +231,7 @@ set(Bullet_HEADERS_DynamicsMLCPSolvers
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsMLCPSolvers}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletDynamics/MLCPSolvers/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletDynamics/MLCPSolvers/")
 
 
 set(Bullet_HEADERS_DynamicsVehicle
@@ -240,7 +240,7 @@ set(Bullet_HEADERS_DynamicsVehicle
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletDynamics/Vehicle/btWheelInfo.h
         )
 install(FILES ${Bullet_HEADERS_DynamicsVehicle}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletDynamics/Vehicle/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletDynamics/Vehicle/")
 
 
 set(Bullet_HEADERS_SoftBody
@@ -259,7 +259,7 @@ set(Bullet_HEADERS_SoftBody
         ${CMAKE_CURRENT_SOURCE_DIR}/BulletSoftBody/btSparseSDF.h
         )
 install(FILES ${Bullet_HEADERS_SoftBody}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/BulletSoftBody/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/BulletSoftBody/")
 
 
 set(Bullet_HEADERS_LinearMath
@@ -292,7 +292,7 @@ set(Bullet_HEADERS_LinearMath
         ${CMAKE_CURRENT_SOURCE_DIR}/LinearMath/btVector3.h
         )
 install(FILES ${Bullet_HEADERS_LinearMath}
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/BULLET/LinearMath/")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/BULLET/LinearMath/")
 
 
 add_library(Bullet STATIC
@@ -454,10 +454,10 @@ add_library(Bullet STATIC
 
 target_include_directories(Bullet SYSTEM PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-	$<INSTALL_INTERFACE:include/WickedEngine/BULLET>
+	$<INSTALL_INTERFACE:include/Crucible/BULLET>
 )
 
 set_target_properties(Bullet PROPERTIES
 	FOLDER "ThirdParty"
-	POSITION_INDEPENDENT_CODE ${WICKED_DYNAMIC_LIBRARY}
+	POSITION_INDEPENDENT_CODE ${CRUCIBLE_DYNAMIC_LIBRARY}
 )

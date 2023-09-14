@@ -1,6 +1,6 @@
 # CMake Project for FAudio
 # Written by @NeroBurner
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.8)
 project(FAudio C)
 
 # Options
@@ -80,13 +80,13 @@ add_library(FAudio STATIC
 )
 
 install(FILES ${PUBLIC_HEADERS}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/FAudio/")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/FAudio/")
 
 # FAudio folders as includes, for other targets to consume
 target_include_directories(FAudio PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/FAudio>
+	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Crucible/FAudio>
 )
 
 # Soname
@@ -94,7 +94,7 @@ set_target_properties(FAudio PROPERTIES
 	OUTPUT_NAME "FAudio"
 	VERSION ${LIB_VERSION}
 	SOVERSION ${LIB_MAJOR_VERSION}
-	POSITION_INDEPENDENT_CODE ${WICKED_DYNAMIC_LIBRARY}
+	POSITION_INDEPENDENT_CODE ${CRUCIBLE_DYNAMIC_LIBRARY}
 )
 
 # SDL2 Dependency

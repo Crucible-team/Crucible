@@ -36,7 +36,7 @@ set(HEADER_FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/h264.h
 		)
 install(FILES ${HEADER_FILES}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/Utility/")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/Utility/")
 
 set(HEADER_FILES_dx12
 		${CMAKE_CURRENT_SOURCE_DIR}/dx12/d3d12.h
@@ -59,13 +59,13 @@ set(HEADER_FILES_dx12
 		${CMAKE_CURRENT_SOURCE_DIR}/dx12/d3dx12_state_object.h
 		)
 install(FILES ${HEADER_FILES_dx12}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/Utility/dx12")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/Utility/dx12")
 
 set(HEADER_FILES_spirv
 		${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/unified1/spirv.h
 		)
 install(FILES ${HEADER_FILES_spirv}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/Utility/include/spirv/unified1/")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/Utility/include/spirv/unified1/")
 
 set(HEADER_FILES_vulkan
 		${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_layer.h
@@ -91,9 +91,9 @@ set(HEADER_FILES_vulkan
 		${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vulkan_fuchsia.h
 		)
 install(FILES ${HEADER_FILES_vulkan}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/Utility/vulkan/")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/Utility/vulkan/")
 
-		
+
 set(HEADER_FILES_vk_video
 		${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_video/vulkan_video_codec_h264std.h
 		${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_video/vulkan_video_codec_h264std_decode.h
@@ -104,7 +104,7 @@ set(HEADER_FILES_vk_video
 		${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_video/vulkan_video_codecs_common.h
 		)
 install(FILES ${HEADER_FILES_vulkan}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/Utility/vulkan/vk_video/")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/Utility/vulkan/vk_video/")
 
 
 set(HEADER_FILES_encoder
@@ -136,7 +136,7 @@ set(HEADER_FILES_encoder
 		${CMAKE_CURRENT_SOURCE_DIR}/basis_universal/encoder/lodepng.h
 		)
 install(FILES ${HEADER_FILES_encoder}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/Utility/basis_universal/encoder/")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/Utility/basis_universal/encoder/")
 
 
 set(HEADER_FILES_transcoder
@@ -151,21 +151,21 @@ set(HEADER_FILES_transcoder
 		${CMAKE_CURRENT_SOURCE_DIR}/basis_universal/transcoder/basisu_transcoder_uastc.h
 		)
 install(FILES ${HEADER_FILES_transcoder}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/Utility/basis_universal/transcoder/")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/Utility/basis_universal/transcoder/")
 
 
 set(HEADER_FILES_zstd
 		${CMAKE_CURRENT_SOURCE_DIR}/basis_universal/zstd/zstd.h
 		)
 install(FILES ${HEADER_FILES_zstd}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/Utility/basis_universal/zstd/")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/Utility/basis_universal/zstd/")
 
 
 set(HEADER_FILES_dxc
 		${CMAKE_CURRENT_SOURCE_DIR}/dxc/Support/WinAdapter.h
 		)
 install(FILES ${HEADER_FILES_dxc}
-		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/WickedEngine/Utility/dxc/Support/")
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Crucible/Utility/dxc/Support/")
 
 
 set (SOURCE_FILES
@@ -196,5 +196,5 @@ add_library(Utility STATIC
 
 set_target_properties("Utility" PROPERTIES
 	FOLDER "ThirdParty"
-	POSITION_INDEPENDENT_CODE ${WICKED_DYNAMIC_LIBRARY}
+	POSITION_INDEPENDENT_CODE ${CRUCIBLE_DYNAMIC_LIBRARY}
 )
