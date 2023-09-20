@@ -1542,7 +1542,7 @@ void EditorComponent::Update(float dt)
 		}
 	}
 
-	if (!GetGUI().IsTyping())
+	if (!wi::backlog::isActive() && !GetGUI().IsTyping())
 	{
 		if (wi::input::Press(wi::input::BUTTON('1')))
 		{
