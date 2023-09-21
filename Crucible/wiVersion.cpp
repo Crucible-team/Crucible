@@ -12,7 +12,7 @@ namespace wi::version
 	// minor features, major updates, breaking compatibility changes
 	const int minor = 71;
 	// minor bug fixes, alterations, refactors, updates
-	const int revision = 291;
+	const int revision = 292;
 	#if defined(CRUCIBLE_NIGHTLY)
 	const std::string version_string = std::string("nightly_") + kGitHash + std::string("-") + kTimestamp;
 	#else
