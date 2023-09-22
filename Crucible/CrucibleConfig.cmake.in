@@ -37,7 +37,7 @@ else ()
 endif()
 
 if (NOT TARGET Crucible::Crucible)
-    include("${WICKED_CMAKE_DIR}/CrucibleTargets.cmake")
+    include("${CRUCIBLE_CMAKE_DIR}/CrucibleTargets.cmake")
     add_library(Crucible::Crucible ALIAS ${TARGET_NAME})
 
     set(Crucible_SHADER_DIR "@_CONFIG_INSTALL_DIR_INCLUDE@/Crucible/shaders/")
@@ -48,4 +48,4 @@ if (NOT TARGET Crucible::Crucible)
             IMPORTED_LOCATION "@_CONFIG_INSTALL_DIR_LIB@/Crucible/${LIBDXCOMPILER}" )
 endif()
 
-set(WickedEngine_LIBRARIES Crucible::Crucible ${TARGET_NAME})
+set(Crucible_LIBRARIES Crucible::Crucible ${TARGET_NAME})
