@@ -1775,6 +1775,17 @@ namespace wi::scene
 		script.clear(); // will be created on first Update()
 	}
 
+	void SoundComponent::Play()
+	{
+		_flags |= PLAYING;
+		wi::audio::Play(&soundinstance);
+	}
+	void SoundComponent::Stop()
+	{
+		_flags &= ~PLAYING;
+		wi::audio::Stop(&soundinstance);
+	}
+
 	XMFLOAT3 SplineComponent::GetSplinePointCat(wi::vector<XMFLOAT3> path, float t)
 	{
 
