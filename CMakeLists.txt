@@ -34,6 +34,7 @@ add_subdirectory(Crucible)
 
 if (CRUCIBLE_EDITOR)
     add_subdirectory(Editor)
+	add_subdirectory(Imgui_Editor_Prototype)
 endif()
 
 if (CRUCIBLE_TESTS)

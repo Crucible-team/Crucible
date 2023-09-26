@@ -33,9 +33,9 @@ if (WIN32)
 		Tests.rc
 	)
 
-	add_executable(Example_ImGui_Docking WIN32 ${SOURCE_FILES})
+	add_executable(Editor_ImGui_Prototype WIN32 ${SOURCE_FILES})
 
-	target_link_libraries(Example_ImGui_Docking PUBLIC
+	target_link_libraries(Editor_ImGui_Prototype PUBLIC
 		Crucible_Windows
 	)
 	set(LIB_DXCOMPILER "dxcompiler.dll")
@@ -44,16 +44,16 @@ else()
 		main_SDL2.cpp
 	)
 
-	add_executable(Example_ImGui_Docking ${SOURCE_FILES})
+	add_executable(Editor_ImGui_Prototype ${SOURCE_FILES})
 
-	target_link_libraries(Example_ImGui_Docking PUBLIC
+	target_link_libraries(Editor_ImGui_Prototype PUBLIC
 		Crucible
 		Threads::Threads
 	)
 
 	# Copy shaders to build and source folders just to be safe:
 	add_custom_command(
-		TARGET Example_ImGui_Docking POST_BUILD
+		TARGET Editor_ImGui_Prototype POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiPS.hlsl ${CMAKE_CURRENT_BINARY_DIR}
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiVS.hlsl ${CMAKE_CURRENT_BINARY_DIR}
 	)
@@ -62,13 +62,13 @@ else()
 endif ()
 
 if (MSVC)
-	set_property(TARGET Example_ImGui_Docking PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+	set_property(TARGET Editor_ImGui_Prototype PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif ()
 
 
 # Copy content to build folder:
 add_custom_command(
-	TARGET Example_ImGui_Docking POST_BUILD
+	TARGET Editor_ImGui_Prototype POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Content ${CMAKE_CURRENT_BINARY_DIR}/Content
 )

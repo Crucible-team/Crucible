@@ -211,7 +211,7 @@ void Example_ImGui::Initialize()
 
 	ActivatePath(&renderer);
 
-	
+
 }
 
 void Example_ImGui::Compose(wi::graphics::CommandList cmd)
@@ -386,7 +386,7 @@ void Example_ImGuiRenderer::Render() const
 	wi::renderer::SetWireRender(true);
 	viewport4.Render();
 	wi::renderer::SetWireRender(false);
-	
+
 }
 
 void Example_ImGuiRenderer::Load()
@@ -556,11 +556,11 @@ void Example_ImGuiRenderer::Update(float dt)
 			ImGui::DockBuilderDockWindow("ViewPort 2", dock_id_middleright);
 			ImGui::DockBuilderDockWindow("ViewPort 3", dock_id_middlebottomleft);
 			ImGui::DockBuilderDockWindow("ViewPort 4", dock_id_middlebottomright);
-			
+
 			ImGui::DockBuilderDockWindow("Assets", dock_id_bottom);
 			ImGui::DockBuilderDockWindow(ICON_MD_TEXT_SNIPPET " Backlog", dock_id_bottom);
 			ImGui::DockBuilderDockWindow(ICON_MD_BUG_REPORT " Debugger", dock_id_bottom);
-			
+
 
 			ImGui::DockBuilderFinish(dockspace_id);
 		}
@@ -660,8 +660,8 @@ void Example_ImGuiRenderer::Update(float dt)
 
 
 	/*if(ImGui::BeginMainMenuBar())
-	{  
-		
+	{
+
 		if(ImGui::BeginMenu("File", true))
 		{
 			if(ImGui::MenuItem("Open"))
@@ -690,7 +690,7 @@ void Example_ImGuiRenderer::Update(float dt)
 			ImGui::EndMenu();
 
 		}
-		
+
 		ImGui::EndMainMenuBar();
 	}*/
 
@@ -739,7 +739,7 @@ void Example_ImGuiRenderer::Update(float dt)
 		{
 
 		}
-		
+
 		ImGui::EndColumns();
 	}
 	ImGui::End();
@@ -820,7 +820,7 @@ void Example_ImGuiRenderer::Update(float dt)
 			for (size_t i = 0; i < scene.rigidbodies.GetCount(); ++i)
 			{
 				PushToEntityTree(scene.rigidbodies.GetEntity(i));
-			
+
 			}
 			for (size_t i = 0; i < scene.softbodies.GetCount(); ++i)
 			{
@@ -834,7 +834,7 @@ void Example_ImGuiRenderer::Update(float dt)
 			/*for (size_t i = 0; i < size; ++i)
 			{
 				Entity e = scene.names.GetEntity(i);
-				
+
 				NameComponent& name = *scene.names.GetComponent(e);
 				if (name.name.empty()) name.name = std::to_string(e);
 
@@ -858,7 +858,7 @@ void Example_ImGuiRenderer::Update(float dt)
 
 				if(opened)
 				{
-					
+
 					ImGui::TreePop();
 				}
 			}*/
@@ -1430,7 +1430,7 @@ void Example_ImGuiRenderer::Update(float dt)
 			ImGui::Image(lpTexture, ImVec2(img_width, img_width * height_ratio));
 			ImGui::PopStyleVar();
 
-					
+
 		}
 	}
 	ImGui::End();
@@ -1460,7 +1460,7 @@ void Example_ImGuiRenderer::Update(float dt)
 			ImGui::Image(lpTexture, ImVec2(img_width, img_width * height_ratio));
 			ImGui::PopStyleVar();
 
-					
+
 		}
 	}
 	ImGui::End();
@@ -1490,7 +1490,7 @@ void Example_ImGuiRenderer::Update(float dt)
 			ImGui::Image(lpTexture, ImVec2(img_width, img_width * height_ratio));
 			ImGui::PopStyleVar();
 
-					
+
 		}
 	}
 	ImGui::End();
@@ -1520,7 +1520,7 @@ void Example_ImGuiRenderer::Update(float dt)
 			ImGui::Image(lpTexture, ImVec2(img_width, img_width * height_ratio));
 			ImGui::PopStyleVar();
 
-					
+
 		}
 	}
 	ImGui::End();
@@ -2015,7 +2015,7 @@ void add_my_font(const char *fontpath)
 
 void Example_ImGuiRenderer::PushToEntityTree(Entity entity)
 {
-				
+	Scene& scene = wi::scene::GetScene();
 	NameComponent& name = *scene.names.GetComponent(entity);
 	if (name.name.empty()) name.name = std::to_string(entity);
 
@@ -2043,10 +2043,10 @@ void Example_ImGuiRenderer::PushToEntityTree(Entity entity)
 		{
 			PushToEntityTree(scene.hierarchy.GetEntity(i));
 		}
-					
+
 		ImGui::TreePop();
 	}
-	
+
 }
 
 void style_dark_ruda( void )
@@ -2148,7 +2148,7 @@ void style_classic_steam( void )
 {
 	// Classic Steam style by metasprite from ImThemes
 	ImGuiStyle& style = ImGui::GetStyle();
-	
+
 	style.Alpha = 1.0f;
 	style.DisabledAlpha = 0.6000000238418579f;
 	style.WindowPadding = ImVec2(8.0f, 8.0f);
@@ -2179,7 +2179,7 @@ void style_classic_steam( void )
 	style.ColorButtonPosition = ImGuiDir_Right;
 	style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
 	style.SelectableTextAlign = ImVec2(0.0f, 0.0f);
-	
+
 	style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.4980392158031464f, 0.4980392158031464f, 0.4980392158031464f, 1.0f);
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.2862745225429535f, 0.3372549116611481f, 0.2588235437870026f, 1.0f);
@@ -2239,7 +2239,7 @@ void style_rounded_visual_studio(void)
 {
 	// Rounded Visual Studio style by RedNicStone from ImThemes
 	ImGuiStyle& style = ImGui::GetStyle();
-	
+
 	style.Alpha = 1.0f;
 	style.DisabledAlpha = 0.6000000238418579f;
 	style.WindowPadding = ImVec2(8.0f, 8.0f);
@@ -2270,7 +2270,7 @@ void style_rounded_visual_studio(void)
 	style.ColorButtonPosition = ImGuiDir_Right;
 	style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
 	style.SelectableTextAlign = ImVec2(0.0f, 0.0f);
-	
+
 	style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.5921568870544434f, 0.5921568870544434f, 0.5921568870544434f, 1.0f);
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
@@ -2330,7 +2330,7 @@ void style_visual_studio()
 {
 	// Visual Studio style by MomoDeve from ImThemes
 	ImGuiStyle& style = ImGui::GetStyle();
-	
+
 	style.Alpha = 1.0f;
 	style.DisabledAlpha = 0.6000000238418579f;
 	style.WindowPadding = ImVec2(8.0f, 8.0f);
@@ -2361,7 +2361,7 @@ void style_visual_studio()
 	style.ColorButtonPosition = ImGuiDir_Right;
 	style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
 	style.SelectableTextAlign = ImVec2(0.0f, 0.0f);
-	
+
 	style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.5921568870544434f, 0.5921568870544434f, 0.5921568870544434f, 1.0f);
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
@@ -2421,7 +2421,7 @@ void style_future_dark()
 {
 	// Future Dark style by rewrking from ImThemes
 	ImGuiStyle& style = ImGui::GetStyle();
-	
+
 	style.Alpha = 1.0f;
 	style.DisabledAlpha = 1.0f;
 	style.WindowPadding = ImVec2(12.0f, 12.0f);
@@ -2452,7 +2452,7 @@ void style_future_dark()
 	style.ColorButtonPosition = ImGuiDir_Right;
 	style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
 	style.SelectableTextAlign = ImVec2(0.0f, 0.0f);
-	
+
 	style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.2745098173618317f, 0.3176470696926117f, 0.4509803950786591f, 1.0f);
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.0784313753247261f, 0.08627451211214066f, 0.1019607856869698f, 1.0f);
