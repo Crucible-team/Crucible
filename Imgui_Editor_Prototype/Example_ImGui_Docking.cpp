@@ -2021,7 +2021,7 @@ void Example_ImGuiRenderer::PushToEntityTree(Entity entity)
 
 	bool is_selected = false;
 	if (highlight_entity == entity) is_selected = true;;
-	std::string s = "Object " + std::to_string(entity) + ": " + name.name;
+	std::string s = /*"Object " + std::to_string(entity) + ": " + */name.name;
 	ImGui::PushItemWidth(-4);
 	ImGuiTreeNodeFlags flags = ( (is_selected) ? ImGuiTreeNodeFlags_Selected : 0)| ImGuiTreeNodeFlags_OpenOnArrow;
 
@@ -2039,10 +2039,14 @@ void Example_ImGuiRenderer::PushToEntityTree(Entity entity)
 
 	if(opened)
 	{
-		if (scene.hierarchy[i].parentID == entity)
+		for (size_t i = 0; i < scene.hierarchy.GetCount(); ++i)
 		{
-			PushToEntityTree(scene.hierarchy.GetEntity(i));
+			if (scene.hierarchy[i].parentID == entity)
+			{
+				PushToEntityTree(scene.hierarchy.GetEntity(i));
+			}
 		}
+		
 
 		ImGui::TreePop();
 	}
