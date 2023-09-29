@@ -1,6 +1,6 @@
 #pragma once
 #include "WickedEngine.h"
-
+#include <unordered_map>
 
 class Example_ImGuiRenderer : public wi::RenderPath2D
 {
@@ -28,6 +28,8 @@ public:
 	wi::scene::CameraComponent viewport4Cam;
 
 	void PushToEntityTree(wi::ecs::Entity entity);
+
+	std::unordered_map<wi::ecs::Entity, bool> parentNodesCreated;
 };
 
 class Example_ImGui : public wi::Application

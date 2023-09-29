@@ -817,7 +817,7 @@ void Example_ImGuiRenderer::Update(float dt)
 				PushToEntityTree(scene.hierarchy[i].parentID);
 			}
 
-			for (size_t i = 0; i < scene.rigidbodies.GetCount(); ++i)
+			/*for (size_t i = 0; i < scene.rigidbodies.GetCount(); ++i)
 			{
 				PushToEntityTree(scene.rigidbodies.GetEntity(i));
 
@@ -830,7 +830,7 @@ void Example_ImGuiRenderer::Update(float dt)
 			for (size_t i = 0; i < scene.names.GetCount(); ++i)
 			{
 				PushToEntityTree(scene.names.GetEntity(i));
-			}
+			}*/
 			/*for (size_t i = 0; i < size; ++i)
 			{
 				Entity e = scene.names.GetEntity(i);
@@ -2016,12 +2016,20 @@ void add_my_font(const char *fontpath)
 void Example_ImGuiRenderer::PushToEntityTree(Entity entity)
 {
 	Scene& scene = wi::scene::GetScene();
-	NameComponent& name = *scene.names.GetComponent(entity);
-	if (name.name.empty()) name.name = std::to_string(entity);
+	NameComponent* namec = scene.names.GetComponent(entity);
+	std::string name;
+	if (namec == nullptr)
+	{
+		name = std::to_string(entity);
+	}
+	else
+	{
+		name = namec->name;
+	}
 
 	bool is_selected = false;
 	if (highlight_entity == entity) is_selected = true;;
-	std::string s = /*"Object " + std::to_string(entity) + ": " + */name.name;
+	std::string s = "Object " + std::to_string(entity) + ": " + name;
 	ImGui::PushItemWidth(-4);
 	ImGuiTreeNodeFlags flags = ( (is_selected) ? ImGuiTreeNodeFlags_Selected : 0)| ImGuiTreeNodeFlags_OpenOnArrow;
 
@@ -2048,9 +2056,8 @@ void Example_ImGuiRenderer::PushToEntityTree(Entity entity)
 		}
 		
 
-		ImGui::TreePop();
+		ImGui::TreePop(); 
 	}
-
 }
 
 void style_dark_ruda( void )
