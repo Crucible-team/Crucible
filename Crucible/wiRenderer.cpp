@@ -2420,11 +2420,6 @@ void Initialize()
 void ClearWorld(Scene& scene)
 {
 	scene.Clear();
-
-	deferredMIPGenLock.lock();
-	deferredMIPGens.clear();
-	deferredMIPGenLock.unlock();
-
 }
 
 // Don't store this structure on heap!
