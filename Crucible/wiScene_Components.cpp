@@ -563,7 +563,15 @@ namespace wi::scene
 		const size_t uv_count = std::max(vertex_uvset_0.size(), vertex_uvset_1.size());
 
 		GPUBufferDesc bd;
-		bd.usage = Usage::DEFAULT;
+		if (device->CheckCapability(GraphicsDeviceCapability::CACHE_COHERENT_UMA))
+		{
+			// In UMA mode, it is better to create UPLOAD buffer, this avoids one copy from UPLOAD to DEFAULT
+			bd.usage = Usage::UPLOAD;
+		}
+		else
+		{
+			bd.usage = Usage::DEFAULT;
+		}
 		bd.bind_flags = BindFlag::VERTEX_BUFFER | BindFlag::INDEX_BUFFER | BindFlag::SHADER_RESOURCE;
 		bd.misc_flags = ResourceMiscFlag::BUFFER_RAW | ResourceMiscFlag::TYPED_FORMAT_CASTING | ResourceMiscFlag::NO_DEFAULT_DESCRIPTORS;
 		if (device->CheckCapability(GraphicsDeviceCapability::RAYTRACING))
@@ -1498,6 +1506,54 @@ namespace wi::scene
 			wi::helper::saveTextureToMemory(bc6tex, lightmapTextureData); // internally waits for GPU completion
 			lightmap.desc = desc;
 		}
+	}
+
+	void EnvironmentProbeComponent::CreateRenderData()
+	{
+		if (!textureName.empty() && !resource.IsValid())
+		{
+			resource = wi::resourcemanager::Load(textureName);
+		}
+		if (resource.IsValid())
+		{
+			texture = resource.GetTexture();
+			SetDirty(false);
+			return;
+		}
+		resolution = wi::math::GetNextPowerOfTwo(resolution);
+		if (texture.IsValid() && resolution == texture.desc.width)
+			return;
+		SetDirty();
+
+		GraphicsDevice* device = wi::graphics::GetDevice();
+
+		TextureDesc desc;
+		desc.array_size = 6;
+		desc.height = resolution;
+		desc.width = resolution;
+		desc.usage = Usage::DEFAULT;
+		desc.format = Format::BC6H_UF16;
+		desc.sample_count = 1; // Note that this texture is always non-MSAA, even if probe is rendered as MSAA, because this contains resolved result
+		desc.bind_flags = BindFlag::SHADER_RESOURCE;
+		desc.mip_levels = GetMipCount(resolution, resolution, 1, 16);
+		desc.misc_flags = ResourceMiscFlag::TEXTURECUBE;
+		desc.layout = ResourceState::SHADER_RESOURCE;
+		device->CreateTexture(&desc, nullptr, &texture);
+		device->SetName(&texture, "EnvironmentProbeComponent::texture");
+	}
+	void EnvironmentProbeComponent::DeleteResource()
+	{
+		if (resource.IsValid())
+		{
+			// only delete these if resource is actually valid!
+			resource = {};
+			texture = {};
+			textureName = {};
+		}
+	}
+	size_t EnvironmentProbeComponent::GetMemorySizeInBytes() const
+	{
+		return ComputeTextureMemorySizeInBytes(texture.desc);
 	}
 
 	AnimationComponent::AnimationChannel::PathDataType AnimationComponent::AnimationChannel::GetPathDataType() const

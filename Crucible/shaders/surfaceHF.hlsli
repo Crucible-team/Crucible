@@ -4,10 +4,29 @@
 
 #define max3(v) max(max(v.x, v.y), v.z)
 
-float3 F_Schlick(const float3 f0, float f90, float VoH)
+// hard coded value for surfaces with simplified lighting:
+//	occlusion = 1
+//	roughness = 1
+//	metalness = 0
+//	reflectance = 0
+static const float4 surfacemap_simple = float4(1, 1, 0, 0);
+
+float3 F_Schlick(const float3 f0, float VoH)
 {
 	// Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"
+	float f90 = saturate(50.0 * dot(f0, 0.33)); // reflectance at grazing angle
 	return f0 + (f90 - f0) * pow5(1.0 - VoH);
+}
+
+// https://www.unrealengine.com/en-US/blog/physically-based-shading-on-mobile
+half3 EnvBRDFApprox(half3 SpecularColor, half Roughness, half NoV)
+{
+	const half4 c0 = { -1, -0.0275, -0.572, 0.022 };
+	const half4 c1 = { 1, 0.0425, 1.04, -0.04 };
+	half4 r = Roughness * c0 + c1;
+	half a004 = min(r.x * r.x, exp2(-9.28 * NoV)) * r.x + r.y;
+	half2 AB = half2(-1.04, 1.04) * a004 + r.zw;
+	return SpecularColor * AB.x + AB.y;
 }
 
 struct SheenSurface
@@ -16,7 +35,6 @@ struct SheenSurface
 	float roughness;
 
 	// computed values:
-	float roughnessBRDF;
 	float DFG;
 	float albedoScaling;
 };
@@ -28,7 +46,6 @@ struct ClearcoatSurface
 	float3 N;
 
 	// computed values:
-	float roughnessBRDF;
 	float3 R;
 	float3 F;
 };
@@ -85,9 +102,7 @@ struct Surface
 	float3 bumpColor;
 
 	// These will be computed when calling Update():
-	float roughnessBRDF;	// roughness input for BRDF functions
 	float NdotV;			// cos(angle between normal and view vector)
-	float f90;				// reflectance at grazing angle
 	float3 R;				// reflection vector
 	float3 F;				// fresnel term computed from NdotV
 
@@ -222,26 +237,29 @@ struct Surface
 
 		create(material);
 	}
-
+	
 	inline void update()
 	{
-		roughness = clamp(roughness, 0.045, 1);
-		roughnessBRDF = roughness * roughness;
+		// the basic roughness must be between [0,1], do not clamp it here for BRDF,
+		//	because it is also used for other effects (eg. envmaps, reflections, etc.)
+		//	BRDF roughness (squared) will have the clamping just before it is computed
+		roughness = saturate(roughness);
 
 #ifdef SHEEN
-		sheen.roughness = clamp(sheen.roughness, 0.045, 1);
-		sheen.roughnessBRDF = sheen.roughness * sheen.roughness;
+		sheen.roughness = saturate(sheen.roughness);
 #endif // SHEEN
 
 #ifdef CLEARCOAT
-		clearcoat.roughness = clamp(clearcoat.roughness, 0.045, 1);
-		clearcoat.roughnessBRDF = clearcoat.roughness * clearcoat.roughness;
+		clearcoat.roughness = saturate(clearcoat.roughness);
 #endif // CLEARCOAT
 
 		NdotV = saturate(dot(N, V) + 1e-5);
-
-		f90 = saturate(50.0 * dot(f0, 0.33));
-		F = F_Schlick(f0, f90, NdotV);
+		
+#ifdef CARTOON
+		F = F_Schlick(f0, NdotV);
+#else
+		F = EnvBRDFApprox(f0, roughness, NdotV);
+#endif // CARTOON
 
 		R = -reflect(V, N);
 
@@ -252,7 +270,12 @@ struct Surface
 #endif // SHEEN
 
 #ifdef CLEARCOAT
-		clearcoat.F = F_Schlick(f0, f90, saturate(dot(clearcoat.N, V) + 1e-5));
+		float clearcoatNdotV = saturate(dot(clearcoat.N, V) + 1e-5);
+#ifdef CARTOON
+		clearcoat.F = F_Schlick(f0, clearcoatNdotV);
+#else
+		clearcoat.F = EnvBRDFApprox(f0, clearcoat.roughness, clearcoatNdotV);
+#endif // CARTOON
 		clearcoat.F *= clearcoat.factor;
 		clearcoat.R = -reflect(V, clearcoat.N);
 #endif // CLEARCOAT
@@ -263,6 +286,7 @@ struct Surface
 		aniso.B = normalize(cross(N, aniso.T));
 		aniso.TdotV = dot(aniso.T.xyz, V);
 		aniso.BdotV = dot(aniso.B, V);
+		float roughnessBRDF = sqr(clamp(roughness, 0.045, 1));
 		aniso.at = max(0, roughnessBRDF * (1 + aniso.strength));
 		aniso.ab = max(0, roughnessBRDF * (1 - aniso.strength));
 #endif // ANISOTROPIC
@@ -270,6 +294,13 @@ struct Surface
 #ifdef CARTOON
 		F = smoothstep(0.1, 0.5, F);
 #endif // CARTOON
+		
+#ifndef ENVMAPRENDERING
+		if (GetFrame().options & OPTION_BIT_FORCE_DIFFUSE_LIGHTING)
+#endif // ENVMAPRENDERING
+		{
+			F = 0;
+		}
 	}
 
 	inline bool IsReceiveShadow() { return flags & SURFACE_FLAG_RECEIVE_SHADOW; }
@@ -544,7 +575,7 @@ struct Surface
 
 		if (simple_lighting)
 		{
-			surfaceMap = 0;
+			surfaceMap = surfacemap_simple;
 		}
 
 #ifdef SURFACE_LOAD_QUAD_DERIVATIVES

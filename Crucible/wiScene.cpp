@@ -829,7 +829,6 @@ namespace wi::scene
 			shaderscene.materialbuffer = device->GetDescriptorIndex(&materialBuffer, SubresourceType::SRV);
 		}
 		shaderscene.meshletbuffer = device->GetDescriptorIndex(&meshletBuffer, SubresourceType::SRV);
-		shaderscene.envmaparray = device->GetDescriptorIndex(&envmapArray, SubresourceType::SRV);
 		if (weather.skyMap.IsValid())
 		{
 			shaderscene.globalenvmap = device->GetDescriptorIndex(&weather.skyMap.GetTexture(), SubresourceType::SRV, weather.skyMap.GetTextureSRGBSubresource());
@@ -838,6 +837,20 @@ namespace wi::scene
 		{
 			shaderscene.globalenvmap = -1;
 		}
+
+		if (probes.GetCount() > 0 && probes[0].texture.IsValid())
+		{
+			shaderscene.globalprobe = device->GetDescriptorIndex(&probes[0].texture, SubresourceType::SRV);
+		}
+		else if (global_dynamic_probe.texture.IsValid())
+		{
+			shaderscene.globalprobe = device->GetDescriptorIndex(&global_dynamic_probe.texture, SubresourceType::SRV);
+		}
+		else
+		{
+			shaderscene.globalprobe = -1;
+		}
+
 		shaderscene.impostorInstanceOffset = impostorInstanceOffset;
 		shaderscene.TLAS = device->GetDescriptorIndex(&TLAS, SubresourceType::SRV);
 		shaderscene.BVH_counter = device->GetDescriptorIndex(&BVH.primitiveCounterBuffer, SubresourceType::SRV);
@@ -5520,7 +5533,7 @@ namespace wi::scene
 			desc.misc_flags = ResourceMiscFlag::NONE;
 			desc.layout = ResourceState::SHADER_RESOURCE;
 
-			desc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
+			desc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::RENDER_TARGET; // Note: RenderTarget required for MSAA resolve dest [PS5]
 			desc.format = Format::R8G8B8A8_UNORM;
 			device->CreateTexture(&desc, nullptr, &impostorRenderTarget_Albedo);
 			device->SetName(&impostorRenderTarget_Albedo, "impostorRenderTarget_Albedo");
@@ -6024,115 +6037,6 @@ namespace wi::scene
 		if (dt == 0)
 			return;
 
-		if (!envmapArray.IsValid()) // even when zero probes, this will be created, since sometimes only the sky will be rendered into it
-		{
-			GraphicsDevice* device = wi::graphics::GetDevice();
-
-			constexpr Format format = Format::BC6H_UF16;
-			constexpr uint32_t mip_count = GetMipCount(envmapRes, envmapRes);
-
-			TextureDesc desc;
-			desc.array_size = 6;
-			desc.height = envmapRes;
-			desc.width = envmapRes;
-			desc.mip_levels = 1;
-			desc.usage = Usage::DEFAULT;
-
-			desc.bind_flags = BindFlag::DEPTH_STENCIL | BindFlag::SHADER_RESOURCE;
-			desc.format = wi::renderer::format_depthbuffer_envprobe;
-			desc.layout = ResourceState::SHADER_RESOURCE;
-			desc.sample_count = envmapMSAASampleCount;
-			device->CreateTexture(&desc, nullptr, &envrenderingDepthBuffer_MSAA);
-			device->SetName(&envrenderingDepthBuffer_MSAA, "envrenderingDepthBuffer_MSAA");
-
-			desc.bind_flags = BindFlag::RENDER_TARGET;
-			desc.format = wi::renderer::format_rendertarget_envprobe;
-			desc.layout = ResourceState::RENDERTARGET;
-			desc.misc_flags = ResourceMiscFlag::TRANSIENT_ATTACHMENT;
-			device->CreateTexture(&desc, nullptr, &envrenderingColorBuffer_MSAA);
-			device->SetName(&envrenderingColorBuffer_MSAA, "envrenderingColorBuffer_MSAA");
-
-			desc.sample_count = 1;
-			desc.array_size = envmapCount * 6;
-			desc.bind_flags = BindFlag::SHADER_RESOURCE;
-			desc.format = format;
-			desc.height = envmapRes;
-			desc.width = envmapRes;
-			desc.mip_levels = mip_count;
-			desc.misc_flags = ResourceMiscFlag::TEXTURECUBE;
-			desc.usage = Usage::DEFAULT;
-			desc.layout = ResourceState::SHADER_RESOURCE;
-			device->CreateTexture(&desc, nullptr, &envmapArray);
-			device->SetName(&envmapArray, "envmapArray");
-
-			desc.array_size = 6;
-			desc.mip_levels = mip_count;
-			desc.bind_flags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
-			desc.format = wi::renderer::format_rendertarget_envprobe;
-			desc.layout = ResourceState::SHADER_RESOURCE;
-			device->CreateTexture(&desc, nullptr, &envrenderingColorBuffer);
-			device->SetName(&envrenderingColorBuffer, "envrenderingColorBuffer");
-
-			desc.mip_levels = 1;
-			desc.format = wi::renderer::format_depthbuffer_envprobe;
-			desc.bind_flags = BindFlag::DEPTH_STENCIL | BindFlag::SHADER_RESOURCE;
-			desc.layout = ResourceState::SHADER_RESOURCE;
-			device->CreateTexture(&desc, nullptr, &envrenderingDepthBuffer);
-			device->SetName(&envrenderingDepthBuffer, "envrenderingDepthBuffer");
-
-			// Cubes per mip level:
-			for (uint32_t i = 0; i < envrenderingColorBuffer.desc.mip_levels; ++i)
-			{
-				int subresource_index;
-				subresource_index = device->CreateSubresource(&envrenderingColorBuffer, SubresourceType::SRV, 0, envrenderingColorBuffer.desc.array_size, i, 1);
-				assert(subresource_index == i);
-				subresource_index = device->CreateSubresource(&envrenderingColorBuffer, SubresourceType::UAV, 0, envrenderingColorBuffer.desc.array_size, i, 1);
-				assert(subresource_index == i);
-			}
-
-			// individual cubes with mips:
-			for (uint32_t i = 0; i < envmapCount; ++i)
-			{
-				int subresource_index;
-				subresource_index = device->CreateSubresource(&envmapArray, SubresourceType::SRV, i * 6, 6, 0, -1);
-				assert(subresource_index == i);
-			}
-
-			std::string info;
-			info += "Created envprobe array with " + std::to_string(envmapCount) + " probes";
-			info += "\n\tResolution = " + std::to_string(envmapRes) + " * " + std::to_string(envmapRes) + " * 6";
-			info += "\n\tMip Levels = " + std::to_string(envmapArray.desc.mip_levels);
-			info += "\n\tRender Format = ";
-			info += GetFormatString(envrenderingColorBuffer.desc.format);
-			info += "\n\tDepth Format = ";
-			info += GetFormatString(envrenderingDepthBuffer.desc.format);
-			info += "\n\tSampled Format = ";
-			info += GetFormatString(envmapArray.desc.format);
-			size_t total_size = 0;
-			total_size += ComputeTextureMemorySizeInBytes(envrenderingDepthBuffer.desc);
-			total_size += ComputeTextureMemorySizeInBytes(envrenderingColorBuffer.desc);
-			total_size += ComputeTextureMemorySizeInBytes(envrenderingDepthBuffer_MSAA.desc);
-			total_size += ComputeTextureMemorySizeInBytes(envrenderingColorBuffer_MSAA.desc);
-			total_size += ComputeTextureMemorySizeInBytes(envmapArray.desc);
-			info += "\n\tMemory = " + wi::helper::GetMemorySizeText(total_size) + "\n";
-			wi::backlog::post(info);
-		}
-
-		// reconstruct envmap array status:
-		bool envmapTaken[envmapCount] = {};
-		for (size_t i = 0; i < probes.GetCount(); ++i)
-		{
-			EnvironmentProbeComponent& probe = probes[i];
-			if (probe.textureIndex >= 0 && probe.textureIndex < envmapCount)
-			{
-				envmapTaken[probe.textureIndex] = true;
-			}
-			else
-			{
-				probe.textureIndex = -1;
-			}
-		}
-
 		for (size_t probeIndex = 0; probeIndex < probes.GetCount(); ++probeIndex)
 		{
 			EnvironmentProbeComponent& probe = probes[probeIndex];
@@ -6172,19 +6076,14 @@ namespace wi::scene
 				probe.render_dirty = true;
 			}
 
-			if (probe.render_dirty && probe.textureIndex < 0)
-			{
-				// need to take a free envmap texture slot:
-				for (int i = 0; i < arraysize(envmapTaken); ++i)
-				{
-					if (envmapTaken[i] == false)
-					{
-						envmapTaken[i] = true;
-						probe.textureIndex = i;
-						break;
-					}
-				}
-			}
+			probe.CreateRenderData();
+		}
+
+		if (probes.GetCount() == 0)
+		{
+			global_dynamic_probe.SetRealTime(true);
+			global_dynamic_probe.resolution = 64;
+			global_dynamic_probe.CreateRenderData();
 		}
 	}
 	void Scene::RunForceUpdateSystem(wi::jobsystem::context& ctx)
@@ -7258,7 +7157,8 @@ namespace wi::scene
 					// Find the nearest feature on the triangle to the sphere.
 					XMVECTOR Dist = XMVector3Dot(XMVectorSubtract(Center, p0), N);
 
-					if (!mesh->IsDoubleSided() && XMVectorGetX(Dist) > 0)
+					bool onBackside = XMVectorGetX(Dist) > 0;
+					if (!mesh->IsDoubleSided() && onBackside)
 						return; // pass through back faces
 
 					// If the center of the sphere is farther from the plane of the triangle than
@@ -7342,13 +7242,53 @@ namespace wi::scene
 						XMVECTOR intersectionVec = Center - bestPoint;
 						XMVECTOR intersectionVecLen = XMVector3Length(intersectionVec);
 
-						float depth = capsule.radius - XMVectorGetX(intersectionVecLen);
+						float lenX = XMVectorGetX(intersectionVecLen);
+						float depth = capsule.radius - lenX;
 						if (depth > result.depth)
 						{
 							result.entity = entity;
-							result.depth = depth;
 							XMStoreFloat3(&result.position, bestPoint);
-							XMStoreFloat3(&result.normal, intersectionVec / intersectionVecLen);
+							if (lenX > std::numeric_limits<float>::epsilon())
+							{
+								result.depth = depth;
+								XMStoreFloat3(&result.normal, intersectionVec / intersectionVecLen);
+							} 
+							else 
+							{
+								// The line segment that makes the spine of the capsule has 
+								// intersected the triangle plane, so interSectionVec ~= Zero, 
+								// and depth ~= capsule.radius.  Use the triangle normal.
+								XMVECTOR CandNorm; 
+								if (onBackside)
+								{
+									CandNorm = N;
+								} else 
+								{
+									CandNorm = XMVectorNegate(N);
+								}
+								XMStoreFloat3(&result.normal, CandNorm);
+
+								// If the capsule has penetrated enough to intersect the spine, the
+								// depth is calculated from closest point on the spine, not from the
+								// actual endpoint, so the real depth may be greater, depending on the
+								// orientation of the capsule relative to the triangle normal.
+								// For simplicity, we assume the penetrating endpoint is the one closest
+								// to Center, and we project the distance from Center to the closest endpoint
+								// onto the normal.
+								XMVECTOR A_C = XMVector3LengthSq(Center - A);
+								XMVECTOR B_C = XMVector3LengthSq(Center - B);
+								XMVECTOR CDiff;
+								if (XMVector3Less(A_C, B_C)) 
+								{
+									CDiff = XMVectorSubtract(A, Center);
+								}
+								else 
+								{
+									CDiff = XMVectorSubtract(B, Center);
+								}
+								XMVECTOR CDiffOnN = XMVectorMultiply(XMVector3Dot(CDiff, N), CDiff);
+								result.depth = depth + XMVectorGetX(XMVector3Length(CDiffOnN));
+							}
 
 							XMVECTOR vel = bestPoint - XMVector3Transform(XMVector3Transform(bestPoint, objectMat_Inverse), objectMatPrev);
 							XMStoreFloat3(&result.velocity, vel);

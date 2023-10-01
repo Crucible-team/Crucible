@@ -1028,10 +1028,12 @@ TextureSlot = {
 - SetCascadeMask(int value)
 - SetRendertypeMask(int value)
 - SetColor(Vector value)
-- GetEmissiveColor(Vector value)
+- SetEmissiveColor(Vector value)
 - SetUserStencilRef(int value)
-- GetLodDistanceMultiplier(float value)
-- GetDrawDistance(float value)
+- SetLodDistanceMultiplier(float value)
+- SetDrawDistance(float value)
+- SetForeground(bool value) -- enable/disable foreground object rendering. Foreground objects will be always rendered on top of regular objects
+- IsForeground() : bool
 
 #### InverseKinematicsComponent
 Describes an Inverse Kinematics effector.
@@ -1421,6 +1423,7 @@ It inherits functions from RenderPath2D, so it can render a 2D overlay.
 - SetFSR2Enabled(bool value) -- FSR 2.1 on/off
 - SetFSR2Sharpness(float value) -- FSR 2.1 sharpness 0: least sharp, 1: sharpest (this is different to FSR 1.0)
 - SetFSR2Preset(FSR2_Preset value) -- FSR 2.1 preset will modify resolution scaling and sampler LOD bias
+- SetTonemap(Tonemap value) -- Set a tonemap type
 - SetCropLeft(float value) -- Sets cropping from left of the screen in logical units
 - SetCropTop(float value) -- Sets cropping from top of the screen in logical units
 - SetCropRight(float value) -- Sets cropping from right of the screen in logical units
@@ -1431,6 +1434,11 @@ FSR2_Preset = {
 	Balanced = 1,			-- 1.7x scaling, -1.76 sampler LOD bias
 	Performance = 2,		-- 2.0x scaling, -2.0 sampler LOD bias
 	Ultra_Performance = 3,	-- 3.0x scaling, -2.58 sampler LOD bias
+}
+
+Tonemap = {
+	Reinhard = 0,
+	ACES = 1,
 }
 
 #### LoadingScreen
