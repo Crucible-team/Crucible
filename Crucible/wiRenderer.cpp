@@ -4529,7 +4529,7 @@ void UpdateRenderDataAsync(
 			const MeshComponent* mesh = vis.scene->meshes.GetComponent(emitter.meshID);
 			const uint32_t instanceIndex = uint32_t(vis.scene->objects.GetCount() + vis.scene->hairs.GetCount()) + emitterIndex;
 
-			emitter.UpdateGPU(instanceIndex, transform, mesh, cmd);
+			emitter.UpdateGPU(instanceIndex, mesh, cmd);
 		}
 		wi::profiler::EndRange(range);
 	}
@@ -5752,6 +5752,8 @@ void DrawScene(
 			continue;
 		if (maincamera && object.IsNotVisibleInMainCamera())
 			continue;
+		if (skip_planar_reflection_objects && object.IsNotVisibleInReflections())
+			continue;
 		if ((object.GetFilterMask() & filterMask) == 0)
 			continue;
 
@@ -6819,14 +6821,9 @@ void DrawDebugWorld(
 		{
 			const wi::EmittedParticleSystem& emitter = scene.emitters[i];
 			Entity entity = scene.emitters.GetEntity(i);
-			if (!scene.transforms.Contains(entity))
-			{
-				continue;
-			}
-			const TransformComponent& transform = *scene.transforms.GetComponent(entity);
 			const MeshComponent* mesh = scene.meshes.GetComponent(emitter.meshID);
 
-			XMStoreFloat4x4(&sb.g_xTransform, XMLoadFloat4x4(&transform.world)*camera.GetViewProjection());
+			XMStoreFloat4x4(&sb.g_xTransform, XMLoadFloat4x4(&emitter.worldMatrix)*camera.GetViewProjection());
 			sb.g_xColor = float4(0, 1, 0, 1);
 
 			device->BindDynamicConstantBuffer(sb, CB_GETBINDSLOT(MiscCB), cmd);
@@ -7682,7 +7679,7 @@ void RefreshEnvProbes(const Visibility& vis, CommandList cmd)
 				if ((aabb.layerMask & vis.layerMask) && (aabb.layerMask & probe_aabb.layerMask) && culler.intersects(aabb))
 				{
 					const ObjectComponent& object = vis.scene->objects[i];
-					if (object.IsRenderable())
+					if (object.IsRenderable() && !object.IsNotVisibleInReflections())
 					{
 						uint16_t camera_mask = 0;
 						for (uint32_t camera_index = 0; camera_index < arraysize(cameras); ++camera_index)
@@ -9195,7 +9192,6 @@ void RayTraceScene(
 	const Texture& output,
 	int accumulation_sample,
 	CommandList cmd,
-	uint8_t instanceInclusionMask,
 	const Texture* output_albedo,
 	const Texture* output_normal,
 	const Texture* output_depth,
@@ -9222,6 +9218,7 @@ void RayTraceScene(
 	cb.xTraceResolution_rcp.x = 1.0f / cb.xTraceResolution.x;
 	cb.xTraceResolution_rcp.y = 1.0f / cb.xTraceResolution.y;
 	cb.xTraceUserData.x = raytraceBounceCount;
+	uint8_t instanceInclusionMask = 0xFF;
 	cb.xTraceUserData.y = instanceInclusionMask;
 	cb.xTraceSampleIndex = (uint32_t)accumulation_sample;
 	device->BindDynamicConstantBuffer(cb, CB_GETBINDSLOT(RaytracingCB), cmd);
@@ -9355,7 +9352,7 @@ void RayTraceSceneBVH(const Scene& scene, CommandList cmd)
 	device->EventEnd(cmd);
 }
 
-void RefreshLightmaps(const Scene& scene, CommandList cmd, uint8_t instanceInclusionMask)
+void RefreshLightmaps(const Scene& scene, CommandList cmd)
 {
 	const uint32_t lightmap_request_count = scene.lightmap_request_allocator.load();
 	if (lightmap_request_count > 0)
@@ -9433,6 +9430,7 @@ void RefreshLightmaps(const Scene& scene, CommandList cmd, uint8_t instanceInclu
 				cb.xTracePixelOffset.y *= 1.4f;	// boost the jitter by a bit
 				cb.xTraceAccumulationFactor = 1.0f / (object.lightmapIterationCount + 1.0f); // accumulation factor (alpha)
 				cb.xTraceUserData.x = raytraceBounceCount;
+				uint8_t instanceInclusionMask = 0xFF;
 				cb.xTraceUserData.y = instanceInclusionMask;
 				cb.xTraceSampleIndex = object.lightmapIterationCount;
 				device->BindDynamicConstantBuffer(cb, CB_GETBINDSLOT(RaytracingCB), cmd);
@@ -10214,8 +10212,7 @@ void SurfelGI_Coverage(
 void SurfelGI(
 	const SurfelGIResources& res,
 	const Scene& scene,
-	CommandList cmd,
-	uint8_t instanceInclusionMask
+	CommandList cmd
 )
 {
 	if (!scene.TLAS.IsValid() && !scene.BVH.IsValid())
@@ -10356,6 +10353,7 @@ void SurfelGI(
 		device->BindComputeShader(&shaders[CSTYPE_SURFEL_RAYTRACE], cmd);
 
 		PushConstantsSurfelRaytrace push;
+		uint8_t instanceInclusionMask = 0xFF;
 		push.instanceInclusionMask = instanceInclusionMask;
 		device->PushConstants(&push, sizeof(push), cmd);
 
@@ -10433,8 +10431,7 @@ void SurfelGI(
 
 void DDGI(
 	const wi::scene::Scene& scene,
-	CommandList cmd,
-	uint8_t instanceInclusionMask
+	CommandList cmd
 )
 {
 	if (!scene.TLAS.IsValid() && !scene.BVH.IsValid())
@@ -10449,6 +10446,7 @@ void DDGI(
 	BindCommonResources(cmd);
 
 	DDGIPushConstants push;
+	uint8_t instanceInclusionMask = 0xFF;
 	push.instanceInclusionMask = instanceInclusionMask;
 	push.frameIndex = scene.ddgi.frame_index;
 	push.rayCount = std::min(GetDDGIRayCount(), DDGI_MAX_RAYCOUNT);
@@ -11523,8 +11521,7 @@ void Postprocess_RTAO(
 	const Texture& output,
 	CommandList cmd,
 	float range,
-	float power,
-	uint8_t instanceInclusionMask
+	float power
 )
 {
 	if (!device->CheckCapability(GraphicsDeviceCapability::RAYTRACING))
@@ -11583,6 +11580,7 @@ void Postprocess_RTAO(
 	rtao_range = range;
 	rtao_power = power;
 	postprocess.params0.w = (float)res.frame;
+	uint8_t instanceInclusionMask = 0xFF;
 	std::memcpy(&postprocess.params1.x, &instanceInclusionMask, sizeof(instanceInclusionMask));
 	device->PushConstants(&postprocess, sizeof(postprocess), cmd);
 
@@ -11803,8 +11801,7 @@ void Postprocess_RTDiffuse(
 	const Scene& scene,
 	const Texture& output,
 	CommandList cmd,
-	float range,
-	uint8_t instanceInclusionMask
+	float range
 )
 {
 	if (!device->CheckCapability(GraphicsDeviceCapability::RAYTRACING))
@@ -11828,6 +11825,7 @@ void Postprocess_RTDiffuse(
 	postprocess.resolution_rcp.y = 1.0f / postprocess.resolution.y;
 	rtdiffuse_range = range;
 	rtdiffuse_frame = (float)res.frame;
+	uint8_t instanceInclusionMask = 0xFF;
 	std::memcpy(&postprocess.params1.x, &instanceInclusionMask, sizeof(instanceInclusionMask));
 
 	{
@@ -12095,8 +12093,7 @@ void Postprocess_RTReflection(
 	const Texture& output,
 	CommandList cmd,
 	float range,
-	float roughnessCutoff,
-	uint8_t instanceInclusionMask
+	float roughnessCutoff
 )
 {
 	if (!device->CheckCapability(GraphicsDeviceCapability::RAYTRACING))
@@ -12121,6 +12118,7 @@ void Postprocess_RTReflection(
 	rtreflection_range = range;
 	rtreflection_roughness_cutoff = roughnessCutoff;
 	rtreflection_frame = (float)res.frame;
+	uint8_t instanceInclusionMask = raytracing_inclusion_mask_reflection;
 	std::memcpy(&postprocess.params1.x, &instanceInclusionMask, sizeof(instanceInclusionMask));
 
 	{
@@ -12972,8 +12970,7 @@ void Postprocess_RTShadow(
 	const GPUBuffer& entityTiles_Opaque,
 	const Texture& lineardepth,
 	const Texture& output,
-	CommandList cmd,
-	uint8_t instanceInclusionMask
+	CommandList cmd
 )
 {
 	if (!device->CheckCapability(GraphicsDeviceCapability::RAYTRACING))
@@ -13052,6 +13049,7 @@ void Postprocess_RTShadow(
 	postprocess.resolution_rcp.x = 1.0f / postprocess.resolution.x;
 	postprocess.resolution_rcp.y = 1.0f / postprocess.resolution.y;
 	postprocess.params0.w = (float)res.frame;
+	uint8_t instanceInclusionMask = raytracing_inclusion_mask_shadow;
 	std::memcpy(&postprocess.params1.x, &instanceInclusionMask, sizeof(instanceInclusionMask));
 	device->PushConstants(&postprocess, sizeof(postprocess), cmd);
 
