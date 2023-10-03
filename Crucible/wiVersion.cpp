@@ -12,10 +12,12 @@ namespace wi::version
 	// minor features, major updates, breaking compatibility changes
 	const int minor = 71;
 	// minor bug fixes, alterations, refactors, updates
-	const int revision = 308;
+	const int revision = 309;
 	#if defined(CRUCIBLE_NIGHTLY)
 	const std::string version_string = std::string("nightly_") + kGitHash + std::string("-") + kTimestamp;
 	#else
+
+>>>>>>> 0163ec64 (water refraction and fog improvements):WickedEngine/wiVersion.cpp
 	const std::string version_string = std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(revision);
 	#endif
 	int GetMajor()
