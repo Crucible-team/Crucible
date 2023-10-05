@@ -307,7 +307,7 @@ set_property(TARGET dxcompiler PROPERTY
 add_custom_command(
 		TARGET ${TARGET_NAME} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/${LIBDXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
-		COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/Crucible/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
 )
 
 # OFFLINE SHADER COMPILER

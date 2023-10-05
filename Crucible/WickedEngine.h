@@ -74,19 +74,19 @@
 #include "wiVideo.h"
 
 #ifdef PLATFORM_WINDOWS_DESKTOP
-#pragma comment(lib,"WickedEngine_Windows.lib")
+#pragma comment(lib,"Crucible_Windows.lib")
 #endif // PLATFORM_WINDOWS_DESKTOP
 
 #ifdef PLATFORM_UWP
-#pragma comment(lib,"WickedEngine_UWP.lib")
+#pragma comment(lib,"Crucible_UWP.lib")
 #endif // PLATFORM_UWP
 
 #ifdef PLATFORM_XBOX
-#pragma comment(lib,"WickedEngine_XBOX.lib")
+#pragma comment(lib,"Crucible_XBOX.lib")
 #endif // PLATFORM_XBOX
 
 #ifdef PLATFORM_PS5
-#pragma comment(lib,"WickedEngine_PS5.a")
+#pragma comment(lib,"Crucible_PS5.a")
 #endif // PLATFORM_PS5
 
 
