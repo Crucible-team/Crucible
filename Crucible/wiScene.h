@@ -400,9 +400,6 @@ namespace wi::scene
 		wi::ecs::Entity Entity_CreatePipe(
 			const std::string& name
 		);
-		wi::ecs::Entity Entity_CreateSphere(
-			const std::string& name
-		);
 
 		wi::ecs::Entity Entity_CreateRussainElpisoid(
 			const std::string& name
@@ -424,6 +421,13 @@ namespace wi::scene
 		);
 		wi::ecs::Entity Entity_CreateCone(
 			const std::string& name
+		);
+
+		wi::ecs::Entity Entity_CreateSphere(
+			const std::string& name,
+			float radius = 1,
+			uint32_t latitudeBands = 64,
+			uint32_t longitudeBands = 64
 		);
 
 		// Attaches an entity to a parent:
