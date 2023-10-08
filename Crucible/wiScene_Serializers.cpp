@@ -1672,11 +1672,20 @@ namespace wi::scene
 			archive >> volume;
 			archive >> (uint32_t&)soundinstance.type;
 
+			if (seri.GetVersion() >= 1)
+			{
+				archive >> soundinstance.begin;
+				archive >> soundinstance.length;
+				archive >> soundinstance.loop_begin;
+				archive >> soundinstance.loop_length;
+			}
+
 			wi::jobsystem::Execute(seri.ctx, [&](wi::jobsystem::JobArgs args) {
 				if (!filename.empty())
 				{
 					filename = dir + filename;
 					soundResource = wi::resourcemanager::Load(filename, wi::resourcemanager::Flags::IMPORT_RETAIN_FILEDATA);
+					soundinstance.SetLooped(IsLooped());
 					wi::audio::CreateSoundInstance(&soundResource.GetSound(), &soundinstance);
 				}
 			});
@@ -1689,6 +1698,14 @@ namespace wi::scene
 			archive << filename;
 			archive << volume;
 			archive << soundinstance.type;
+
+			if (seri.GetVersion() >= 1)
+			{
+				archive << soundinstance.begin;
+				archive << soundinstance.length;
+				archive << soundinstance.loop_begin;
+				archive << soundinstance.loop_length;
+			}
 		}
 	}
 	void VideoComponent::Serialize(wi::Archive& archive, EntitySerializer& seri)
