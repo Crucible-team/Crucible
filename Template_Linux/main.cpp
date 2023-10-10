@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include <SDL2/SDL.h>
+#include "sdl2.h"
 
 int sdl_loop(wi::Application &application)
 {

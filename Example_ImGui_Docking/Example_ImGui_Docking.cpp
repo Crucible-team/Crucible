@@ -6,20 +6,20 @@
 #include "stdafx.h"
 #include "Example_ImGui_Docking.h"
 
-#include "ImGui/imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
 #endif
-#include "ImGui/imgui_internal.h"
+#include "imgui.h"
+#include "imgui_internal.h"
 
 #ifdef _WIN32
-#include "ImGui/imgui_impl_win32.h"
+#include "imgui_impl_win32.h"
 #elif defined(SDL2)
-#include "ImGui/imgui_impl_sdl.h"
+#include "imgui_impl_sdl.h"
 #endif
-#include "ImGui/ImGuizmo.h"
+#include "ImGuizmo.h"
 #ifdef INCLUDEICONFONT
-#include "ImGui/IconsMaterialDesign.h"
+#include "IconsMaterialDesign.h"
 #endif
 
 

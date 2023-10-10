@@ -3,8 +3,8 @@
 
 #include "stdafx.h"
 #include "main_Windows.h"
-#include "ImGui/imgui.h"
-#include "ImGui/imgui_internal.h"
+#include "imgui.h"
+#include "imgui_internal.h"
 
 #define MAX_LOADSTRING 100
 

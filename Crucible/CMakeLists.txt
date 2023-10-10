@@ -26,42 +26,10 @@ if (WIN32)
 	set(TARGET_NAME Crucible_Windows)
 else ()
 	set(TARGET_NAME Crucible_Linux)
-	find_package(SDL2 REQUIRED)
-	find_package(OpenImageDenoise "${MIN_OpenImageDenoise_VERSION}" QUIET)
-	find_package(Threads REQUIRED)
-	if(NOT ${OpenImageDenoise_FOUND})
-		message("OpenImageDenoise>=${MIN_OpenImageDenoise_VERSION} not found, it will be disabled.")
-	else()
-		message("OpenImageDenoise ${OpenImageDenoise_VERSION} Found.")
-	endif()
-
-	if(NOT TARGET SDL2::SDL2)
-		# using old SDL2 cmake, lets create a SDL2 target ourselves
-		find_library(SDL2_LIBRARY_FILE_LOCATION SDL2 REQUIRED)
-
-		add_library(SDL2::SDL2 SHARED IMPORTED)
-		set_target_properties(SDL2::SDL2 PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${SDL2_INCLUDE_DIRS}
-			INTERFACE_LINK_LIBRARIES ${SDL2_LIBRARIES}
-			IMPORTED_LOCATION ${SDL2_LIBRARY_FILE_LOCATION}
-		)
-
-		unset(SDL2_LIBRARY_FILE_LOCATION)
-	endif()
-
-	# minimum sdl version is 2.0.14 for controller LED support
-	if((${SDL_VERSION_MAJOR} GREATER_EQUAL 2) AND (${SDL2_VERSION_MINOR} GREATER_EQUAL 0) AND (${SDL2_VERSION_PATCH} GREATER_EQUAL 14))
-		add_compile_definitions(SDL2_FEATURE_CONTROLLER_LED=1)
-	endif()
 endif()
 
 add_subdirectory(BULLET)
-add_subdirectory(LUA)
 add_subdirectory(Utility)
-add_subdirectory(Recast)
-add_subdirectory(Detour)
-add_subdirectory(DebugUtils)
-add_subdirectory(DetourTileCache)
 
 set(HEADER_FILES
 		WickedEngine.h
@@ -161,6 +129,9 @@ set(HEADER_FILES
 		)
 
 add_library(${TARGET_NAME} ${CRUCIBLE_LIBRARY_TYPE}
+	$<$<PLATFORM_ID:Windows>:
+		wickedengine.natvis
+	>
 	wiLoadingScreen.cpp
 	wiLoadingScreen_BindLua.cpp
 	wiApplication.cpp
@@ -245,7 +216,6 @@ target_include_directories(${TARGET_NAME} SYSTEM PUBLIC
 
 set(CRUCIBLE_STATIC_LIBRARIES
 	Bullet
-	LUA
 	Utility
 )
 
@@ -258,7 +228,9 @@ if (WIN32)
 		UNICODE _UNICODE
 	)
 
-	target_compile_options(${TARGET_NAME} PRIVATE /W3)
+	target_compile_options(${TARGET_NAME} PRIVATE /W3 $<$<CONFIG:Debug>:/bigobj>)
+	
+	target_link_options(${TARGET_NAME} PRIVATE /NATVIS:${CMAKE_CURRENT_SOURCE_DIR}/wickedengine.natvis)
 
 	set(LIBDXCOMPILER "dxcompiler.dll")
 else ()
@@ -269,6 +241,7 @@ else ()
 	target_link_libraries(${TARGET_NAME} PUBLIC
 		Threads::Threads
 		SDL2::SDL2
+		${LUA_LIBRARIES}
 		$<$<BOOL:${OpenImageDenoise_FOUND}>:OpenImageDenoise> # links OpenImageDenoise only if it's found
 	)
 	set(CRUCIBLE_STATIC_LIBRARIES ${CRUCIBLE_STATIC_LIBRARIES} FAudio)
@@ -316,7 +289,7 @@ add_executable(offlineshadercompiler
 )
 
 target_link_libraries(offlineshadercompiler
-		PUBLIC ${TARGET_NAME})
+		PUBLIC ${TARGET_NAME} ${LUA_LIBRARIES})
 
 install(TARGETS offlineshadercompiler
 		RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/Crucible")

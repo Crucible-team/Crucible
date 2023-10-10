@@ -2262,7 +2262,7 @@ namespace wi::scene
 
 		std::unordered_map<std::bitset<LAST_COND_TOTAL>, response> responses;
 
-		nlohmann::json_abi_v3_11_2::json json;
+		nlohmann::json json;
 
 		bool isDirty;
 

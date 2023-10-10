@@ -23,7 +23,7 @@
 #endif // PLATFORM_LINUX
 
 #ifdef SHADERCOMPILER_ENABLED_DXCOMPILER
-#include "Utility/dxcapi.h"
+#include "dxcapi.h"
 #endif // SHADERCOMPILER_ENABLED_DXCOMPILER
 
 #ifdef SHADERCOMPILER_ENABLED_D3DCOMPILER

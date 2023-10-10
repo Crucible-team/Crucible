@@ -1,6 +1,9 @@
 
 set (SOURCE_FILES
 	main_${PLATFORM}.cpp
+	$<$<PLATFORM_ID:Windows>:
+		Editor.rc
+	>
 	#$<$<STREQUAL:${PLATFORM},Windows>:App_${PLATFORM}.cpp>
 	AnimationWindow.cpp
 	CameraWindow.cpp
@@ -53,31 +56,23 @@ set (SOURCE_FILES
 	SplineWindow.cpp
 )
 
-add_subdirectory(meshoptimizer)
+if (WIN32)
+	add_executable(JOE WIN32 ${SOURCE_FILES})
+else()
+	add_executable(JOE ${SOURCE_FILES})
+endif()
+
+target_link_libraries(JOE PUBLIC
+	$<IF:$<PLATFORM_ID:Windows>,Crucible_Windows,Crucible> 
+	${MESHOPTIMIZER_LIBRARY}
+	${LUA_LIBRARIES}
+)
 
 if (WIN32)
-	list (APPEND SOURCE_FILES
-		Editor.rc
-	)
-
-	add_executable(JOE WIN32 ${SOURCE_FILES})
-
-	target_link_libraries(JOE PUBLIC
-		Crucible_Windows
-		meshoptimizer
-	)
-
 	set_property(TARGET JOE PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 	set(LIB_DXCOMPILER "dxcompiler.dll")
 else ()
-	add_executable(JOE ${SOURCE_FILES})
-
-	target_link_libraries(JOE PUBLIC
-		Crucible
-		meshoptimizer
-	)
 	set(LIB_DXCOMPILER "libdxcompiler.so")
-
 endif ()
 
 # Copy content to build folder:
@@ -95,11 +90,13 @@ include(GNUInstallDirs)
 set(EDITOR_INSTALL_FOLDER "${CMAKE_INSTALL_LIBDIR}/Crucible/Editor")
 
 # wicked-engine.sh (cd install folder then execs editor)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Linux/Installer/Distribution/wicked-engine.template.sh"
-		"${CMAKE_CURRENT_BINARY_DIR}/wicked-engine.sh")
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/wicked-engine.sh"
-		DESTINATION ${CMAKE_INSTALL_BINDIR}
-		PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
+if (UNIX)
+	configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Linux/Installer/Distribution/wicked-engine.template.sh"
+			"${CMAKE_CURRENT_BINARY_DIR}/wicked-engine.sh")
+	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/wicked-engine.sh"
+			DESTINATION ${CMAKE_INSTALL_BINDIR}
+			PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
+endif()
 
 # JOE executable
 install(TARGETS JOE RUNTIME DESTINATION ${EDITOR_INSTALL_FOLDER})

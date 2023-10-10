@@ -2,7 +2,7 @@
 #include "wiLua.h"
 #include "wiLuna.h"
 #include "wiScene.h"
-#include <LUA/lua.h>
+#include <lua.h>
 #include <wiMath_BindLua.h>
 
 namespace wi::lua::scene
