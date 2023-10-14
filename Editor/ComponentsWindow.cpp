@@ -47,6 +47,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	healthWnd.Create(editor);
 	armorWnd.Create(editor);
 	splineWnd.Create(editor);
+	spriteWnd.Create(editor);
+	fontWnd.Create(editor);
 
 	enum ADD_THING
 	{
@@ -78,6 +80,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 		ADD_IO,
 		ADD_RESPONSE,
 		ADD_SPLINE
+		ADD_SPRITE,
+		ADD_FONT,
 	};
 
 	newComponentCombo.Create("Add: ");
@@ -114,6 +118,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	newComponentCombo.AddItem("IO " ICON_IO, ADD_IO);
 	newComponentCombo.AddItem("Response " ICON_FA_CHART_AREA, ADD_RESPONSE);
 	newComponentCombo.AddItem("Spline " ICON_FA_CHART_AREA, ADD_SPLINE);
+	newComponentCombo.AddItem("Sprite " ICON_SPRITE, ADD_SPRITE);
+	newComponentCombo.AddItem("Font " ICON_FONT, ADD_FONT);
 	newComponentCombo.OnSelect([=](wi::gui::EventArgs args) {
 		newComponentCombo.SetSelectedWithoutCallback(-1);
 		if (editor->translator.selected.empty())
@@ -250,6 +256,14 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 			if (scene.splines.Contains(entity))
 				return;
 			break;
+		case ADD_SPRITE:
+			if (scene.sprites.Contains(entity))
+				return;
+			break;
+		case ADD_FONT:
+			if (scene.fonts.Contains(entity))
+				return;
+			break;
 		default:
 			return;
 		}
@@ -364,6 +378,12 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 		case ADD_SPLINE:
 			scene.splines.Create(entity);
 			break;
+		case ADD_SPRITE:
+			scene.sprites.Create(entity);
+			break;
+		case ADD_FONT:
+			scene.fonts.Create(entity);
+			break;
 		default:
 			break;
 		}
@@ -409,6 +429,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	AddWidget(&healthWnd);
 	AddWidget(&armorWnd);
 	AddWidget(&splineWnd);
+	AddWidget(&spriteWnd);
+	AddWidget(&fontWnd);
 
 	materialWnd.SetVisible(false);
 	weatherWnd.SetVisible(false);
@@ -443,6 +465,8 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 	healthWnd.SetVisible(false);
 	armorWnd.SetVisible(false);
 	splineWnd.SetVisible(false);
+	spriteWnd.SetVisible(false);
+	fontWnd.SetVisible(false);
 
 	XMFLOAT2 size = XMFLOAT2(338, 500);
 	if (editor->main->config.GetSection("layout").Has("components.width"))
@@ -926,5 +950,31 @@ void ComponentsWindow::ResizeLayout()
 	else
 	{
 		splineWnd.SetVisible(false);
+	}
+
+	if (scene.sprites.Contains(spriteWnd.entity))
+	{
+		spriteWnd.SetVisible(true);
+		spriteWnd.SetPos(pos);
+		spriteWnd.SetSize(XMFLOAT2(width, spriteWnd.GetScale().y));
+		pos.y += spriteWnd.GetSize().y;
+		pos.y += padding;
+	}
+	else
+	{
+		spriteWnd.SetVisible(false);
+	}
+
+	if (scene.fonts.Contains(fontWnd.entity))
+	{
+		fontWnd.SetVisible(true);
+		fontWnd.SetPos(pos);
+		fontWnd.SetSize(XMFLOAT2(width, fontWnd.GetScale().y));
+		pos.y += fontWnd.GetSize().y;
+		pos.y += padding;
+	}
+	else
+	{
+		fontWnd.SetVisible(false);
 	}
 }

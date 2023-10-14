@@ -1657,6 +1657,8 @@ void EditorComponent::Update(float dt)
 		componentsWnd.healthWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.armorWnd.SetEntity(INVALID_ENTITY);
 		componentsWnd.splineWnd.SetEntity(INVALID_ENTITY);
+		componentsWnd.spriteWnd.SetEntity(INVALID_ENTITY);
+		componentsWnd.fontWnd.SetEntity(INVALID_ENTITY);
 	}
 	else
 	{
@@ -1688,6 +1690,8 @@ void EditorComponent::Update(float dt)
 		componentsWnd.armatureWnd.SetEntity(picked.entity);
 		componentsWnd.humanoidWnd.SetEntity(picked.entity);
 		componentsWnd.terrainWnd.SetEntity(picked.entity);
+		componentsWnd.spriteWnd.SetEntity(picked.entity);
+		componentsWnd.fontWnd.SetEntity(picked.entity);
 
 		componentsWnd.ioWnd.SetEntity(picked.entity);
 		componentsWnd.responseWnd.SetEntity(picked.entity);
@@ -4265,6 +4269,8 @@ void EditorComponent::RefreshSceneList()
 			componentsWnd.armatureWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 			componentsWnd.humanoidWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 			componentsWnd.terrainWnd.SetEntity(wi::ecs::INVALID_ENTITY);
+			componentsWnd.spriteWnd.SetEntity(wi::ecs::INVALID_ENTITY);
+			componentsWnd.fontWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 
 			componentsWnd.ioWnd.SetEntity(wi::ecs::INVALID_ENTITY);
 			componentsWnd.responseWnd.SetEntity(wi::ecs::INVALID_ENTITY);
