@@ -15,7 +15,7 @@
 #ifdef _WIN32
 #include "imgui_impl_win32.h"
 #elif defined(SDL2)
-#include "imgui_impl_sdl.h"
+#include "imgui_impl_sdl2.h"
 #endif
 #include "ImGuizmo.h"
 #ifdef INCLUDEICONFONT
