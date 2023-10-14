@@ -21,13 +21,6 @@ CheckGitSetup()
 add_compile_definitions(CRUCIBLE_NIGHTLY=1)
 endif()
 
-if (WIN32)
-	# TODO: Choose whether to use SDL2 on windows as well
-	set(TARGET_NAME Crucible_Windows)
-else ()
-	set(TARGET_NAME Crucible_Linux)
-endif()
-
 add_subdirectory(BULLET)
 add_subdirectory(Utility)
 
@@ -128,7 +121,7 @@ set(HEADER_FILES
 		wiKeyValue.h
 		)
 
-add_library(${TARGET_NAME} ${CRUCIBLE_LIBRARY_TYPE}
+add_library(Crucible ${CRUCIBLE_LIBRARY_TYPE}
 	$<$<PLATFORM_ID:Windows>:
 		wickedengine.natvis
 	>
@@ -206,10 +199,10 @@ add_library(${TARGET_NAME} ${CRUCIBLE_LIBRARY_TYPE}
 	wiKeyValue.cpp
 	${HEADER_FILES}
 )
-add_library(Crucible ALIAS ${TARGET_NAME})
-set_target_properties(${TARGET_NAME} PROPERTIES PUBLIC_HEADER "${HEADER_FILES}")
 
-target_include_directories(${TARGET_NAME} SYSTEM PUBLIC
+set_target_properties(Crucible PROPERTIES PUBLIC_HEADER "${HEADER_FILES}")
+
+target_include_directories(Crucible SYSTEM PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Crucible>
 )
@@ -224,21 +217,21 @@ set(CRUCIBLE_STATIC_LIBRARIES ${CRUCIBLE_STATIC_LIBRARIES} cmake_genvars)
 endif()
 
 if (WIN32)
-	target_compile_definitions(${TARGET_NAME} PUBLIC
+	target_compile_definitions(Crucible PUBLIC
 		UNICODE _UNICODE
 	)
 
-	target_compile_options(${TARGET_NAME} PRIVATE /W3 $<$<CONFIG:Debug>:/bigobj>)
+	target_compile_options(Crucible PRIVATE /W3 $<$<CONFIG:Debug>:/bigobj>)
 	
-	target_link_options(${TARGET_NAME} PRIVATE /NATVIS:${CMAKE_CURRENT_SOURCE_DIR}/wickedengine.natvis)
+	target_link_options(Crucible PRIVATE /NATVIS:${CMAKE_CURRENT_SOURCE_DIR}/wickedengine.natvis)
 
 	set(LIBDXCOMPILER "dxcompiler.dll")
 else ()
 	# `ska::flat_hash_map` has issues on linux because of the hash function being identity
 	# in same cases. Use `robin_hood::unordered_flat_map` instead
-	target_compile_definitions(${TARGET_NAME} PUBLIC WI_UNORDERED_MAP_TYPE=2)
+	target_compile_definitions(Crucible PUBLIC WI_UNORDERED_MAP_TYPE=2)
 
-	target_link_libraries(${TARGET_NAME} PUBLIC
+	target_link_libraries(Crucible PUBLIC
 		Threads::Threads
 		SDL2::SDL2
 		${LUA_LIBRARIES}
@@ -248,7 +241,7 @@ else ()
 
 	# add some warnings and set them as errors
 	# read more details here: https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html
-	target_compile_options(${TARGET_NAME} PRIVATE
+	target_compile_options(Crucible PRIVATE
 			-Wuninitialized
 			-Wmaybe-uninitialized
 			-Wwrite-strings
@@ -261,15 +254,15 @@ else ()
 			# -Wfatal-errors
 			)
 
-	target_link_libraries(${TARGET_NAME} PRIVATE dl)
+	target_link_libraries(Crucible PRIVATE dl)
 
 	set(LIBDXCOMPILER "libdxcompiler.so")
 endif()
 
-target_link_libraries(${TARGET_NAME} PUBLIC ${CRUCIBLE_STATIC_LIBRARIES})
+target_link_libraries(Crucible PUBLIC ${CRUCIBLE_STATIC_LIBRARIES})
 
 if (PLATFORM MATCHES "SDL2")
-	target_compile_definitions(${TARGET_NAME} PUBLIC SDL2=1)
+	target_compile_definitions(Crucible PUBLIC SDL2=1)
 endif()
 
 add_library(dxcompiler SHARED IMPORTED)
@@ -278,7 +271,7 @@ set_property(TARGET dxcompiler PROPERTY
 
 # Copy the shader library next to the executable
 add_custom_command(
-		TARGET ${TARGET_NAME} POST_BUILD
+		TARGET Crucible POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/${LIBDXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
 )
@@ -289,7 +282,7 @@ add_executable(offlineshadercompiler
 )
 
 target_link_libraries(offlineshadercompiler
-		PUBLIC ${TARGET_NAME} ${LUA_LIBRARIES})
+		PUBLIC Crucible ${LUA_LIBRARIES})
 
 install(TARGETS offlineshadercompiler
 		RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/Crucible")
@@ -301,10 +294,10 @@ install(DIRECTORY "${CMAKE_SOURCE_DIR}/Content"
 # Create importable target here
 
 #set_target_properties(${TARGET_NAME} PROPERTIES PUBLIC_HEADER "${HEADERS}")
-set_target_properties("${TARGET_NAME}" PROPERTIES EXPORT_NAME "${TARGET_NAME}")
+#set_target_properties("${TARGET_NAME}" PROPERTIES EXPORT_NAME "${TARGET_NAME}")
 
 
-install(TARGETS "${TARGET_NAME}" ${CRUCIBLE_STATIC_LIBRARIES}
+install(TARGETS "Crucible" ${CRUCIBLE_STATIC_LIBRARIES}
 		EXPORT Engine-Targets
 		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/Crucible"

@@ -20,7 +20,7 @@ else()
 endif ()
 
 target_link_libraries(Tests PUBLIC
-	$<IF:$<PLATFORM_ID:Windows>,Crucible_Windows,Crucible> 
+	Crucible
 	${LUA_LIBRARIES}
 )
 

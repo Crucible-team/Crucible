@@ -26,7 +26,7 @@ else()
 endif()
 
 target_link_libraries(Example_ImGui_Docking PUBLIC
-	$<IF:$<PLATFORM_ID:Windows>,Crucible_Windows,Crucible> 
+	Crucible
 	$<$<PLATFORM_ID:Linux>:
 		SDL2::SDL2
 		Threads::Threads

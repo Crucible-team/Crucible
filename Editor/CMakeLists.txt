@@ -63,7 +63,7 @@ else()
 endif()
 
 target_link_libraries(JOE PUBLIC
-	$<IF:$<PLATFORM_ID:Windows>,Crucible_Windows,Crucible> 
+	Crucible
 	${MESHOPTIMIZER_LIBRARY}
 	${LUA_LIBRARIES}
 )
