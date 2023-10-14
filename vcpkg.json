@@ -7,23 +7,27 @@
     {
       "name": "imgui",
       "features": ["docking-experimental"],
-      "platform": "(windows & !static) | (linux & !static)"
+      "platform": "windows | linux"
     },
     {
       "name": "imgui",
       "features": ["docking-experimental", "win32-binding"],
-      "platform": "windows & !static"
+      "platform": "windows"
     },
     {
       "name": "imgui",
-      "features": ["docking-experimental", "sdl2"],
-      "platform": "linux & !static"
+      "features": ["docking-experimental", "sdl2-binding"],
+      "platform": "linux"
     },
 	"imguizmo",
 	"lua",
 	"meshoptimizer",
 	"recastnavigation",
-	"nlohmann-json"
+	"nlohmann-json",
+    {
+      "name": "alsa",
+      "platform": "linux"
+    }
   ],
   "overrides": [
     {

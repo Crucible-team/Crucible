@@ -34,6 +34,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(Crucible)
 
+if(UNIX)
+	# Alsa
+	find_package("ALSA" MODULE REQUIRED)
+endif()
+
 # SDL2 (Not used by windows... yet)
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
