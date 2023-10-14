@@ -234,3 +234,4 @@ wiShaderdump.h
 buildlog/
 buildx64/
 buildx86/
+buildDb/
