@@ -15,7 +15,7 @@ rm -rf buildDb > /dev/null 2>&1
 mkdir buildDb > /dev/null 2>&1
 cd buildDb
 echo Generating files
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ../neo > log.txt ||(
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug .. > log.txt ||(
 echo ERROR Generating files
 cd ..
 rmdir /Q /S buildDb
