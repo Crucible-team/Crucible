@@ -73,8 +73,6 @@ endif()
 
 if (WINDOWS_STORE)
 	list(APPEND SOURCE_FILES ${ASSETS_FILES})
-else()
-
 endif()
 
 if (WIN32)
