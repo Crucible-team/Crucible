@@ -39,15 +39,32 @@ project(Crucible)
 if(UNIX)
 	# Alsa
 	find_package("ALSA" MODULE REQUIRED)
+
+	# Threads
+	find_package(Threads REQUIRED)
+endif()
+
+# Intel's Open Image Denoisers (This should be use in windows to)
+find_package(OpenImageDenoise "${MIN_OpenImageDenoise_VERSION}" QUIET)
+if(NOT ${OpenImageDenoise_FOUND})
+	message("OpenImageDenoise>=${MIN_OpenImageDenoise_VERSION} not found, it will be disabled.")
+else()
+	message("OpenImageDenoise ${OpenImageDenoise_VERSION} Found.")
 endif()
 
 # SDL2 (Not used by windows... yet)
 find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIR})
+if (${SDL_FOUND})
+	include_directories(${SDL2_INCLUDE_DIR})
 
-# minimum sdl version is 2.0.14 for controller LED support
-if((${SDL_VERSION_MAJOR} GREATER_EQUAL 2) AND (${SDL2_VERSION_MINOR} GREATER_EQUAL 0) AND (${SDL2_VERSION_PATCH} GREATER_EQUAL 14))
-	add_compile_definitions(SDL2_FEATURE_CONTROLLER_LED=1)
+	add_compile_definitions(SDL2=1)
+
+	# minimum sdl version is 2.0.14 for controller LED support
+	if((${SDL_VERSION_MAJOR} GREATER_EQUAL 2) AND (${SDL2_VERSION_MINOR} GREATER_EQUAL 0) AND (${SDL2_VERSION_PATCH} GREATER_EQUAL 14))
+		add_compile_definitions(SDL2_FEATURE_CONTROLLER_LED=1)
+	endif()
+else()
+	# TODO: do something when we didn't find SDL2
 endif()
 
 # Imgui
@@ -93,21 +110,8 @@ if (WIN32)
 	else()
 		set(PLATFORM "Windows")
 	endif()
-    add_compile_definitions(WIN32=1)
-    # add_compile_definitions(_WIN32=1) this is a given from the compiler
-    set(DXC_TARGET "${CMAKE_CURRENT_SOURCE_DIR}/Crucible/dxc.exe")
 elseif(UNIX)
     set(PLATFORM "SDL2")
-    add_compile_definitions(SDL2=1)
-    set(DXC_TARGET "dxc")
-
-	find_package(OpenImageDenoise "${MIN_OpenImageDenoise_VERSION}" QUIET)
-	find_package(Threads REQUIRED)
-	if(NOT ${OpenImageDenoise_FOUND})
-		message("OpenImageDenoise>=${MIN_OpenImageDenoise_VERSION} not found, it will be disabled.")
-	else()
-		message("OpenImageDenoise ${OpenImageDenoise_VERSION} Found.")
-	endif()
 endif()
 
 add_subdirectory(Crucible)
