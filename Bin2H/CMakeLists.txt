@@ -5,7 +5,7 @@ set (SOURCE_FILES
 add_executable(Bin2H ${SOURCE_FILES})
 
 target_link_libraries(Bin2H PUBLIC
-	$<IF:$<PLATFORM_ID:Windows>,Crucible_Windows,Crucible>
+	Crucible
 	${LUA_LIBRARIES}
 )
 
