@@ -7,12 +7,12 @@
     {
       "name": "imgui",
       "features": ["docking-experimental"],
-      "platform": "windows | linux"
+      "platform": "(windows & !uwp) | linux"
     },
     {
       "name": "imgui",
       "features": ["docking-experimental", "win32-binding"],
-      "platform": "windows"
+      "platform": "windows & !uwp"
     },
     {
       "name": "imgui",

@@ -4,6 +4,9 @@ set (SOURCE_FILES
 	$<$<PLATFORM_ID:Windows>:
 		Editor.rc
 	>
+	$<$<PLATFORM_ID:WindowsStore>:
+		Assets/Icon.c
+	>
 	#$<$<STREQUAL:${PLATFORM},Windows>:App_${PLATFORM}.cpp>
 	AnimationWindow.cpp
 	CameraWindow.cpp
@@ -56,6 +59,24 @@ set (SOURCE_FILES
 	SplineWindow.cpp
 )
 
+if (WINDOWS_STORE)
+	set (ASSETS_FILES
+		Assets/LockScreenLogo.scale-200.png
+		Assets/SplashScreen.scale-200.png
+		Assets/Square44x44Logo.scale-200.png
+		Assets/Square44x44Logo.targetsize-24_altform-unplated.png
+		Assets/Square150x150Logo.scale-200.png
+		Assets/StoreLogo.png
+		Assets/Wide310x150Logo.scale-200.png
+	)
+endif()
+
+if (WINDOWS_STORE)
+	list(APPEND SOURCE_FILES ${ASSETS_FILES})
+else()
+
+endif()
+
 if (WIN32)
 	add_executable(JOE WIN32 ${SOURCE_FILES})
 else()
@@ -70,6 +91,22 @@ target_link_libraries(JOE PUBLIC
 
 if (WIN32)
 	set_property(TARGET JOE PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+	if (WINDOWS_STORE)
+		set_target_properties(JOE PROPERTIES
+			VS_PROJECT_IMPORT ${CMAKE_BINARY_DIR}/packages/Microsoft.Windows.CppWinRT/build/native/Microsoft.Windows.CppWinRT.props
+		)
+
+		set_target_properties(JOE PROPERTIES
+			VS_WINRT_EXTENSIONS TRUE
+		)
+
+		set_source_files_properties(${ASSETS_FILES} PROPERTIES
+			VS_DEPLOYMENT_CONTENT 1
+			VS_DEPLOYMENT_LOCATION "Assets"
+		)
+	endif ()
+
 	set(LIB_DXCOMPILER "dxcompiler.dll")
 else ()
 	set(LIB_DXCOMPILER "libdxcompiler.so")
