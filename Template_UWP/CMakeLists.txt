@@ -25,7 +25,7 @@ set(LIB_DXCOMPILER "dxcompiler.dll")
 add_executable(Template_UWP WIN32 ${SOURCE_FILES} ${HEADERS_FILES} ${ASSETS_FILES})
 
 set_target_properties(Template_UWP PROPERTIES
-	VS_PROJECT_IMPORT ${CMAKE_BINARY_DIR}/packages/Microsoft.Windows.CppWinRT/build/native/Microsoft.Windows.CppWinRT.props
+	VS_PACKAGE_REFERENCES "Microsoft.Windows.CppWinRT_2.0.230706.1"
 )
 
 set_target_properties(Template_UWP PROPERTIES

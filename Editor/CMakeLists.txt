@@ -92,7 +92,7 @@ if (WIN32)
 
 	if (WINDOWS_STORE)
 		set_target_properties(JOE PROPERTIES
-			VS_PROJECT_IMPORT ${CMAKE_BINARY_DIR}/packages/Microsoft.Windows.CppWinRT/build/native/Microsoft.Windows.CppWinRT.props
+			VS_PACKAGE_REFERENCES "Microsoft.Windows.CppWinRT_2.0.230706.1"
 		)
 
 		set_target_properties(JOE PROPERTIES
