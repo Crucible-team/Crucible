@@ -35,7 +35,6 @@ void OptionsWindow::Create(EditorComponent* _editor)
 		NEW_SCRIPT,
 		NEW_COLLIDER,
 		NEW_TERRAIN,
-<<<<<<< HEAD
 		NEW_CYLINDER,
 		NEW_TORUS,
 		NEW_TETRAHEDRON,
@@ -43,11 +42,9 @@ void OptionsWindow::Create(EditorComponent* _editor)
 		NEW_DODECAHEDRON,
 		NEW_ICOSAHEDRON,
 		NEW_PIPE,
-		NEW_CIRCLE
-=======
+		NEW_CIRCLE,
 		NEW_SPRITE,
 		NEW_FONT,
->>>>>>> 75457f17 (Sprites and fonts can be added to the scene (#762))
 	};
 
 	newCombo.Create("New: ");
@@ -235,7 +232,6 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			scene.terrains.Create(pick.entity) = editor->componentsWnd.terrainWnd.terrain_preset;
 			scene.names.Create(pick.entity) = "terrain";
 			break;
-<<<<<<< HEAD
 		case NEW_CYLINDER:
 			pick.entity = scene.Entity_CreateCylinder("cylinder");
 			pick.subsetIndex = 0;
@@ -273,7 +269,6 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			pick.subsetIndex = 0;
 			break;
 		
-=======
 		case NEW_SPRITE:
 		{
 			pick.entity = CreateEntity();
@@ -298,7 +293,6 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			scene.names.Create(pick.entity) = "font";
 		}
 		break;
->>>>>>> 75457f17 (Sprites and fonts can be added to the scene (#762))
 		default:
 			break;
 		}

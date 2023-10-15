@@ -79,7 +79,7 @@ void ComponentsWindow::Create(EditorComponent* _editor)
 		ADD_HEALTH,
 		ADD_IO,
 		ADD_RESPONSE,
-		ADD_SPLINE
+		ADD_SPLINE,
 		ADD_SPRITE,
 		ADD_FONT,
 	};
