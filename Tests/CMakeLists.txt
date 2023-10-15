@@ -1,6 +1,12 @@
-
-
 set (SOURCE_FILES
+	$<$<PLATFORM_ID:Windows>:
+		main_Windows.cpp
+		main_Windows.h
+		Tests.rc
+	>
+	$<$<PLATFORM_ID:Linux>:
+		main_SDL2.cpp
+	>
 	stdafx.cpp
 	Tests.cpp
 	Tests.h
@@ -8,37 +14,26 @@ set (SOURCE_FILES
 )
 
 if (WIN32)
-	list (APPEND SOURCE_FILES
-		main_Windows.cpp
-		main_Windows.h
-		Tests.rc
-	)
-
 	add_executable(Tests WIN32 ${SOURCE_FILES})
+else()
+	add_executable(Tests ${SOURCE_FILES})
+endif ()
 
-	target_link_libraries(Tests PUBLIC
-		Crucible_Windows
-	)
+target_link_libraries(Tests PUBLIC
+	Crucible
+	${LUA_LIBRARIES}
+)
 
+if (WIN32)
 	set(LIB_DXCOMPILER "dxcompiler.dll")
 else()
-	list (APPEND SOURCE_FILES
-		main_SDL2.cpp
-	)
-
-	add_executable(Tests ${SOURCE_FILES})
-
-	target_link_libraries(Tests PUBLIC
-		Crucible
-	)
-
 	set(LIB_DXCOMPILER "libdxcompiler.so")
 endif ()
 
 if (MSVC)
+	set_target_properties(Tests PROPERTIES LINK_FLAGS "/NODEFAULTLIB:MSVCRT.lib")
 	set_property(TARGET Tests PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif ()
-
 
 # Copy content to build folder:
 add_custom_command(

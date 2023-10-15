@@ -3,7 +3,7 @@
 
 #include "Utility/stb_image.h"
 
-#include "meshoptimizer/meshoptimizer.h"
+#include "meshoptimizer.h"
 
 using namespace wi::ecs;
 using namespace wi::scene;

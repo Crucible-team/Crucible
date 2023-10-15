@@ -3,64 +3,53 @@ if (NOT WIN32)
 endif ()
 
 set (SOURCE_FILES
+	$<$<PLATFORM_ID:Windows>:
+		main_Windows.cpp
+		main_Windows.h
+		Tests.rc
+	>
+	$<$<PLATFORM_ID:Linux>:
+		main_SDL2.cpp
+	>
 	stdafx.cpp
 	Example_ImGui.cpp
 	Example_ImGui.h
 	stdafx.h
-	ImGui/imconfig.h
-	ImGui/imgui.cpp
-	ImGui/imgui.h
-	ImGui/imgui_demo.cpp
-	ImGui/imgui_draw.cpp
-	ImGui/imgui_internal.h
-	ImGui/imgui_tables.cpp
-	ImGui/imgui_widgets.cpp
-	ImGui/imstb_rectpack.h
-	ImGui/imstb_textedit.h
-	ImGui/imstb_truetype.h
-	ImGui/imgui_impl_sdl.cpp
-	ImGui/imgui_impl_sdl.h
 )
 
 if (WIN32)
-	list (APPEND SOURCE_FILES
-		main_Windows.cpp
-		main_Windows.h
-		Tests.rc
-	)
-
 	add_executable(Example_ImGui WIN32 ${SOURCE_FILES})
+else()
+	add_executable(Example_ImGui ${SOURCE_FILES})
+endif ()
 
-	target_link_libraries(Example_ImGui PUBLIC
-		Crucible_Windows
-	)
+target_link_libraries(Example_ImGui PUBLIC
+	Crucible
+	$<$<PLATFORM_ID:Linux>:
+		SDL2::SDL2
+		Threads::Threads
+	>
+	${LUA_LIBRARIES}
+	${IMGUI_LIBRARY}
+)
+
+if (WIN32)
 	set(LIB_DXCOMPILER "dxcompiler.dll")
 else()
-	list (APPEND SOURCE_FILES
-		main_SDL2.cpp
-	)
-
-	add_executable(Example_ImGui ${SOURCE_FILES})
-
-	target_link_libraries(Example_ImGui PUBLIC
-		Crucible
-		Threads::Threads
-	)
-
-	# Copy shaders to build and source folders just to be safe:
-	add_custom_command(
-		TARGET Example_ImGui POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiPS.hlsl ${CMAKE_CURRENT_BINARY_DIR}
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiVS.hlsl ${CMAKE_CURRENT_BINARY_DIR}
-	)
-
 	set(LIB_DXCOMPILER "libdxcompiler.so")
 endif ()
 
 if (MSVC)
+	set_target_properties(Example_ImGui PROPERTIES LINK_FLAGS "/NODEFAULTLIB:MSVCRT.lib")
 	set_property(TARGET Example_ImGui PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif ()
 
+# Copy shaders to build and source folders just to be safe:
+add_custom_command(
+	TARGET Example_ImGui POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiPS.hlsl ${CMAKE_CURRENT_BINARY_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiVS.hlsl ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 # Copy content to build folder:
 add_custom_command(

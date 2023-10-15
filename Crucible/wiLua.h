@@ -7,9 +7,9 @@
 
 extern "C"
 {
-#include "LUA/lua.h"
-#include "LUA/lualib.h"
-#include "LUA/lauxlib.h"
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 }
 
 typedef int(*lua_CFunction) (lua_State* L);

@@ -229,3 +229,9 @@ wiShaderdump.h
 *.a
 *.elf
 *.prx
+
+# Compile & Log Folders
+buildlog/
+buildx64/
+buildx86/
+buildDb/

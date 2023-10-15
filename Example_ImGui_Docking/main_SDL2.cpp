@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 #include "sdl2.h"
-#include "ImGui/imgui_impl_sdl.h"
+#include "imgui_impl_sdl2.h"
 
 int sdl_loop(Example_ImGui &tests)
 {

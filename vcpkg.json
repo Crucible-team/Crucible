@@ -1,0 +1,38 @@
+{
+  "name": "crucible",
+  "version": "0.0.1",
+  "builtin-baseline": "cc97b4536ae749ec0e4f643488b600b217540fb3",
+  "dependencies": [
+    "sdl2",
+    {
+      "name": "imgui",
+      "features": ["docking-experimental"],
+      "platform": "(windows & !uwp) | linux"
+    },
+    {
+      "name": "imgui",
+      "features": ["docking-experimental", "win32-binding"],
+      "platform": "windows & !uwp"
+    },
+    {
+      "name": "imgui",
+      "features": ["docking-experimental", "sdl2-binding"],
+      "platform": "linux"
+    },
+	"imguizmo",
+	"lua",
+	"meshoptimizer",
+	"recastnavigation",
+	"nlohmann-json",
+    {
+      "name": "alsa",
+      "platform": "linux"
+    }
+  ],
+  "overrides": [
+    {
+      "name": "lua",
+	  "version-string": "5.3.5#6"
+    }
+  ]
+}

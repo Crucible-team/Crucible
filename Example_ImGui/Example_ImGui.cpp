@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "Example_ImGui.h"
 
-#include "ImGui/imgui.h"
-#include "ImGui/imgui_internal.h"
+#include "imgui.h"
+#include "imgui_internal.h"
 
 #ifdef _WIN32
-#include "ImGui/imgui_impl_win32.h"
+#include "imgui_impl_win32.h"
 #elif defined(SDL2)
-#include "ImGui/imgui_impl_sdl.h"
+#include "imgui_impl_sdl2.h"
 #endif
 
 #include <fstream>

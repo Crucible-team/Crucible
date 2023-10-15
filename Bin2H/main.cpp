@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string.h>
+#ifndef _WINDOWS
 #include <getopt.h>
+#endif // !_WINDOWS
 
 #include "Utility/stb_image.h"
 #include <wiHelper.h>
