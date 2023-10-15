@@ -19,6 +19,14 @@ set (SOURCE_FILES
 	../Editor/ModelImporter_GLTF.cpp
 )
 
+set(EDITOR_LIBRARIES
+	Crucible
+)
+
+if (UNIX)
+	list(APPEND EDITOR_LIBRARIES SDL2::SDL2 Threads::Threads)
+endif()
+
 if (WIN32)
 	add_executable(Editor_ImGui_Prototype WIN32 ${SOURCE_FILES})
 else()
@@ -26,11 +34,7 @@ else()
 endif ()
 
 target_link_libraries(Editor_ImGui_Prototype PUBLIC
-	Crucible
-	$<$<PLATFORM_ID:Linux>:
-		SDL2::SDL2
-		Threads::Threads
-	>
+	${EDITOR_LIBRARIES}
 	${LUA_LIBRARIES}
 	${IMGUI_LIBRARY}
 	${IMGUIZMO_LIBRARY}

@@ -17,6 +17,14 @@ set (SOURCE_FILES
 	stdafx.h
 )
 
+set(EXAMPLE_IMGUI_LIBRARIES
+	Crucible
+)
+
+if (UNIX)
+	list(APPEND EXAMPLE_IMGUI_LIBRARIES SDL2::SDL2 Threads::Threads)
+endif()
+
 if (WIN32)
 	add_executable(Example_ImGui WIN32 ${SOURCE_FILES})
 else()
@@ -25,10 +33,7 @@ endif ()
 
 target_link_libraries(Example_ImGui PUBLIC
 	Crucible
-	$<$<PLATFORM_ID:Linux>:
-		SDL2::SDL2
-		Threads::Threads
-	>
+	${EXAMPLE_IMGUI_LIBRARIES}
 	${LUA_LIBRARIES}
 	${IMGUI_LIBRARY}
 )

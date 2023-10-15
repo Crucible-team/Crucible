@@ -19,6 +19,14 @@ set (SOURCE_FILES
 	../Editor/ModelImporter_GLTF.cpp
 )
 
+set(EXAMPLE_DOCK_IMGUI_LIBRARIES
+	Crucible
+)
+
+if (UNIX)
+	list(APPEND EXAMPLE_DOCK_IMGUI_LIBRARIES SDL2::SDL2 Threads::Threads)
+endif()
+
 if (WIN32)
 	add_executable(Example_ImGui_Docking WIN32 ${SOURCE_FILES})
 else()
@@ -27,10 +35,7 @@ endif()
 
 target_link_libraries(Example_ImGui_Docking PUBLIC
 	Crucible
-	$<$<PLATFORM_ID:Linux>:
-		SDL2::SDL2
-		Threads::Threads
-	>
+	${EXAMPLE_DOCK_IMGUI_LIBRARIES}
 	${LUA_LIBRARIES}
 	${IMGUI_LIBRARY}
 	${IMGUIZMO_LIBRARY}
