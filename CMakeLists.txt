@@ -104,6 +104,10 @@ find_package(nlohmann_json CONFIG REQUIRED)
 set(JSON_LIBRARY nlohmann_json::nlohmann_json)
 include_directories(${JSON_INCLUDE_DIRS})
 
+# This includes the VCPKG installed directory
+# We search a dependenies so this can actually work
+find_path(DEPENDENCIES_DIR "lua.dll" PATH_SUFFIXES "bin")
+
 if (WIN32)
 	if (WINDOWS_STORE)
 		set(PLATFORM "UWP")

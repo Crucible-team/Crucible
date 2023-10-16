@@ -88,7 +88,7 @@ target_link_libraries(JOE PUBLIC
 )
 
 if (WIN32)
-	set_property(TARGET JOE PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+	set_property(TARGET JOE PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${EDITOR_INSTALL_FOLDER}")
 
 	if (WINDOWS_STORE)
 		set_target_properties(JOE PROPERTIES
@@ -115,6 +115,7 @@ add_custom_command(
 	TARGET JOE POST_BUILD
 	# Copy shader compiler library in the source folder
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
+	# Data folders
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Crucible/shaders ${CMAKE_CURRENT_BINARY_DIR}/Data/shadersrc
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/terrain ${CMAKE_CURRENT_BINARY_DIR}/Data/terrain
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/languages ${CMAKE_CURRENT_BINARY_DIR}/Data/languages
@@ -124,11 +125,11 @@ add_custom_command(
 include(GNUInstallDirs)
 set(EDITOR_INSTALL_FOLDER "${CMAKE_INSTALL_LIBDIR}/Crucible/Editor")
 
-# wicked-engine.sh (cd install folder then execs editor)
+# crucible-engine.sh (cd install folder then execs editor)
 if (UNIX)
-	configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Linux/Installer/Distribution/wicked-engine.template.sh"
-			"${CMAKE_CURRENT_BINARY_DIR}/wicked-engine.sh")
-	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/wicked-engine.sh"
+	configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Linux/Installer/Distribution/crucible-engine.template.sh"
+			"${CMAKE_CURRENT_BINARY_DIR}/crucible-engine.sh")
+	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/crucible-engine.sh"
 			DESTINATION ${CMAKE_INSTALL_BINDIR}
 			PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 endif()
@@ -144,17 +145,26 @@ install(DIRECTORY
 		"${CMAKE_CURRENT_SOURCE_DIR}/languages"
 		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
 		DESTINATION ${EDITOR_INSTALL_FOLDER})
+
+# Dependencies
+if (WIN32)
+install(FILES
+		${CMAKE_SOURCE_DIR}/Crucible/${LIB_DXCOMPILER}
+		${DEPENDENCIES_DIR}/meshoptimizer.dll
+		${DEPENDENCIES_DIR}/lua.dll
+		DESTINATION ${EDITOR_INSTALL_FOLDER})
+endif()
+
 # optional .ini .ico .lua
 install(FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/config.ini
-		${CMAKE_CURRENT_SOURCE_DIR}/Editor.ico
+		${CMAKE_CURRENT_SOURCE_DIR}/joe.ico
 		${CMAKE_CURRENT_SOURCE_DIR}/startup.lua
 		DESTINATION ${EDITOR_INSTALL_FOLDER})
 
 # Installing icon and application "shortcut" on Linux
 if (UNIX)
-	install(FILES ${CMAKE_SOURCE_DIR}/Content/logo_small.png
-			RENAME wicked.png
+	install(FILES ${CMAKE_SOURCE_DIR}/Content/crucible.svg
 			DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/")
 
 	configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Linux/Installer/Distribution/JOE.template.desktop"

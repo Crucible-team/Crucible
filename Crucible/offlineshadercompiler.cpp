@@ -363,7 +363,7 @@ using namespace wi::graphics;
 int main(int argc, char* argv[])
 {
 	wi::shadercompiler::Flags compile_flags = wi::shadercompiler::Flags::NONE;
-	std::cout << "[Wicked Engine Offline Shader Compiler]\n";
+	std::cout << "[Crucible Engine Offline Shader Compiler]\n";
 	std::cout << "Available command arguments:\n";
 	std::cout << "\thlsl5 : \t\tCompile shaders to hlsl5 (dx11) format (using d3dcompiler)\n";
 	std::cout << "\thlsl6 : \t\tCompile shaders to hlsl6 (dx12) format (using dxcompiler)\n";
@@ -481,7 +481,7 @@ int main(int argc, char* argv[])
 	std::string SHADERSOURCEPATH = wi::renderer::GetShaderSourcePath();
 	wi::helper::MakePathAbsolute(SHADERSOURCEPATH);
 
-	std::cout << "[Wicked Engine Offline Shader Compiler] Searching for outdated shaders...\n";
+	std::cout << "[Crucible Engine Offline Shader Compiler] Searching for outdated shaders...\n";
 	wi::Timer timer;
 	static int errors = 0;
 
@@ -578,11 +578,11 @@ int main(int argc, char* argv[])
 	}
 	wi::jobsystem::Wait(ctx);
 
-	std::cout << "[Wicked Engine Offline Shader Compiler] Finished in " << std::setprecision(4) << timer.elapsed_seconds() << " seconds with " << errors << " errors\n";
+	std::cout << "[Crucible Engine Offline Shader Compiler] Finished in " << std::setprecision(4) << timer.elapsed_seconds() << " seconds with " << errors << " errors\n";
 
 	if (shaderdump_enabled)
 	{
-		std::cout << "[Wicked Engine Offline Shader Compiler] Creating ShaderDump...\n";
+		std::cout << "[Crucible Engine Offline Shader Compiler] Creating ShaderDump...\n";
 		timer.record();
 		std::string ss;
 		ss += "namespace wiShaderDump {\n";
@@ -618,7 +618,7 @@ int main(int argc, char* argv[])
 		ss += "};\n"; // map end
 		ss += "}\n"; // namespace end
 		wi::helper::FileWrite("wiShaderDump.h", (uint8_t*)ss.c_str(), ss.length());
-		std::cout << "[Wicked Engine Offline Shader Compiler] ShaderDump written to wiShaderDump.h in " << std::setprecision(4) << timer.elapsed_seconds() << " seconds\n";
+		std::cout << "[Crucible Engine Offline Shader Compiler] ShaderDump written to wiShaderDump.h in " << std::setprecision(4) << timer.elapsed_seconds() << " seconds\n";
 	}
 
 	wi::jobsystem::ShutDown();

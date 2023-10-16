@@ -1,10 +1,10 @@
 # Settings  
 
-A brief explanation of Wicked Engine's settings.
+A brief explanation of Crucible Engine's settings.
 
 ## About
 
-This folder contains settings files optionally copied over to your Wicked
+This folder contains settings files optionally copied over to your Crucible
 Engine installation directory. 
 
 ### Configuration
@@ -21,17 +21,17 @@ Here's their documentation:
 
 - The `enabled` variable toggles whether to enable or ignore the `config.ini`.
 - The `x` and `y`
-variables, which influence where your window appears when you open Wicked 
+variables, which influence where your window appears when you open Crucible 
 Engine.
-- The `w` and `h` variables control the width and height of your Wicked Engine window.
-- The `fullscreen`variable controls whether your window goes full-screen when opening Wicked Engine.
+- The `w` and `h` variables control the width and height of your Crucible Engine window.
+- The `fullscreen`variable controls whether your window goes full-screen when opening Crucible Engine.
 - The `borderless` variable determines if your window should have borders or not.
-- The `allow_hdr` variable toggles whether HDR should be used by Wicked Engine.
+- The `allow_hdr` variable toggles whether HDR should be used by Crucible Engine.
 
 ### Start-up 
 
-Wicked Engine automatically loads the `startup.lua` script if found. This script
-is just like any other Wicked Engine Lua script. Rather than having set variables
+Crucible Engine automatically loads the `startup.lua` script if found. This script
+is just like any other Crucible Engine Lua script. Rather than having set variables
 for you to control, the script simply allows you do whatever you want. Have fun!
 
 #### Profiling
