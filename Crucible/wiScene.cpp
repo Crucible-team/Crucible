@@ -3316,9 +3316,9 @@ namespace wi::scene
 					const Scene* data_scene = sampler.scene == nullptr ? this : (const Scene*)sampler.scene;
 					const AnimationDataComponent* animationdata = data_scene->animation_datas.GetComponent(sampler.data);
 					if (animationdata == nullptr)
-					{
 						continue;
-					}
+					if (animationdata->keyframe_times.empty())
+						continue;
 
 					const AnimationComponent::AnimationChannel::PathDataType path_data_type = channel.GetPathDataType();
 
@@ -3354,8 +3354,11 @@ namespace wi::scene
 					{
 						if (animation.timer < timeFirst)
 						{
-							// animation beginning haven't been reached, don't update animation:
-							continue;
+							// animation beginning haven't been reached, force first keyframe:
+							timeLeft = timeFirst;
+							timeRight = timeFirst;
+							keyLeft = 0;
+							keyRight = 0;
 						}
 					}
 					else
