@@ -34,6 +34,9 @@ math.randomseed( os.time() )
 -- should be woken up.
 local WAITING_ON_TIME = {}
 
+-- This table is for a Global Event Bus for script components to exchange data from one another.
+EVENT_BUS = {}
+
 -- Keep track of how long the game has been running.
 local CURRENT_TIME = 0
 function waitSeconds(seconds)  
