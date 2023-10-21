@@ -248,7 +248,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			pick.entity = scene.Entity_CreateOctahedron("octahedron");
 			pick.subsetIndex = 0;
 			break;
-		case NEW_DODECAHEDRO:
+		case NEW_DODECAHEDRON:
 			pick.entity = scene.Entity_CreateDodecahedron("dodecahedron");
 			pick.subsetIndex = 0;
 			break;
