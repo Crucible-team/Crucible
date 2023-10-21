@@ -860,6 +860,7 @@ namespace wi::lua::scene
 		int SetForeground(lua_State* L);
 		int SetNotVisibleInMainCamera(lua_State* L);
 		int SetNotVisibleInReflections(lua_State* L);
+		int SetRenderable(lua_State* L);
 	};
 
 	class InverseKinematicsComponent_BindLua

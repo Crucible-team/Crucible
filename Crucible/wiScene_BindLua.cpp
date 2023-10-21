@@ -4777,6 +4777,7 @@ Luna<ObjectComponent_BindLua>::FunctionType ObjectComponent_BindLua::methods[] =
 	lunamethod(ObjectComponent_BindLua, SetForeground),
 	lunamethod(ObjectComponent_BindLua, SetNotVisibleInMainCamera),
 	lunamethod(ObjectComponent_BindLua, SetNotVisibleInReflections),
+	lunamethod(ObjectComponent_BindLua, SetRenderable),
 	{ NULL, NULL }
 };
 Luna<ObjectComponent_BindLua>::PropertyType ObjectComponent_BindLua::properties[] = {
@@ -5002,6 +5003,22 @@ int ObjectComponent_BindLua::SetNotVisibleInMainCamera(lua_State* L)
 	else
 	{
 		wi::lua::SError(L, "SetNotVisibleInMainCamera(bool value) not enough arguments!");
+	}
+
+	return 0;
+}
+
+int ObjectComponent_BindLua::SetRenderable(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		float value = wi::lua::SGetBool(L, 1);
+		component->SetRenderable(value);
+	}
+	else
+	{
+		wi::lua::SError(L, "SetRenderable(bool value) not enough arguments!");
 	}
 
 	return 0;
