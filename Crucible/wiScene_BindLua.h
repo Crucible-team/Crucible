@@ -1541,6 +1541,11 @@ namespace wi::lua::scene
 			windWaveSize = FloatProperty(&component->windWaveSize);
 			windSpeed = FloatProperty(&component->windSpeed);
 			stars = FloatProperty(&component->stars);
+			rainAmount = FloatProperty(&component->rain_amount);
+			rainLength = FloatProperty(&component->rain_length);
+			rainSpeed = FloatProperty(&component->rain_speed);
+			rainScale = FloatProperty(&component->rain_scale);
+			rainColor = VectorProperty(&component->rain_color);
 			gravity = VectorProperty(&component->gravity);
 
 			OceanParameters = Weather_OceanParams_Property(&component->oceanParameters);
@@ -1585,6 +1590,11 @@ namespace wi::lua::scene
 		FloatProperty windWaveSize;
 		FloatProperty windSpeed;
 		FloatProperty stars;
+		FloatProperty rainAmount;
+		FloatProperty rainLength;
+		FloatProperty rainSpeed;
+		FloatProperty rainScale;
+		VectorProperty rainColor;
 
 		PropertyFunction(sunColor)
 		PropertyFunction(sunDirection)
@@ -1609,6 +1619,11 @@ namespace wi::lua::scene
 		PropertyFunction(windWaveSize)
 		PropertyFunction(windSpeed)
 		PropertyFunction(stars)
+		PropertyFunction(rainAmount)
+		PropertyFunction(rainLength)
+		PropertyFunction(rainSpeed)
+		PropertyFunction(rainScale)
+		PropertyFunction(rainColor)
 
 		Weather_OceanParams_Property OceanParameters;
 		Weather_AtmosphereParams_Property AtmosphereParameters;
