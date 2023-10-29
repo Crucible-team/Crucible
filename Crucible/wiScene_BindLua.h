@@ -1808,6 +1808,8 @@ namespace wi::lua::scene
 		int GetBoneEntity(lua_State* L);
 		int SetLookAtEnabled(lua_State* L);
 		int SetLookAt(lua_State* L);
+		int SetRagdollPhysicsEnabled(lua_State* L);
+		int IsRagdollPhysicsEnabled(lua_State* L);
 	};
 
 	class DecalComponent_BindLua
