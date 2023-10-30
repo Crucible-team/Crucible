@@ -159,7 +159,7 @@ You can use the Renderer with the following functions, all of which are in the g
 ### Sprite
 Render images on the screen.
 - Params : ImageParams
-- Anim : SpriteAnim 
+- Anim : SpriteAnim
 
 </br>
 
@@ -276,6 +276,8 @@ Animate Sprites easily with this helper.
 - SetRotation(float val)
 - SetOpacity(float val)
 - SetFade(float val)
+- SetWobbleAnimAmount(float val)
+- SetWobbleAnimSpeed(float val)
 - SetRepeatable(boolean val)
 - SetVelocity(Vector val)
 - SetScaleX(float val)
