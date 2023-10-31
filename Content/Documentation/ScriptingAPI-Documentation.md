@@ -461,6 +461,7 @@ Loads and plays an audio files.
 #### Sound
 An audio file. Can be instanced several times via SoundInstance.
 - [constructor]Sound()  -- creates an empty sound. Use the audio device to load sounds from files
+- IsValid() : bool -- returns whether the sound was created successfully
 
 #### SoundInstance
 An audio file instance that can be played. Note: after modifying parameters of the SoundInstance, the SoundInstance will need to be recreated from a specified sound
@@ -479,6 +480,7 @@ An audio file instance that can be played. Note: after modifying parameters of t
 - GetLoopLength() : float
 - IsEnableReverb() : bool
 - IsLooped() : bool
+- IsValid() : bool -- returns whether the sound instance was created successfully
 
 #### SoundInstance3D
 Describes the relation between a sound instance and a listener in a 3D world

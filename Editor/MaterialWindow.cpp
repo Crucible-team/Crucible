@@ -25,7 +25,7 @@ void MaterialWindow::Create(EditorComponent* _editor)
 		editor->optionsWnd.RefreshEntityTree();
 		});
 
-	float hei = 18;
+	float hei = 25;
 	float step = hei + 2;
 	float x = 150, y = 0;
 	float wid = 130;
