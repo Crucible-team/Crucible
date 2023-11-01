@@ -147,6 +147,7 @@ struct LoaderState
 
 void Import_Extension_VRM(LoaderState& state);
 void Import_Extension_VRMC(LoaderState& state);
+void VRM_ToonMaterialCustomize(const std::string& name, MaterialComponent& material);
 void Import_Mixamo_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node);
 void Import_HL_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node);
 void Import_HLHD_Bone(LoaderState& state, Entity armatureEntity, Entity boneEntity, const tinygltf::Node& node);
@@ -654,6 +655,13 @@ void ImportModel_GLTF(const std::string& fileName, Scene& scene)
 			// https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_unlit
 
 			material.shaderType = MaterialComponent::SHADERTYPE_UNLIT;
+		}
+
+		auto ext_mtoon = x.extensions.find("VRMC_materials_mtoon");
+		if (ext_mtoon != x.extensions.end())
+		{
+			// https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_materials_mtoon-1.0
+			VRM_ToonMaterialCustomize(x.name, material);
 		}
 
 		auto ext_emissiveStrength = x.extensions.find("KHR_materials_emissive_strength");
@@ -2884,42 +2892,23 @@ void Import_Extension_VRM(LoaderState& state)
 			for (size_t material_index = 0; material_index < materialProperties.ArrayLen(); ++material_index)
 			{
 				const auto& material = materialProperties.Get(int(material_index));
-				MaterialComponent* component = nullptr;
 
 				if (material.Has("name"))
 				{
 					const auto& value = material.Get("name");
-					const std::string& name = value.Get<std::string>();
-					Entity entity = state.scene->Entity_FindByName(name);
-					component = state.scene->materials.GetComponent(entity);
-
-					// These customizations are just made for Wicked Engine, but not standardized:
-					if (name.find("SKIN") != std::string::npos)
+					const std::string& materialName = value.Get<std::string>();
+					Entity entity = state.scene->Entity_FindByName(materialName);
+					MaterialComponent* component = state.scene->materials.GetComponent(entity);
+					if (component != nullptr)
 					{
-						// For skin, apply some subsurface scattering to look softer:
-						component->SetSubsurfaceScatteringAmount(0.5f);
-						component->SetSubsurfaceScatteringColor(XMFLOAT3(255.0f / 255.0f, 148.0f / 255.0f, 142.0f / 255.0f));
-					}
-					if (name.find("EYE") != std::string::npos ||
-						name.find("FaceEyeline") != std::string::npos ||
-						name.find("FaceEyelash") != std::string::npos ||
-						name.find("FaceBrow") != std::string::npos
-					)
-					{
-						// Disable shadow casting for some elements on the face like eyes, eyebrows, etc:
-						component->SetCastShadow(false);
-					}
-				}
-
-				if (component != nullptr)
-				{
-					if (material.Has("shader"))
-					{
-						const auto& value = material.Get("shader");
-						const std::string& name = wi::helper::toUpper(value.Get<std::string>());
-						if (!name.compare("VRM/MTOON"))
+						if (material.Has("shader"))
 						{
-							component->shaderType = MaterialComponent::SHADERTYPE_CARTOON;
+							const auto& value = material.Get("shader");
+							const std::string& shaderName = wi::helper::toUpper(value.Get<std::string>());
+							if (!shaderName.compare("VRM/MTOON"))
+							{
+								VRM_ToonMaterialCustomize(materialName, *component);
+							}
 						}
 					}
 				}
@@ -2937,7 +2926,7 @@ void Import_Extension_VRMC(LoaderState& state)
 	{
 		if (ext_vrm->second.Has("expressions"))
 		{
-			// https://github.com/vrm-c/vrm-specification/blob/master/specification/VRMC_vrm-1.0-beta/expressions.md#vrmc_vrmexpressions
+			// https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_vrm-1.0#vrmc_vrmexpressions-facial-expressions-optional
 			Entity entity = state.rootEntity;
 			if (state.scene->expressions.Contains(entity))
 			{
@@ -3408,7 +3397,7 @@ void Import_Extension_VRMC(LoaderState& state)
 
 		if (ext_vrm->second.Has("humanoid"))
 		{
-			// https://github.com/vrm-c/vrm-specification/blob/master/specification/VRMC_vrm-1.0-beta/humanoid.md
+			// https://github.com/vrm-c/vrm-specification/blob/master/specification/VRMC_vrm-1.0/humanoid.md
 			Entity entity = state.rootEntity;
 			if (state.scene->humanoids.Contains(entity))
 			{
@@ -3827,6 +3816,28 @@ void Import_Extension_VRMC(LoaderState& state)
 			}
 
 		}
+	}
+}
+
+void VRM_ToonMaterialCustomize(const std::string& name, MaterialComponent& material)
+{
+	material.shaderType = MaterialComponent::SHADERTYPE_CARTOON;
+
+	// These customizations are just made for Wicked Engine, but not standardized:
+	if (name.find("SKIN") != std::string::npos)
+	{
+		// For skin, apply some subsurface scattering to look softer:
+		material.SetSubsurfaceScatteringAmount(0.5f);
+		material.SetSubsurfaceScatteringColor(XMFLOAT3(255.0f / 255.0f, 148.0f / 255.0f, 142.0f / 255.0f));
+	}
+	if (name.find("EYE") != std::string::npos ||
+		name.find("FaceEyeline") != std::string::npos ||
+		name.find("FaceEyelash") != std::string::npos ||
+		name.find("FaceBrow") != std::string::npos
+		)
+	{
+		// Disable shadow casting for some elements on the face like eyes, eyebrows, etc:
+		material.SetCastShadow(false);
 	}
 }
 
