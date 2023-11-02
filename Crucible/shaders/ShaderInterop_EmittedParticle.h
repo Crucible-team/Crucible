@@ -91,6 +91,10 @@ CBUFFER(EmittedParticleCB, CBSLOT_OTHER_EMITTEDPARTICLE)
 
 	float3		xParticleVelocity;
 	float		xParticleDrag;
+
+	float4 colors[32];
+	uint3 padding; // padding numColors to uint4
+	uint numColors;
 };
 
 static const uint THREADCOUNT_EMIT = 256;

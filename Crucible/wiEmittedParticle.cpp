@@ -392,6 +392,23 @@ namespace wi
 			cb.xEmitterLayerMask = layerMask;
 			cb.xEmitterInstanceIndex = instanceIndex;
 
+			if (!user_defined_colors.empty())
+			{
+				for (size_t i = 0; i < user_defined_colors.size(); ++i)
+				{
+					if (i <= 31)
+					{
+						cb.colors[i] = user_defined_colors[i];
+					}
+				}
+				cb.numColors = user_defined_colors.size();
+			}
+			else
+			{
+				cb.numColors = 0;
+			}
+			
+
 			cb.xEmitterOptions = 0;
 			if (IsSPHEnabled())
 			{
@@ -990,6 +1007,21 @@ namespace wi
 				archive >> restitution;
 			}
 
+			if (archive.GetVersion() >= 151)
+			{
+				size_t color_size_count = 0;
+				archive >> color_size_count;
+				user_defined_colors.resize(color_size_count);
+				for (size_t i = 0; i < color_size_count; ++i)
+				{
+					float4 Usercolor;
+					archive >> Usercolor;
+					user_defined_colors[i] = Usercolor;
+				}
+			}
+
+			
+
 		}
 		else
 		{
@@ -1034,6 +1066,15 @@ namespace wi
 			if (archive.GetVersion() >= 74)
 			{
 				archive << restitution;
+			}
+
+			if (archive.GetVersion() >= 151)
+			{
+				archive << user_defined_colors.size();
+				for (size_t i = 0; i < user_defined_colors.size(); ++i)
+				{
+					archive << user_defined_colors[i];
+				}
 			}
 		}
 	}

@@ -125,6 +125,7 @@ namespace wi
 		uint32_t frameCount = 1;
 		uint32_t frameStart = 0;
 		float frameRate = 0; // frames per second
+		wi::vector<float4> user_defined_colors = {float4(1,1,1,1),float4(1,1,1,1)};
 
 		void SetMaxParticleCount(uint32_t value);
 		uint32_t GetMaxParticleCount() const { return MAX_PARTICLES; }

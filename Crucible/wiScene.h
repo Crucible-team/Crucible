@@ -306,6 +306,9 @@ namespace wi::scene
 		// Finds all entities in the scene that have any components attached
 		void FindAllEntities(wi::unordered_set<wi::ecs::Entity>& entities) const;
 
+		//Crucible return a vector of entities with the same names.
+		wi::vector<wi::ecs::Entity> Entity_FindAllByName(const std::string& name, wi::ecs::Entity ancestor = wi::ecs::INVALID_ENTITY);
+
 		// Removes (deletes) a specific entity from the scene (if it exists):
 		//	recursive	: also removes children if true
 		//	keep_sorted	: remove all components while keeping sorted order (slow)
@@ -313,6 +316,7 @@ namespace wi::scene
 		// Finds the first entity by the name (if it exists, otherwise returns INVALID_ENTITY):
 		//	ancestor : you can specify an ancestor entity if you only want to find entities that are descendants of ancestor entity
 		wi::ecs::Entity Entity_FindByName(const std::string& name, wi::ecs::Entity ancestor = wi::ecs::INVALID_ENTITY);
+		//wi::ecs::Entity Entity_FindByNamefromParent(const std::string& name);
 		// Duplicates all of an entity's components and creates a new entity with them (recursively keeps hierarchy):
 		wi::ecs::Entity Entity_Duplicate(wi::ecs::Entity entity);
 		// Check whether entity is a descendant of ancestor

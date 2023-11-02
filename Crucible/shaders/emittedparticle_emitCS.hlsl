@@ -103,10 +103,22 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	particle.color_mirror |= ((rng.next_float() < 0.5f) << 30) & 0x20000000;
 
 	uint color_modifier = 0;
-	color_modifier |= (uint) (255.0 * lerp(1, rng.next_float(), xParticleRandomColorFactor)) << 0;
-	color_modifier |= (uint) (255.0 * lerp(1, rng.next_float(), xParticleRandomColorFactor)) << 8;
-	color_modifier |= (uint) (255.0 * lerp(1, rng.next_float(), xParticleRandomColorFactor)) << 16;
-	particle.color_mirror |= pack_rgba(float4(EmitterGetMaterial().baseColor.rgb, 1)) & color_modifier;
+	
+	if (numColors > 0 && xParticleRandomColorFactor > 0)
+	{
+		color_modifier |= (uint) (255.0 * lerp(colors[0].r, colors[1].r, rng.next_float()* xParticleRandomColorFactor)) << 0;
+		color_modifier |= (uint) (255.0 * lerp(colors[0].g, colors[1].g,  rng.next_float()* xParticleRandomColorFactor)) << 8;
+		color_modifier |= (uint) (255.0 * lerp(colors[0].b, colors[1].b,  rng.next_float()* xParticleRandomColorFactor)) << 16;
+		particle.color_mirror |= pack_rgba(float4(EmitterGetMaterial().baseColor.rgb, 1)) & color_modifier;
+	}
+	else
+	{
+		color_modifier |= (uint) (255.0 * lerp(1, rng.next_float(), xParticleRandomColorFactor)) << 0;
+		color_modifier |= (uint) (255.0 * lerp(1, rng.next_float(), xParticleRandomColorFactor)) << 8;
+		color_modifier |= (uint) (255.0 * lerp(1, rng.next_float(), xParticleRandomColorFactor)) << 16;
+		particle.color_mirror |= pack_rgba(float4(EmitterGetMaterial().baseColor.rgb, 1)) & color_modifier;
+	}
+	
 	
 	// new particle index retrieved from dead list (pop):
 	uint deadCount;

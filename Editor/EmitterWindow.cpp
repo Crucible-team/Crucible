@@ -514,6 +514,38 @@ void EmitterWindow::Create(EditorComponent* _editor)
 	emitColorRandomnessSlider.SetTooltip("Set the randomness of color for the emitted particles.");
 	AddWidget(&emitColorRandomnessSlider);
 
+	colorPicker1.Create("Color1", wi::gui::Window::WindowControls::NONE);
+	colorPicker1.SetPos(XMFLOAT2(10, y += step));
+	colorPicker1.SetVisible(true);
+	colorPicker1.SetEnabled(true);
+	colorPicker1.OnColorChanged([&](wi::gui::EventArgs args) {
+
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			emitter->user_defined_colors[0] = args.color.toFloat4();
+		}
+	});
+	AddWidget(&colorPicker1);
+
+	y += colorPicker1.GetScale().y;
+
+	colorPicker2.Create("Color2", wi::gui::Window::WindowControls::NONE);
+	colorPicker2.SetPos(XMFLOAT2(10, y += step));
+	colorPicker2.SetVisible(true);
+	colorPicker2.SetEnabled(true);
+	colorPicker2.OnColorChanged([&](wi::gui::EventArgs args) {
+
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			emitter->user_defined_colors[1] = args.color.toFloat4();
+		}
+		});
+	AddWidget(&colorPicker2);
+
+	y += colorPicker2.GetScale().y;
+
 	emitMotionBlurSlider.Create(0.0f, 1.0f, 1.0f, 100000, "Motion blur: ");
 	emitMotionBlurSlider.SetSize(XMFLOAT2(wid, itemheight));
 	emitMotionBlurSlider.SetPos(XMFLOAT2(x, y += step));
@@ -690,6 +722,12 @@ void EmitterWindow::SetEntity(Entity entity)
 		emitScalingSlider.SetValue(emitter->scaleX);
 		emitLifeSlider.SetValue(emitter->life);
 		emitRandomnessSlider.SetValue(emitter->random_factor);
+
+		colorPicker1.SetEnabled(true);
+		colorPicker2.SetEnabled(true);
+		colorPicker1.SetPickColor(wi::Color::fromFloat4(emitter->user_defined_colors[0]));
+		colorPicker2.SetPickColor(wi::Color::fromFloat4(emitter->user_defined_colors[1]));
+
 		emitLifeRandomnessSlider.SetValue(emitter->random_life);
 		emitColorRandomnessSlider.SetValue(emitter->random_color);
 		emitMotionBlurSlider.SetValue(emitter->motionBlurAmount);
@@ -834,6 +872,10 @@ void EmitterWindow::ResizeLayout()
 	add(emitLifeRandomnessSlider);
 	add(emitRandomnessSlider);
 	add(emitColorRandomnessSlider);
+
+	add_fullwidth(colorPicker1);
+	add_fullwidth(colorPicker2);
+
 	add(emitMotionBlurSlider);
 	add(emitMassSlider);
 	add(timestepSlider);

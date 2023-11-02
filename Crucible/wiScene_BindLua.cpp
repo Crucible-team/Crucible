@@ -540,11 +540,6 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_CreateDecal),
 	lunamethod(Scene_BindLua, Component_CreateSprite),
 	lunamethod(Scene_BindLua, Component_CreateFont),
-
-	lunamethod(Scene_BindLua, Component_CreateRelationship),
-	lunamethod(Scene_BindLua, Component_CreateHealth),
-	lunamethod(Scene_BindLua, Component_CreateArmor),
-
 	lunamethod(Scene_BindLua, Component_GetName),
 	lunamethod(Scene_BindLua, Component_GetLayer),
 	lunamethod(Scene_BindLua, Component_GetTransform),
@@ -570,12 +565,6 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_GetDecal),
 	lunamethod(Scene_BindLua, Component_GetSprite),
 	lunamethod(Scene_BindLua, Component_GetFont),
-
-	//Crucible
-	lunamethod(Scene_BindLua, Component_GetRelationship),
-	lunamethod(Scene_BindLua, Component_GetHealth),
-	lunamethod(Scene_BindLua, Component_GetArmor),
-
 	lunamethod(Scene_BindLua, Component_GetNameArray),
 	lunamethod(Scene_BindLua, Component_GetLayerArray),
 	lunamethod(Scene_BindLua, Component_GetTransformArray),
@@ -601,12 +590,6 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_GetDecalArray),
 	lunamethod(Scene_BindLua, Component_GetSpriteArray),
 	lunamethod(Scene_BindLua, Component_GetFontArray),
-
-	//Crucible
-	lunamethod(Scene_BindLua, Component_GetRelationshipArray),
-	lunamethod(Scene_BindLua, Component_GetHealthArray),
-	lunamethod(Scene_BindLua, Component_GetArmorArray),
-
 	lunamethod(Scene_BindLua, Entity_GetNameArray),
 	lunamethod(Scene_BindLua, Entity_GetLayerArray),
 	lunamethod(Scene_BindLua, Entity_GetTransformArray),
@@ -633,12 +616,6 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Entity_GetDecalArray),
 	lunamethod(Scene_BindLua, Entity_GetSpriteArray),
 	lunamethod(Scene_BindLua, Entity_GetFontArray),
-
-	//Crucible
-	lunamethod(Scene_BindLua, Entity_GetRelationshipArray),
-	lunamethod(Scene_BindLua, Entity_GetHealthArray),
-	lunamethod(Scene_BindLua, Entity_GetArmorArray),
-
 	lunamethod(Scene_BindLua, Component_RemoveName),
 	lunamethod(Scene_BindLua, Component_RemoveLayer),
 	lunamethod(Scene_BindLua, Component_RemoveTransform),
@@ -665,20 +642,41 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_RemoveDecal),
 	lunamethod(Scene_BindLua, Component_RemoveSprite),
 	lunamethod(Scene_BindLua, Component_RemoveFont),
-
-	//Crucible
-	lunamethod(Scene_BindLua, Component_RemoveRelationship),
-	lunamethod(Scene_BindLua, Component_RemoveHealth),
-	lunamethod(Scene_BindLua, Component_RemoveArmor),
-
 	lunamethod(Scene_BindLua, Component_Attach),
 	lunamethod(Scene_BindLua, Component_Detach),
 	lunamethod(Scene_BindLua, Component_DetachChildren),
-
 	lunamethod(Scene_BindLua, GetBounds),
 	lunamethod(Scene_BindLua, GetWeather),
 	lunamethod(Scene_BindLua, SetWeather),
 	lunamethod(Scene_BindLua, RetargetAnimation),
+
+
+
+
+	//Crucible
+
+	lunamethod(Scene_BindLua, Entity_FindAllByName),
+
+
+
+	lunamethod(Scene_BindLua, Component_CreateRelationship),
+	lunamethod(Scene_BindLua, Component_CreateHealth),
+	lunamethod(Scene_BindLua, Component_CreateArmor),
+
+	lunamethod(Scene_BindLua, Component_GetRelationship),
+	lunamethod(Scene_BindLua, Component_GetHealth),
+	lunamethod(Scene_BindLua, Component_GetArmor),
+
+	lunamethod(Scene_BindLua, Entity_GetRelationshipArray),
+	lunamethod(Scene_BindLua, Entity_GetHealthArray),
+	lunamethod(Scene_BindLua, Entity_GetArmorArray),
+	lunamethod(Scene_BindLua, Component_GetRelationshipArray),
+	lunamethod(Scene_BindLua, Component_GetHealthArray),
+	lunamethod(Scene_BindLua, Component_GetArmorArray),
+
+	lunamethod(Scene_BindLua, Component_RemoveRelationship),
+	lunamethod(Scene_BindLua, Component_RemoveHealth),
+	lunamethod(Scene_BindLua, Component_RemoveArmor),
 	{ NULL, NULL }
 };
 Luna<Scene_BindLua>::PropertyType Scene_BindLua::properties[] = {
@@ -7097,6 +7095,40 @@ int ArmorComponent_BindLua::SetMaxArmor(lua_State* L)
 		wi::lua::SError(L, "SetMaxArmor (int value) not enough arguments!");
 	}
 	return 0;
+}
+
+int Scene_BindLua::Entity_FindAllByName(lua_State* L)
+{
+
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		std::string name = wi::lua::SGetString(L, 1);
+
+		Entity ancestor = INVALID_ENTITY;
+		if (argc > 1)
+		{
+			ancestor = (Entity)wi::lua::SGetLongLong(L, 2);
+		}
+
+		wi::vector<wi::ecs::Entity> entities = scene->Entity_FindAllByName(name, ancestor);
+
+		lua_createtable(L, (int)entities.size(), 0);
+		int newTable = lua_gettop(L);
+		for (size_t i = 0; i < entities.size(); ++i)
+		{
+			wi::lua::SSetLongLong(L, entities[i] );
+			lua_rawseti(L, newTable, lua_Integer(i + 1));
+		}
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Entity_FindAllByName(string name, opt Entity ancestor) not enough arguments!");
+	}
+	return 0;
+
+	
 }
 
 }

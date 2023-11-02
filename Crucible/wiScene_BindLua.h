@@ -209,6 +209,8 @@ namespace wi::lua::scene
 		int Entity_GetArmorArray(lua_State* L);
 		int Component_RemoveArmor(lua_State* L);
 
+		int Entity_FindAllByName(lua_State* L);
+
 
 	};
 

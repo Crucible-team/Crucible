@@ -61,6 +61,11 @@ public:
 	wi::gui::TextInputField frameCountInput;
 	wi::gui::TextInputField frameStartInput;
 
+	//curcible
+	//user defined colors
+	wi::gui::ColorPicker colorPicker1;
+	wi::gui::ColorPicker colorPicker2;
+
 	void ResizeLayout() override;
 };
 

@@ -1033,6 +1033,49 @@ namespace wi::scene
 		}
 		return INVALID_ENTITY;
 	}
+
+	/*Entity Scene::Entity_FindByNamefromParent(const std::string& name)
+	{
+		for (size_t i = 0; i < hierarchy.GetCount(); ++i)
+		{
+			Entity entity = hierarchy.GetEntity(i);
+
+			const HierarchyComponent* hier = hierarchy.GetComponent(entity);
+
+			NameComponent* parentname = names.GetComponent(hier->parentID);
+
+			if (parentname != nullptr)
+			{
+				
+				if (parentname->name == name)
+				{
+					if (ancestor != INVALID_ENTITY && !Entity_IsDescendant(entity, ancestor))
+						continue;
+					return entity;
+				}
+			}
+
+		}
+		return INVALID_ENTITY;
+	}*/
+
+	wi::vector<Entity> Scene::Entity_FindAllByName(const std::string& name, Entity ancestor)
+	{
+		wi::vector<Entity> AllEnts;
+		for (size_t i = 0; i < names.GetCount(); ++i)
+		{
+			if (names[i] == name)
+			{
+				Entity entity = names.GetEntity(i);
+				if (ancestor != INVALID_ENTITY && !Entity_IsDescendant(entity, ancestor))
+					continue;
+				AllEnts.push_back(entity);
+
+			}
+		}
+		return AllEnts;
+	}
+
 	Entity Scene::Entity_Duplicate(Entity entity)
 	{
 		wi::Archive archive;
