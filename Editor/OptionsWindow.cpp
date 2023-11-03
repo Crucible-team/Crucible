@@ -268,6 +268,10 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			pick.entity = scene.Entity_CreatePipe("pipe");
 			pick.subsetIndex = 0;
 			break;
+		case NEW_PLANE:
+			pick.entity = scene.Entity_CreatePlane("plane");
+			pick.subsetIndex = 0;
+			break;
 		
 		case NEW_SPRITE:
 		{
