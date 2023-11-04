@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.8)
 option(CRUCIBLE_DYNAMIC_LIBRARY "Build Crucible as a dynamic library" OFF)
 
 option(CRUCIBLE_EDITOR "Build Crucible editor (JOE)" ON)
+option(CRUCIBLE_GAME_EXECUTABLE "Dedicated game executable (only lua scripts for the moment)")
 option(CRUCIBLE_TESTS "Build Crucible tests" ON)
 option(CRUCIBLE_IMGUI_EXAMPLE "Build Crucible imgui example" ON)
 option(CRUCIBLE_LINUX_TEMPLATE "Build Crucible Linux template" ON)
@@ -35,6 +36,10 @@ add_subdirectory(Crucible)
 if (CRUCIBLE_EDITOR)
     add_subdirectory(Editor)
 	add_subdirectory(Imgui_Editor_Prototype)
+endif()
+
+if(CRUCIBLE_GAME_EXECUTABLE)
+	add_subdirectory(Game_Executable)
 endif()
 
 if (CRUCIBLE_TESTS)
