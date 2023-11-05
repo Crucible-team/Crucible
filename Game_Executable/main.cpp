@@ -48,6 +48,14 @@ int sdl_loop(GameApp &gameapp)
 
 }
 
+void GameComponent::PostSaveText(const std::string& message, const std::string& filename, float time_seconds)
+{
+	save_text_message = message;
+	save_text_filename = filename;
+	save_text_alpha = time_seconds;
+	wi::backlog::post(message + filename);
+}
+
 void GameApp::Initialize()
 {
 
@@ -186,8 +194,6 @@ void GameComponent::ResizeBuffers()
 		desc.swizzle.g = ComponentSwizzle::R;
 		desc.swizzle.b = ComponentSwizzle::R;
 		desc.swizzle.a = ComponentSwizzle::R;
-		device->CreateTexture(&desc, nullptr, &rt_dummyOutline);
-		device->SetName(&rt_dummyOutline, "rt_dummyOutline");
 	}
 
 	{
@@ -225,7 +231,6 @@ void GameComponent::ResizeLayout()
 
 void GameComponent::Load()
 {
-
 RenderPath2D::Load();
 }
 

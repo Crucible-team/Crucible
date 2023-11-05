@@ -14,6 +14,7 @@ endif()
 set (SOURCE_FILES
     main.cpp
     stdafx.h
+	EmbeddedResources.cpp
 )
 
 set(LIB_DXCOMPILER "libdxcompiler.so")
