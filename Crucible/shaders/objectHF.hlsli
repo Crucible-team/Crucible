@@ -505,7 +505,40 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	if (GetMaterial().textures[BASECOLORMAP].IsValid() && (GetFrame().options & OPTION_BIT_DISABLE_ALBEDO_MAPS) == 0)
 #endif // PREPASS
 	{
+	
+	#ifdef WATER
+		[branch]
+		if (GetMaterial().textures[SHEENCOLORMAP].IsValid())
+		{
+			float4 flowmap1 = 0;
+			float4 flowmap2 = 0;
+			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[SHEENCOLORMAP].texture_descriptor];
+		
+			float2 Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,uvsets).rg - 1.0;
+			
+			
+			const float2 UV_flowMap = GetMaterial().textures[SHEENCOLORMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
+		
+			float time_phase1 = (GetFrame().time * 0.1) - floor(GetFrame().time * 0.1);
+			float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
+		
+			float flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
+		
+		
+			flowmap1 = GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(uvsets.xy +  ((Flowmap * time_phase1 * 2)) ,uvsets.zw)).rgba;
+			flowmap2 = GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(uvsets.xy + ((Flowmap * time_phase2 *2)),uvsets.zw)).rgba;
+		
+			surface.baseColor *= lerp(flowmap1, flowmap2, flow_mix); //GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+		
+		}
+		else
+		{
+			surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+		}
+	#else 
 		surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+		
+	#endif
 	}
 	else if ((GetFrame().options & OPTION_BIT_DISABLE_ALBEDO_MAPS) == 0)
 	{
@@ -513,6 +546,8 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 		float4 color2 = float4(0, 0.0, 0, 1);
 		
 		float2 _Scale = float2(8, 8); // Size of each square in the checkerboard pattern
+		
+		
 		
 		float2 uv = input.uvsets.xy * _Scale; // scale this with uvs defaults to xy which might not be always right??
 
@@ -757,6 +792,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	float2 bumpColor0 = 0;
 	float2 bumpColor1 = 0;
 	float2 bumpColor2 = 0;
+	
 	[branch]
 	if (GetMaterial().textures[NORMALMAP].IsValid())
 	{
@@ -773,7 +809,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	surface.bumpColor = float3(bumpColor0 + bumpColor1 + bumpColor2, 1)  * GetMaterial().refraction;
 	surface.N = normalize(lerp(surface.N, mul(normalize(surface.bumpColor), TBN), GetMaterial().normalMapStrength));
 	surface.bumpColor *= GetMaterial().normalMapStrength;
-
+	
 	[branch]
 	if (GetCamera().texture_reflection_index >= 0)
 	{
