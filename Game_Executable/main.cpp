@@ -136,8 +136,8 @@ void set_window_icon(SDL_Window *window) {
 
 int main(int argc, char *argv[])
 {
-    #ifdef WickedEngine_SHADER_DIR
-    wi::renderer::SetShaderSourcePath(WickedEngine_SHADER_DIR);
+    #ifdef Crucible_SHADER_DIR
+    wi::renderer::SetShaderSourcePath(Crucible_SHADER_DIR);
     #endif
 
 int width = 1920;
