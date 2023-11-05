@@ -20,49 +20,19 @@ class GameComponent : public wi::RenderPath2D
 public:
 	GameApp* main = nullptr;
 
-	//wi::gui::Button newSceneButton;
-
-	//wi::gui::Button translateButton;
-	//wi::gui::Button rotateButton;
-	//wi::gui::Button scaleButton;
-
-	//wi::gui::Button dummyButton;
-	//bool dummy_enabled = false;
-	//bool dummy_male = false;
-	//XMFLOAT3 dummy_pos = XMFLOAT3(0, 0, 0);
-
-	//wi::gui::Button playButton;
-	//wi::gui::Button stopButton;
-
-	//wi::gui::Button saveButton;
-	//wi::gui::Button openButton;
-	//wi::gui::Button logButton;
-	//wi::gui::Button profilerButton;
-	//wi::gui::Button cinemaButton;
-	//wi::gui::Button fullscreenButton;
-	//wi::gui::Button bugButton;
-	//wi::gui::Button aboutButton;
-	//wi::gui::Button exitButton;
-	//wi::gui::Window aboutWindow;
-	//wi::gui::Label aboutLabel;
-
-	//OptionsWindow optionsWnd;
-	//ComponentsWindow componentsWnd;
-	//ProfilerWindow profilerWnd;
-
 	std::unique_ptr<wi::RenderPath3D> renderPath;
-	//const wi::graphics::Texture* GetGUIBlurredBackground() const override { return renderPath->GetGUIBlurredBackground(); }
+	const wi::graphics::Texture* GetGUIBlurredBackground() const override { return renderPath->GetGUIBlurredBackground(); }
 
-	//void ResizeBuffers() override;
-	//void ResizeLayout() override;
-	//void Load() override;
-	//void Start() override;
-	//void PreUpdate() override;
-	//void FixedUpdate() override;
-	//void Update(float dt) override;
-	//void PostUpdate() override;
-	//void Render() const override;
-	//void Compose(wi::graphics::CommandList cmd) const override;
+	void ResizeBuffers() override;
+	void ResizeLayout() override;
+	void Load() override;
+	void Start() override;
+	void PreUpdate() override;
+	void FixedUpdate() override;
+	void Update(float dt) override;
+	void PostUpdate() override;
+	void Render() const override;
+	void Compose(wi::graphics::CommandList cmd) const override;
 
 
 	enum EDITORSTENCILREF
@@ -149,8 +119,6 @@ public:
 		wi::scene::TransformComponent camera_target;
 		wi::vector<wi::Archive> history;
 		int historyPos = -1;
-		//wi::gui::Button tabSelectButton;
-		//wi::gui::Button tabCloseButton;
 	};
 	wi::vector<std::unique_ptr<EditorScene>> scenes;
 	int current_scene = 0;
