@@ -44,14 +44,12 @@ public:
 	};
 	wi::graphics::Texture rt_selectionOutline_MSAA;
 	wi::graphics::Texture rt_selectionOutline[2];
-	wi::graphics::Texture rt_dummyOutline;
 	float outlineTimer = 0;
 	const XMFLOAT4 selectionColor = XMFLOAT4(1, 0.6f, 0, 1);
 	const XMFLOAT4 selectionColor2 = XMFLOAT4(0, 1, 0.6f, 0.35f);
 	wi::Color inactiveEntityColor = wi::Color::fromFloat4(XMFLOAT4(1, 1, 1, 0.5f));
 	wi::Color hoveredEntityColor = wi::Color::fromFloat4(XMFLOAT4(1, 1, 1, 1));
 	wi::Color backgroundEntityColor = wi::Color::Black();
-	wi::Color dummyColor = wi::Color::White();
 
 	wi::graphics::Texture editor_depthbuffer;
 

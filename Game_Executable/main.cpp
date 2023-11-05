@@ -194,8 +194,6 @@ void GameComponent::ResizeBuffers()
 		desc.swizzle.g = ComponentSwizzle::R;
 		desc.swizzle.b = ComponentSwizzle::R;
 		desc.swizzle.a = ComponentSwizzle::R;
-		device->CreateTexture(&desc, nullptr, &rt_dummyOutline);
-		device->SetName(&rt_dummyOutline, "rt_dummyOutline");
 	}
 
 	{
@@ -233,7 +231,6 @@ void GameComponent::ResizeLayout()
 
 void GameComponent::Load()
 {
-
 RenderPath2D::Load();
 }
 
