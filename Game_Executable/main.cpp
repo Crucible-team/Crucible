@@ -321,7 +321,7 @@ void GameComponent::Render() const
 		device->EventBegin("Editor", cmd);
 
 		// Selection outline:
-		if (renderPath->GetDepthStencil() != nullptr && !translator.selected.empty())
+		if (renderPath->GetDepthStencil() != nullptr)
 		{
 			device->EventBegin("Selection Outline Mask", cmd);
 
@@ -410,114 +410,6 @@ void GameComponent::Render() const
 
 			device->EventEnd(cmd);
 		}
-
-		// Reference dummy render:
-		if(dummy_enabled)
-		{
-			device->EventBegin("Reference Dummy", cmd);
-			static PipelineState pso;
-			if (!pso.IsValid())
-			{
-				static auto LoadShaders = [] {
-					PipelineStateDesc desc;
-					desc.vs = wi::renderer::GetShader(wi::enums::VSTYPE_VERTEXCOLOR);
-					desc.ps = wi::renderer::GetShader(wi::enums::PSTYPE_VERTEXCOLOR);
-					desc.il = wi::renderer::GetInputLayout(wi::enums::ILTYPE_VERTEXCOLOR);
-					desc.dss = wi::renderer::GetDepthStencilState(wi::enums::DSSTYPE_DEPTHDISABLED);
-					desc.rs = wi::renderer::GetRasterizerState(wi::enums::RSTYPE_DOUBLESIDED);
-					desc.bs = wi::renderer::GetBlendState(wi::enums::BSTYPE_TRANSPARENT);
-					desc.pt = PrimitiveTopology::TRIANGLELIST;
-					wi::graphics::GetDevice()->CreatePipelineState(&desc, &pso);
-				};
-				static wi::eventhandler::Handle handle = wi::eventhandler::Subscribe(wi::eventhandler::EVENT_RELOAD_SHADERS, [](uint64_t userdata) { LoadShaders(); });
-				LoadShaders();
-			}
-			struct Vertex
-			{
-				XMFLOAT4 position;
-				XMFLOAT4 color;
-			};
-
-			const float3* vertices = dummy_female::vertices;
-			size_t vertices_size = sizeof(dummy_female::vertices);
-			size_t vertices_count = arraysize(dummy_female::vertices);
-			const unsigned int* indices = dummy_female::indices;
-			size_t indices_size = sizeof(dummy_female::indices);
-			size_t indices_count = arraysize(dummy_female::indices);
-			if (dummy_male)
-			{
-				vertices = dummy_male::vertices;
-				vertices_size = sizeof(dummy_male::vertices);
-				vertices_count = arraysize(dummy_male::vertices);
-				indices = dummy_male::indices;
-				indices_size = sizeof(dummy_male::indices);
-				indices_count = arraysize(dummy_male::indices);
-			}
-
-			static GPUBuffer dummyBuffers[2];
-			if (!dummyBuffers[dummy_male].IsValid())
-			{
-				auto fill_data = [&](void* data) {
-					Vertex* gpu_vertices = (Vertex*)data;
-					for (size_t i = 0; i < vertices_count; ++i)
-					{
-						Vertex vert = {};
-						vert.position.x = vertices[i].x;
-						vert.position.y = vertices[i].y;
-						vert.position.z = vertices[i].z;
-						vert.position.w = 1;
-						vert.color = XMFLOAT4(1, 1, 1, 1);
-						std::memcpy(gpu_vertices + i, &vert, sizeof(vert));
-					}
-
-					uint32_t* gpu_indices = (uint32_t*)(gpu_vertices + vertices_count);
-					std::memcpy(gpu_indices, indices, indices_size);
-				};
-
-				GPUBufferDesc desc;
-				desc.size = indices_count * sizeof(uint32_t) + vertices_count * sizeof(Vertex);
-				desc.bind_flags = BindFlag::INDEX_BUFFER | BindFlag::VERTEX_BUFFER;
-				device->CreateBuffer2(&desc, fill_data, &dummyBuffers[dummy_male]);
-				device->SetName(&dummyBuffers[dummy_male], "dummyBuffer");
-			}
-
-			RenderPassImage rp[] = {
-				RenderPassImage::RenderTarget(&rt_dummyOutline, RenderPassImage::LoadOp::CLEAR),
-			};
-			device->RenderPassBegin(rp, arraysize(rp), cmd);
-
-			Viewport vp;
-			vp.width = (float)rt_dummyOutline.GetDesc().width;
-			vp.height = (float)rt_dummyOutline.GetDesc().height;
-			device->BindViewports(1, &vp, cmd);
-
-			device->BindPipelineState(&pso, cmd);
-
-			// remove camera jittering
-			CameraComponent cam = *renderPath->camera;
-			cam.jitter = XMFLOAT2(0, 0);
-			cam.UpdateCamera();
-			const XMMATRIX VP = cam.GetViewProjection();
-
-			MiscCB sb;
-			XMStoreFloat4x4(&sb.g_xTransform, XMMatrixTranslation(dummy_pos.x, dummy_pos.y, dummy_pos.z) * VP);
-			sb.g_xColor = XMFLOAT4(1, 1, 1, 1);
-			device->BindDynamicConstantBuffer(sb, CB_GETBINDSLOT(MiscCB), cmd);
-
-			const GPUBuffer* vbs[] = {
-				&dummyBuffers[dummy_male],
-			};
-			const uint32_t strides[] = {
-				sizeof(Vertex),
-			};
-			const uint64_t offsets[] = {
-				0,
-			};
-			device->BindVertexBuffers(vbs, 0, arraysize(vbs), strides, offsets, cmd);
-			device->BindIndexBuffer(&dummyBuffers[dummy_male], IndexBufferFormat::UINT32, vertices_count * sizeof(Vertex), cmd);
-			device->DrawIndexed((uint32_t)indices_count, 0, 0, cmd);
-			device->RenderPassEnd(cmd);
-			device->EventEnd(cmd);
 		}
 
 		// Full resolution:
@@ -548,7 +440,7 @@ void GameComponent::Render() const
 			wi::Color selectedEntityColor = wi::Color::fromFloat4(glow);
 
 			// Draw selection outline to the screen:
-			if (renderPath->GetDepthStencil() != nullptr && !translator.selected.empty())
+			if (renderPath->GetDepthStencil() != nullptr)
 			{
 				device->EventBegin("Selection Outline Edge", cmd);
 				wi::renderer::BindCommonResources(cmd);
@@ -560,18 +452,6 @@ void GameComponent::Render() const
 				col.w *= opacity;
 				wi::renderer::Postprocess_Outline(rt_selectionOutline[1], cmd, 0.1f, 1, col);
 				device->EventEnd(cmd);
-			}
-
-			if (dummy_enabled)
-			{
-				wi::image::Params fx;
-				fx.enableFullScreen();
-				fx.blendFlag = wi::enums::BLENDMODE_PREMULTIPLIED;
-				fx.color = XMFLOAT4(0, 0, 0, 0.4f);
-				wi::image::Draw(&rt_dummyOutline, fx, cmd);
-				XMFLOAT4 dummyColorBlinking = dummyColor;
-				dummyColorBlinking.w = wi::math::Lerp(0.4f, 1, selectionColorIntensity);
-				wi::renderer::Postprocess_Outline(rt_dummyOutline, cmd, 0.1f, 1, dummyColorBlinking);
 			}
 
 			const CameraComponent& camera = GetCurrentEditorScene().camera;
@@ -601,9 +481,9 @@ void GameComponent::Render() const
 			fp.shadowColor = backgroundEntityColor;
 			fp.shadow_softness = 1;
 
-			
 
-			if (optionsWnd.generalWnd.nameDebugCheckBox.GetCheck())
+
+			/*if (optionsWnd.generalWnd.nameDebugCheckBox.GetCheck())
 			{
 				device->EventBegin("Debug Names", cmd);
 				struct DebugNameEntitySorter
@@ -661,7 +541,7 @@ void GameComponent::Render() const
 					wi::font::Draw(scene.names[x.name_index].name, params, cmd);
 				}
 				device->EventEnd(cmd);
-			}
+			}*/
 
 
 			device->RenderPassEnd(cmd);
@@ -669,9 +549,7 @@ void GameComponent::Render() const
 
 		device->EventEnd(cmd);
 	}
-
 	RenderPath2D::Render();
-
 }
 
 int main(int argc, char *argv[])
