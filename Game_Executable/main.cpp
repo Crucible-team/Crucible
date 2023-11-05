@@ -48,6 +48,14 @@ int sdl_loop(GameApp &gameapp)
 
 }
 
+void GameComponent::PostSaveText(const std::string& message, const std::string& filename, float time_seconds)
+{
+	save_text_message = message;
+	save_text_filename = filename;
+	save_text_alpha = time_seconds;
+	wi::backlog::post(message + filename);
+}
+
 void GameApp::Initialize()
 {
 
