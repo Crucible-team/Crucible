@@ -4,6 +4,8 @@
 #include <SDL2/SDL.h>
 #include "Assets/Icon.c"
 
+using namespace wi::graphics;
+
 int sdl_loop(GameApp &gameapp)
 {
     SDL_Event event;
@@ -132,6 +134,90 @@ void set_window_icon(SDL_Window *window) {
     SDL_SetWindowIcon(window, icon);
 
     SDL_FreeSurface(icon);
+}
+
+void GameComponent::ResizeBuffers()
+{
+	//optionsWnd.graphicsWnd.UpdateSwapChainFormats(&main->swapChain);
+
+	init(main->canvas);
+	RenderPath2D::ResizeBuffers();
+
+	GraphicsDevice* device = wi::graphics::GetDevice();
+
+	renderPath->init(*this);
+	renderPath->ResizeBuffers();
+
+	if(renderPath->GetDepthStencil() != nullptr)
+	{
+		bool success = false;
+
+		XMUINT2 internalResolution = GetInternalResolution();
+
+		TextureDesc desc;
+		desc.width = internalResolution.x;
+		desc.height = internalResolution.y;
+
+		desc.format = Format::R8_UNORM;
+		desc.bind_flags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE;
+		if (renderPath->getMSAASampleCount() > 1)
+		{
+			desc.sample_count = renderPath->getMSAASampleCount();
+			success = device->CreateTexture(&desc, nullptr, &rt_selectionOutline_MSAA);
+			assert(success);
+			desc.sample_count = 1;
+		}
+		success = device->CreateTexture(&desc, nullptr, &rt_selectionOutline[0]);
+		assert(success);
+		success = device->CreateTexture(&desc, nullptr, &rt_selectionOutline[1]);
+		assert(success);
+	}
+
+	{
+		TextureDesc desc;
+		desc.width = renderPath->GetRenderResult().GetDesc().width;
+		desc.height = renderPath->GetRenderResult().GetDesc().height;
+		desc.format = Format::R8_UNORM;
+		desc.bind_flags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE;
+		desc.swizzle.r = ComponentSwizzle::R;
+		desc.swizzle.g = ComponentSwizzle::R;
+		desc.swizzle.b = ComponentSwizzle::R;
+		desc.swizzle.a = ComponentSwizzle::R;
+		device->CreateTexture(&desc, nullptr, &rt_dummyOutline);
+		device->SetName(&rt_dummyOutline, "rt_dummyOutline");
+	}
+
+	{
+		TextureDesc desc;
+		desc.width = renderPath->GetRenderResult().GetDesc().width;
+		desc.height = renderPath->GetRenderResult().GetDesc().height;
+		desc.format = Format::D32_FLOAT;
+		desc.bind_flags = BindFlag::DEPTH_STENCIL;
+		desc.layout = ResourceState::DEPTHSTENCIL;
+		desc.misc_flags = ResourceMiscFlag::TRANSIENT_ATTACHMENT;
+		device->CreateTexture(&desc, nullptr, &editor_depthbuffer);
+		device->SetName(&editor_depthbuffer, "editor_depthbuffer");
+	}
+}
+
+void GameComponent::ResizeLayout()
+{
+	RenderPath2D::ResizeLayout();
+
+	// GUI elements scaling:
+
+	float screenW = GetLogicalWidth();
+	float screenH = GetLogicalHeight();
+
+	//optionsWnd.SetPos(XMFLOAT2(0, screenH - optionsWnd.GetScale().y));
+	//optionsWnd.scale_local = wi::math::Clamp(optionsWnd.scale_local, XMFLOAT3(1, 1, 1), XMFLOAT3(screenW, screenH, 1));
+
+	//componentsWnd.SetPos(XMFLOAT2(screenW - componentsWnd.GetScale().x, screenH - componentsWnd.GetScale().y));
+	//componentsWnd.scale_local = wi::math::Clamp(componentsWnd.scale_local, XMFLOAT3(1, 1, 1), XMFLOAT3(screenW, screenH, 1));
+
+	//aboutWindow.SetSize(XMFLOAT2(screenW / 2.0f, screenH / 1.5f));
+	//aboutWindow.SetPos(XMFLOAT2(screenW / 2.0f - aboutWindow.scale.x / 2.0f, screenH / 2.0f - aboutWindow.scale.y / 2.0f));
+
 }
 
 int main(int argc, char *argv[])
