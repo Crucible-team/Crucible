@@ -5,6 +5,9 @@
 #include "Assets/Icon.c"
 
 using namespace wi::graphics;
+using namespace wi::primitive;
+using namespace wi::scene;
+using namespace wi::ecs;
 
 int sdl_loop(GameApp &gameapp)
 {
