@@ -410,7 +410,6 @@ void GameComponent::Render() const
 
 			device->EventEnd(cmd);
 		}
-		}
 
 		// Full resolution:
 		{
