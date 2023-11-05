@@ -229,3 +229,4 @@ wiShaderdump.h
 *.a
 *.elf
 *.prx
+.vscode/launch.json
