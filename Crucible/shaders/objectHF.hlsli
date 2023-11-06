@@ -792,21 +792,52 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	float2 bumpColor0 = 0;
 	float2 bumpColor1 = 0;
 	float2 bumpColor2 = 0;
+	float flow_mix = 0;
 	
 	[branch]
 	if (GetMaterial().textures[NORMALMAP].IsValid())
 	{
 		Texture2D texture_normalmap = bindless_textures[GetMaterial().textures[NORMALMAP].texture_descriptor];
 		const float2 UV_normalMap = GetMaterial().textures[NORMALMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
-		bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
-		bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+		
+		if (GetMaterial().textures[SHEENCOLORMAP].IsValid())
+		{
+			float4 flowmap1 = 0;
+			float4 flowmap2 = 0;
+			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[SHEENCOLORMAP].texture_descriptor];
+		
+			float2 Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,uvsets).rg - 1.0;
+		
+			float time_phase1 = (GetFrame().time * 0.1) - floor(GetFrame().time * 0.1);
+			float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
+		
+			flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
+		
+			bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +  (Flowmap * time_phase1 * 2)- GetMaterial().texMulAdd.ww).rg - 1;
+			bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +(Flowmap * time_phase2 *2) + GetMaterial().texMulAdd.zw).rg - 1;
+		
+		}
+		else
+		{
+			bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
+			bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+		}
 	}
 	[branch]
 	if (GetCamera().texture_waterriples_index >= 0)
 	{
 		bumpColor2 = bindless_textures_float2[GetCamera().texture_waterriples_index].SampleLevel(sampler_linear_clamp, ScreenCoord, 0).rg;
 	}
-	surface.bumpColor = float3(bumpColor0 + bumpColor1 + bumpColor2, 1)  * GetMaterial().refraction;
+	
+	if (GetMaterial().textures[SHEENCOLORMAP].IsValid())
+	{
+		surface.bumpColor = float3(lerp(bumpColor0, bumpColor1, flow_mix) + bumpColor2, 1)  * GetMaterial().refraction;
+	}
+	else
+	{
+		surface.bumpColor = float3(bumpColor0 + bumpColor1 + bumpColor2, 1)  * GetMaterial().refraction;
+	}
+	
 	surface.N = normalize(lerp(surface.N, mul(normalize(surface.bumpColor), TBN), GetMaterial().normalMapStrength));
 	surface.bumpColor *= GetMaterial().normalMapStrength;
 	
