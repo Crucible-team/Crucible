@@ -169,16 +169,16 @@ PixelInput main(ConstantOutput input, float3 uvw : SV_DomainLocation, const Outp
 			displacement = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, float4(output.uvsets.xy +  (Flowmap * time_phase1 * 2), output.uvsets.zw), 0).r;
 			displacement2 = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, float4(output.uvsets.xy +  (Flowmap * time_phase2 * 2), output.uvsets.zw), 0).r;
 		
-			displacement = lerp(displacement, displacement2, flow_mix);
+			final_displacement = lerp(displacement, displacement2, flow_mix);
 		
 		}
 		else
 		{
-			displacement = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, output.uvsets, 0).r;
+			final_displacement = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, output.uvsets, 0).r;
 		}
 		
-		displacement *= GetMaterial().displacementMapping;
-		output.pos.xyz += normalize(float3(output.nor)) * displacement;
+		final_displacement *= GetMaterial().displacementMapping;
+		output.pos.xyz += normalize(float3(output.nor)) * final_displacement;
 	}
 #endif // OBJECTSHADER_USE_UVSETS
 #endif // OBJECTSHADER_USE_NORMAL
