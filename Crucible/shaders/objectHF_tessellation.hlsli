@@ -153,21 +153,19 @@ PixelInput main(ConstantOutput input, float3 uvw : SV_DomainLocation, const Outp
 		float displacement2 = 0;
 		float final_displacement = 0;
 		float flow_mix = 0;
-		if (GetMaterial().textures[SHEENCOLORMAP].IsValid())
+		if (GetMaterial().textures[FLOWMAP].IsValid())
 		{
-			float4 flowmap1 = 0;
-			float4 flowmap2 = 0;
-			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[SHEENCOLORMAP].texture_descriptor];
+			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[FLOWMAP].texture_descriptor];
 		
 			float2 Flowmap = 2.0 * texture_flowmap.SampleLevel(sampler_linear_clamp,output.uvsets,0).rg - 1.0;
 		
-			float time_phase1 = (GetFrame().time * 0.1) - floor(GetFrame().time * 0.1);
+			float time_phase1 = (GetFrame().time * GetMaterial().flowmapspeed) - floor(GetFrame().time * GetMaterial().flowmapspeed);
 			float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
 		
 			flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
 			
-			displacement = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, float4(output.uvsets.xy +  (Flowmap * time_phase1 * 2), output.uvsets.zw), 0).r;
-			displacement2 = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, float4(output.uvsets.xy +  (Flowmap * time_phase2 * 2), output.uvsets.zw), 0).r;
+			displacement = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, float4(output.uvsets.xy +  (Flowmap * time_phase1 * GetMaterial().flowmapintensity), output.uvsets.zw), 0).r;
+			displacement2 = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, float4(output.uvsets.xy +  (Flowmap * time_phase2 * GetMaterial().flowmapintensity), output.uvsets.zw), 0).r;
 		
 			final_displacement = lerp(displacement, displacement2, flow_mix);
 		

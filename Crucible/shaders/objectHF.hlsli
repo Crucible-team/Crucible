@@ -505,41 +505,71 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	if (GetMaterial().textures[BASECOLORMAP].IsValid() && (GetFrame().options & OPTION_BIT_DISABLE_ALBEDO_MAPS) == 0)
 #endif // PREPASS
 	{
+		float4 baseColorpainted = {1,1,1,1};
 	
-	#ifdef WATER
 		[branch]
-		if (GetMaterial().textures[SHEENCOLORMAP].IsValid())
+		if (GetMaterial().textures[FLOWMAP].IsValid())
 		{
 			float4 flowmap1 = 0;
 			float4 flowmap2 = 0;
-			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[SHEENCOLORMAP].texture_descriptor];
+			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[FLOWMAP].texture_descriptor];
 		
 			float2 Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,uvsets).rg - 1.0;
 			
 			
-			const float2 UV_flowMap = GetMaterial().textures[SHEENCOLORMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
+			const float2 UV_flowMap = GetMaterial().textures[FLOWMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
 		
-			float time_phase1 = (GetFrame().time * 0.1) - floor(GetFrame().time * 0.1);
+			float time_phase1 = (GetFrame().time * GetMaterial().flowmapspeed) - floor(GetFrame().time * GetMaterial().flowmapspeed);
 			float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
 		
 			float flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
 		
 		
-			flowmap1 = GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(uvsets.xy +  ((Flowmap * time_phase1 * 2)) ,uvsets.zw)).rgba;
-			flowmap2 = GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(uvsets.xy + ((Flowmap * time_phase2 *2)),uvsets.zw)).rgba;
-		
-			surface.baseColor *= lerp(flowmap1, flowmap2, flow_mix); //GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+			flowmap1 = GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(uvsets.xy +  ((Flowmap * time_phase1 * GetMaterial().flowmapintensity)) ,uvsets.zw)).rgba;
+			flowmap2 = GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(uvsets.xy + ((Flowmap * time_phase2 *GetMaterial().flowmapintensity)),uvsets.zw)).rgba;
+			
+			
+			{
+				surface.baseColor *= lerp(flowmap1, flowmap2, flow_mix);
+			}
+			
 		
 		}
 		else
 		{
-			surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+			if (GetMaterial().textures[PAINTMAP].IsValid())
+			{
+				Texture2D texture_paintmap = bindless_textures[GetMaterial().textures[PAINTMAP].texture_descriptor];
+				float4 Pmap = texture_paintmap.Sample(sampler_objectshader,uvsets).rgba;
+				
+				if(Pmap.x > 0)
+				{
+					baseColorpainted.xyz *= ( (GetMaterial().baseColor1.xyz * Pmap.x) + (1 - Pmap.x) );
+				}
+				
+				if(Pmap.y > 0)
+				{
+					baseColorpainted.xyz *= ( (GetMaterial().baseColor2.xyz * Pmap.y) + (1 - Pmap.y) );
+				}
+				
+				if(Pmap.z > 0)
+				{
+					baseColorpainted.xyz *= ( (GetMaterial().baseColor3.xyz * Pmap.z) + (1 - Pmap.z) );
+				}
+				
+				baseColorpainted *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+				
+				surface.baseColor = baseColorpainted;
+			
+			}
+			else
+			{
+				surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+			}
+			
 		}
-	#else 
-		surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
-		
-	#endif
 	}
+#ifndef WATER
 	else if ((GetFrame().options & OPTION_BIT_DISABLE_ALBEDO_MAPS) == 0)
 	{
 		float4 color1 = float4(0, 0.5, 0, 1);
@@ -561,6 +591,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 		
 		surface.baseColor = color;
 	}
+#endif // not water? just don't provide a color just make it white, water doesn't actually need a albedo to look good. but it is nessary if one wants to use a flowmap to affect albedo.
 #endif // OBJECTSHADER_USE_UVSETS
 
 
@@ -800,21 +831,19 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 		Texture2D texture_normalmap = bindless_textures[GetMaterial().textures[NORMALMAP].texture_descriptor];
 		const float2 UV_normalMap = GetMaterial().textures[NORMALMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
 		
-		if (GetMaterial().textures[SHEENCOLORMAP].IsValid())
+		if (GetMaterial().textures[FLOWMAP].IsValid())
 		{
-			float4 flowmap1 = 0;
-			float4 flowmap2 = 0;
-			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[SHEENCOLORMAP].texture_descriptor];
+			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[FLOWMAP].texture_descriptor];
 		
 			float2 Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,uvsets).rg - 1.0;
 		
-			float time_phase1 = (GetFrame().time * 0.1) - floor(GetFrame().time * 0.1);
+			float time_phase1 = (GetFrame().time * GetMaterial().flowmapspeed) - floor(GetFrame().time * GetMaterial().flowmapspeed);
 			float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
 		
 			flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
 		
-			bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +  (Flowmap * time_phase1 * 2)- GetMaterial().texMulAdd.ww).rg - 1;
-			bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +(Flowmap * time_phase2 *2) + GetMaterial().texMulAdd.zw).rg - 1;
+			bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +  (Flowmap * time_phase1 * GetMaterial().flowmapintensity)- GetMaterial().texMulAdd.ww).rg - 1;
+			bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +(Flowmap * time_phase2 *GetMaterial().flowmapintensity) + GetMaterial().texMulAdd.zw).rg - 1;
 		
 		}
 		else
@@ -829,7 +858,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 		bumpColor2 = bindless_textures_float2[GetCamera().texture_waterriples_index].SampleLevel(sampler_linear_clamp, ScreenCoord, 0).rg;
 	}
 	
-	if (GetMaterial().textures[SHEENCOLORMAP].IsValid())
+	if (GetMaterial().textures[FLOWMAP].IsValid())
 	{
 		surface.bumpColor = float3(lerp(bumpColor0, bumpColor1, flow_mix) + bumpColor2, 1)  * GetMaterial().refraction;
 	}
