@@ -55,6 +55,13 @@ public:
 	wi::gui::Label textureSlotLabel;
 	wi::gui::TextInputField textureSlotUvsetField;
 
+	wi::gui::Slider flowmapSpeedSlider;
+	wi::gui::Slider flowmapIntensitySlider;
+
+	wi::gui::ColorPicker colorPicker1;
+	wi::gui::ColorPicker colorPicker2;
+	wi::gui::ColorPicker colorPicker3;
+
 	void ResizeLayout() override;
 };
 

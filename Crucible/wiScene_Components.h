@@ -261,6 +261,8 @@ namespace wi::scene
 		float alphaRef = 1.0f;
 		float anisotropy_strength = 0;
 		float anisotropy_rotation = 0; //radians, counter-clockwise
+		float flowmapspeed = 0;
+		float flowmapintensity = 0;
 
 		XMFLOAT4 sheenColor = XMFLOAT4(1, 1, 1, 1);
 		float sheenRoughness = 0;
@@ -289,6 +291,8 @@ namespace wi::scene
 			CLEARCOATNORMALMAP,
 			SPECULARMAP,
 			ANISOTROPYMAP,
+			FLOWMAP,
+			PAINTMAP,
 
 			TEXTURESLOT_COUNT
 		};
@@ -392,6 +396,17 @@ namespace wi::scene
 		inline void SetDoubleSided(bool value = true) { if (value) { _flags |= DOUBLE_SIDED; } else { _flags &= ~DOUBLE_SIDED; } }
 		inline void SetOutlineEnabled(bool value = true) { if (value) { _flags |= OUTLINE; } else { _flags &= ~OUTLINE; } }
 		inline void SetPreferUncompressedTexturesEnabled(bool value = true) { if (value) { _flags |= PREFER_UNCOMPRESSED_TEXTURES; } else { _flags &= ~PREFER_UNCOMPRESSED_TEXTURES; } CreateRenderData(true); }
+
+		inline void SetFlowmapSpeed(float value) { flowmapspeed = value; SetDirty(); }
+		inline void SetFlowmapIntensity(float value) { flowmapintensity = value; SetDirty(); }
+
+		XMFLOAT4 baseColor1 = XMFLOAT4(1, 1, 1, 1);
+		XMFLOAT4 baseColor2 = XMFLOAT4(1, 1, 1, 1);
+		XMFLOAT4 baseColor3 = XMFLOAT4(1, 1, 1, 1);
+
+		inline void SetBaseColor1(const XMFLOAT4& value) { SetDirty(); baseColor1 = value; }
+		inline void SetBaseColor2(const XMFLOAT4& value) { SetDirty(); baseColor2 = value; }
+		inline void SetBaseColor3(const XMFLOAT4& value) { SetDirty(); baseColor3 = value; }
 
 		// The MaterialComponent will be written to ShaderMaterial (a struct that is optimized for GPU use)
 		void WriteShaderMaterial(ShaderMaterial* dest) const;

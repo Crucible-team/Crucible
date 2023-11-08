@@ -90,6 +90,8 @@ enum TEXTURESLOT
 	CLEARCOATNORMALMAP,
 	SPECULARMAP,
 	ANISOTROPYMAP,
+	FLOWMAP,
+	PAINTMAP,
 
 	TEXTURESLOT_COUNT
 };
@@ -339,6 +341,16 @@ struct ShaderMaterial
 	float		anisotropy_rotation_sin;
 	float		anisotropy_rotation_cos;
 	float		padding0;
+	
+	//Crucible section
+	float		flowmapspeed;
+	float		flowmapintensity;
+	float		padding1;
+	float		padding2;
+	
+	float4		baseColor1;
+	float4		baseColor2;
+	float4		baseColor3;
 
 	int			sampler_descriptor;
 	uint		options;
@@ -379,6 +391,9 @@ struct ShaderMaterial
 		clearcoatRoughness = 0;
 		stencilRef = 0;
 		shaderType = 0;
+		
+		flowmapspeed = 0;
+		flowmapintensity = 0;
 
 		userdata = uint4(0, 0, 0, 0);
 

@@ -285,6 +285,13 @@ namespace wi::scene
 		material.shaderType = (uint)shaderType;
 		material.userdata = userdata;
 
+		material.flowmapspeed = flowmapspeed;
+		material.flowmapintensity = flowmapintensity;
+
+		material.baseColor1 = baseColor1;
+		material.baseColor2 = baseColor2;
+		material.baseColor3 = baseColor3;
+
 		material.options = 0;
 		if (IsUsingVertexColors())
 		{
@@ -344,6 +351,8 @@ namespace wi::scene
 				case EMISSIVEMAP:
 				case SPECULARMAP:
 				case SHEENCOLORMAP:
+				case FLOWMAP:
+				case PAINTMAP:
 					subresource = textures[i].resource.GetTextureSRGBSubresource();
 					break;
 				case SURFACEMAP:

@@ -488,6 +488,33 @@ void MaterialWindow::Create(EditorComponent* _editor)
 		});
 	AddWidget(&clearcoatRoughnessSlider);
 
+	flowmapSpeedSlider.Create(0, 1, 0, 1000, "Flowmap Speed: ");
+	flowmapSpeedSlider.SetTooltip("This affects Flowmap speed.");
+	flowmapSpeedSlider.SetSize(XMFLOAT2(wid, hei));
+	flowmapSpeedSlider.SetPos(XMFLOAT2(x, y += step));
+	flowmapSpeedSlider.OnSlide([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetFlowmapSpeed(args.fValue);
+		}
+		});
+	AddWidget(&flowmapSpeedSlider);
+
+
+	flowmapIntensitySlider.Create(0, 1, 0, 1000, "Flowmap Intensity: ");
+	flowmapIntensitySlider.SetTooltip("This affects the flowmaps Intensity.");
+	flowmapIntensitySlider.SetSize(XMFLOAT2(wid, hei));
+	flowmapIntensitySlider.SetPos(XMFLOAT2(x, y += step));
+	flowmapIntensitySlider.OnSlide([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetFlowmapIntensity(args.fValue);
+		}
+		});
+	AddWidget(&flowmapIntensitySlider);
+
 
 	// 
 	hei = 20;
@@ -517,7 +544,24 @@ void MaterialWindow::Create(EditorComponent* _editor)
 	colorComboBox.AddItem("Emissive color");
 	colorComboBox.AddItem("Subsurface color");
 	colorComboBox.AddItem("Sheen color");
+	colorComboBox.AddItem("Paintable colors");
 	colorComboBox.SetTooltip("Choose the destination data of the color picker.");
+
+	colorComboBox.OnSelect([&](wi::gui::EventArgs args) {
+		switch (colorComboBox.GetSelected())
+		{
+		default:
+			colorPicker1.SetEnabled(false);
+			colorPicker2.SetEnabled(false);
+			colorPicker3.SetEnabled(false);
+			break;
+		case 5:
+			colorPicker1.SetEnabled(true);
+			colorPicker2.SetEnabled(true);
+			colorPicker3.SetEnabled(true);
+			break;
+		}
+		});
 	AddWidget(&colorComboBox);
 
 	colorPicker.Create("Color", wi::gui::Window::WindowControls::NONE);
@@ -549,6 +593,9 @@ void MaterialWindow::Create(EditorComponent* _editor)
 			case 4:
 				material->SetSheenColor(args.color.toFloat3());
 				break;
+			case 5:
+				material->SetBaseColor(args.color.toFloat4());
+				break;
 			}
 		}
 		});
@@ -558,6 +605,51 @@ void MaterialWindow::Create(EditorComponent* _editor)
 	// Textures:
 
 	y += colorPicker.GetScale().y;
+
+	colorPicker1.Create("PaintColor2", wi::gui::Window::WindowControls::NONE);
+	colorPicker1.SetPos(XMFLOAT2(10, y += step));
+	colorPicker1.SetVisible(true);
+	colorPicker1.SetEnabled(true);
+	colorPicker1.OnColorChanged([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetBaseColor1(args.color.toFloat4());
+		}
+		});
+	AddWidget(&colorPicker1);
+
+	y += colorPicker1.GetScale().y;
+
+	colorPicker2.Create("PaintColor3", wi::gui::Window::WindowControls::NONE);
+	colorPicker2.SetPos(XMFLOAT2(10, y += step));
+	colorPicker2.SetVisible(true);
+	colorPicker2.SetEnabled(true);
+	colorPicker2.OnColorChanged([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetBaseColor2(args.color.toFloat4());
+		}
+		});
+	AddWidget(&colorPicker2);
+
+	y += colorPicker2.GetScale().y;
+
+	colorPicker3.Create("PaintColor4", wi::gui::Window::WindowControls::NONE);
+	colorPicker3.SetPos(XMFLOAT2(10, y += step));
+	colorPicker3.SetVisible(true);
+	colorPicker3.SetEnabled(true);
+	colorPicker3.OnColorChanged([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetBaseColor3(args.color.toFloat4());
+		}
+		});
+	AddWidget(&colorPicker3);
+
+	y += colorPicker2.GetScale().y;
 
 	textureSlotComboBox.Create("Texture Slot: ");
 	textureSlotComboBox.SetSize(XMFLOAT2(170, hei));
@@ -607,6 +699,12 @@ void MaterialWindow::Create(EditorComponent* _editor)
 			break;
 		case MaterialComponent::ANISOTROPYMAP:
 			textureSlotComboBox.AddItem("Anisotropy map");
+			break;
+		case MaterialComponent::FLOWMAP:
+			textureSlotComboBox.AddItem("Flow map");
+			break;
+		case MaterialComponent::PAINTMAP:
+			textureSlotComboBox.AddItem("Paint map");
 			break;
 		default:
 			break;
@@ -659,6 +757,12 @@ void MaterialWindow::Create(EditorComponent* _editor)
 			break;
 		case MaterialComponent::ANISOTROPYMAP:
 			tooltiptext = "RG: The anisotropy texture. Red and green channels represent the anisotropy direction in [-1, 1] tangent, bitangent space.\nThe vector is rotated by anisotropyRotation, and multiplied by anisotropyStrength, to obtain the final anisotropy direction and strength.";
+			break;
+		case MaterialComponent::FLOWMAP:
+			tooltiptext = "RG: The Flow texture. Red and green channels represent the UV direction in [-1, 1].";
+			break;
+		case MaterialComponent::PAINTMAP:
+			tooltiptext = "RGBA: The paint texture. Red, green, blue, Alpha are area's which are paintable.";
 			break;
 		default:
 			break;
@@ -819,6 +923,8 @@ void MaterialWindow::SetEntity(Entity entity)
 		alphaRefSlider.SetValue(material->alphaRef);
 		blendModeComboBox.SetSelected((int)material->userBlendMode);
 		surfacepropComboBox.SetSelected((int)material->surfacetype);
+		flowmapSpeedSlider.SetValue(material->flowmapspeed);
+		flowmapIntensitySlider.SetValue(material->flowmapintensity);
 
 		shaderTypeComboBox.ClearItems();
 		shaderTypeComboBox.AddItem("PBR", MaterialComponent::SHADERTYPE_PBR);
@@ -847,6 +953,10 @@ void MaterialWindow::SetEntity(Entity entity)
 
 		colorComboBox.SetEnabled(true);
 		colorPicker.SetEnabled(true);
+
+		colorPicker1.SetEnabled(false);
+		colorPicker2.SetEnabled(false);
+		colorPicker3.SetEnabled(false);
 		
 		switch (colorComboBox.GetSelected())
 		{
@@ -865,6 +975,15 @@ void MaterialWindow::SetEntity(Entity entity)
 			break;
 		case 4:
 			colorPicker.SetPickColor(wi::Color::fromFloat3(XMFLOAT3(material->sheenColor.x, material->sheenColor.y, material->sheenColor.z)));
+			break;
+		case 5:
+			colorPicker1.SetEnabled(true);
+			colorPicker2.SetEnabled(true);
+			colorPicker3.SetEnabled(true);
+			colorPicker.SetPickColor(wi::Color::fromFloat4(material->baseColor));
+			colorPicker1.SetPickColor(wi::Color::fromFloat4(material->baseColor1));
+			colorPicker2.SetPickColor(wi::Color::fromFloat4(material->baseColor2));
+			colorPicker3.SetPickColor(wi::Color::fromFloat4(material->baseColor3));
 			break;
 		}
 
@@ -995,8 +1114,13 @@ void MaterialWindow::ResizeLayout()
 	add(sheenRoughnessSlider);
 	add(clearcoatSlider);
 	add(clearcoatRoughnessSlider);
+	add(flowmapSpeedSlider);
+	add(flowmapIntensitySlider);
 	add(colorComboBox);
 	add_fullwidth(colorPicker);
+	add_fullwidth(colorPicker1);
+	add_fullwidth(colorPicker2);
+	add_fullwidth(colorPicker3);
 	add(textureSlotComboBox);
 	add_fullwidth(textureSlotButton);
 	add_fullwidth(textureSlotLabel);

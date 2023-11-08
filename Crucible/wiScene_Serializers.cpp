@@ -236,6 +236,24 @@ namespace wi::scene
 				anisotropy_strength = parallaxOcclusionMapping; // old version fix
 			}
 
+			if (archive.GetVersion() >= 152)
+			{
+				archive >> flowmapspeed;
+				archive >> flowmapintensity;
+				archive >> textures[FLOWMAP].name;
+				archive >> textures[FLOWMAP].uvset;
+			}
+
+			if (archive.GetVersion() >= 153)
+			{
+				archive >> baseColor1;
+				archive >> baseColor2;
+				archive >> baseColor3;
+
+				archive >> textures[PAINTMAP].name;
+				archive >> textures[PAINTMAP].uvset;
+			}
+
 			for (auto& x : textures)
 			{
 				if (!x.name.empty())
@@ -375,6 +393,24 @@ namespace wi::scene
 				archive << anisotropy_rotation;
 				archive << textures[ANISOTROPYMAP].name;
 				archive << textures[ANISOTROPYMAP].uvset;
+			}
+
+			if (archive.GetVersion() >= 152)
+			{
+				archive << flowmapspeed;
+				archive << flowmapintensity;
+				archive << textures[FLOWMAP].name;
+				archive << textures[FLOWMAP].uvset;
+			}
+
+			if (archive.GetVersion() >= 153)
+			{
+				archive << baseColor1;
+				archive << baseColor2;
+				archive << baseColor3;
+
+				archive << textures[PAINTMAP].name;
+				archive << textures[PAINTMAP].uvset;
 			}
 		}
 	}
