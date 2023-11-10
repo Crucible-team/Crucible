@@ -254,6 +254,16 @@ namespace wi::scene
 				archive >> textures[PAINTMAP].uvset;
 			}
 
+			if (seri.GetVersion() >= 3)
+			{
+				archive >> (uint32_t&)watertype;
+				archive >> softwareWaterSpeed;
+				archive >> TextureToWaveScale ;
+				archive >> RippleScale;
+				archive >> pixelate;
+				archive >> WarpStyle_Software_Quality;
+			}
+
 			for (auto& x : textures)
 			{
 				if (!x.name.empty())
@@ -380,7 +390,10 @@ namespace wi::scene
 				archive << textures[SPECULARMAP].uvset;
 			}
 
-			archive << (uint32_t)surfacetype;
+			if (archive.GetVersion() >= 150)
+			{
+				archive << (uint32_t)surfacetype;
+			}
 
 			if (seri.GetVersion() >= 1)
 			{
@@ -411,6 +424,16 @@ namespace wi::scene
 
 				archive << textures[PAINTMAP].name;
 				archive << textures[PAINTMAP].uvset;
+			}
+
+			if (seri.GetVersion() >= 3)
+			{
+				archive << (uint32_t)watertype;
+				archive << softwareWaterSpeed;
+				archive << TextureToWaveScale ;
+				archive << RippleScale;
+				archive << pixelate;
+				archive << WarpStyle_Software_Quality;
 			}
 		}
 	}

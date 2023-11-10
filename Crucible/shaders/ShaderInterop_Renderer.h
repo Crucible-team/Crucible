@@ -345,8 +345,14 @@ struct ShaderMaterial
 	//Crucible section
 	float		flowmapspeed;
 	float		flowmapintensity;
-	float		padding1;
-	float		padding2;
+	float 		software_water_speed;
+	float		texture_to_wave_scale;
+
+	float 		ripple_scale;
+	uint		water_type;
+	uint		pixelate;
+	uint		WarpStyle_Software_Quality;
+	
 	
 	float4		baseColor1;
 	float4		baseColor2;
@@ -394,6 +400,14 @@ struct ShaderMaterial
 		
 		flowmapspeed = 0;
 		flowmapintensity = 0;
+
+		software_water_speed = 0.5;
+		texture_to_wave_scale = 1;
+
+		ripple_scale = 1;
+
+		water_type = 0;
+		pixelate = 0;
 
 		userdata = uint4(0, 0, 0, 0);
 

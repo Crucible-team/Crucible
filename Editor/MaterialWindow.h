@@ -62,6 +62,14 @@ public:
 	wi::gui::ColorPicker colorPicker2;
 	wi::gui::ColorPicker colorPicker3;
 
+	wi::gui::ComboBox softwareWaterComboBox;
+	wi::gui::ComboBox PixelateComboBox;
+	wi::gui::ComboBox WarpQualityComboBox;
+
+	wi::gui::Slider softwareWaterSpeedSlider;
+	wi::gui::Slider waveScaleSlider;
+	wi::gui::Slider RippleScaleSlider;
+
 	void ResizeLayout() override;
 };
 

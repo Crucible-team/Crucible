@@ -515,6 +515,102 @@ void MaterialWindow::Create(EditorComponent* _editor)
 		});
 	AddWidget(&flowmapIntensitySlider);
 
+	softwareWaterComboBox.Create("Color picker mode: ");
+	softwareWaterComboBox.SetSize(XMFLOAT2(120, hei));
+	softwareWaterComboBox.SetPos(XMFLOAT2(x + 150, y += step));
+	softwareWaterComboBox.AddItem("NONE");
+	softwareWaterComboBox.AddItem("Classic GL Warp");
+	softwareWaterComboBox.AddItem("Classic GL Warp Enhanced");
+	softwareWaterComboBox.AddItem("Classic Software");
+	softwareWaterComboBox.AddItem("Classic Software Enhanced");
+	softwareWaterComboBox.SetTooltip("Choose type of classic water to emulate");
+
+	softwareWaterComboBox.OnSelect([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetSoftwareWater(args.iValue);
+		}
+		
+		});
+	AddWidget(&softwareWaterComboBox);
+
+	PixelateComboBox.Create("Color picker mode: ");
+	PixelateComboBox.SetSize(XMFLOAT2(120, hei));
+	PixelateComboBox.SetPos(XMFLOAT2(x + 150, y += step));
+	PixelateComboBox.AddItem("NONE");
+	PixelateComboBox.AddItem("1");
+	PixelateComboBox.AddItem("2");
+	PixelateComboBox.SetTooltip("CHoose type of pixelate");
+
+	PixelateComboBox.OnSelect([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetPixelate(args.iValue);
+		}
+		
+		});
+	AddWidget(&PixelateComboBox);
+
+	WarpQualityComboBox.Create("Color picker mode: ");
+	WarpQualityComboBox.SetSize(XMFLOAT2(120, hei));
+	WarpQualityComboBox.SetPos(XMFLOAT2(x + 150, y += step));
+	WarpQualityComboBox.AddItem("NONE");
+	WarpQualityComboBox.AddItem("1");
+	WarpQualityComboBox.AddItem("2");
+	WarpQualityComboBox.SetTooltip("CHoose type of pixelate");
+
+	WarpQualityComboBox.OnSelect([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetWarpStyle_Software_Quality(args.iValue);
+		}
+		
+		});
+	AddWidget(&WarpQualityComboBox);
+
+	softwareWaterSpeedSlider.Create(0, 1, 0, 1000, "Software water speed: ");
+	softwareWaterSpeedSlider.SetTooltip("Affects speed in software water.");
+	softwareWaterSpeedSlider.SetSize(XMFLOAT2(wid, hei));
+	softwareWaterSpeedSlider.SetPos(XMFLOAT2(x, y += step));
+	softwareWaterSpeedSlider.OnSlide([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetSoftwareWaterSpeed(args.fValue);
+		}
+		});
+	AddWidget(&softwareWaterSpeedSlider);
+
+	waveScaleSlider.Create(0, 1, 0, 1000, "Wave scale ");
+	waveScaleSlider.SetTooltip("This affects the wave scale for software water.");
+	waveScaleSlider.SetSize(XMFLOAT2(wid, hei));
+	waveScaleSlider.SetPos(XMFLOAT2(x, y += step));
+	waveScaleSlider.OnSlide([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetTextureToWaveScale(args.fValue);
+		}
+		});
+	AddWidget(&waveScaleSlider);
+
+	RippleScaleSlider.Create(0, 1, 0, 1000, "Wave scale ");
+	RippleScaleSlider.SetTooltip("This affects the wave scale for software water.");
+	RippleScaleSlider.SetSize(XMFLOAT2(wid, hei));
+	RippleScaleSlider.SetPos(XMFLOAT2(x, y += step));
+	RippleScaleSlider.OnSlide([&](wi::gui::EventArgs args) {
+		MaterialComponent* material = editor->GetCurrentScene().materials.GetComponent(entity);
+		if (material != nullptr)
+		{
+			material->SetRippleScale(args.fValue);
+		}
+		});
+	AddWidget(&RippleScaleSlider);
+	
+
 
 	// 
 	hei = 20;

@@ -287,6 +287,12 @@ namespace wi::scene
 
 		material.flowmapspeed = flowmapspeed;
 		material.flowmapintensity = flowmapintensity;
+		material.water_type = (uint)watertype;
+		material.software_water_speed = softwareWaterSpeed;
+		material.texture_to_wave_scale = TextureToWaveScale;
+		material.ripple_scale = RippleScale;
+		material.pixelate = pixelate;
+		material.WarpStyle_Software_Quality = WarpStyle_Software_Quality;
 
 		material.baseColor1 = baseColor1;
 		material.baseColor2 = baseColor2;

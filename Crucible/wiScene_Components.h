@@ -164,6 +164,8 @@ namespace wi::scene
 
 		wi::enums::SURFACEPROP surfacetype = wi::enums::DEFUALT;
 
+		wi::enums::SOFTWAREWATER watertype = wi::enums::WARPSTYLE_SOFTWAREENHANCED;
+
 		inline static const wi::vector<std::string> surfaceTypeDefines[] = {
 			{"Default"}, // SHADERTYPE_PBR,
 			{"Defaul_silent"}, // SHADERTYPE_PBR_PLANARREFLECTION,
@@ -261,8 +263,13 @@ namespace wi::scene
 		float alphaRef = 1.0f;
 		float anisotropy_strength = 0;
 		float anisotropy_rotation = 0; //radians, counter-clockwise
-		float flowmapspeed = 0;
-		float flowmapintensity = 0;
+		float flowmapspeed = 0.0f;
+		float flowmapintensity = 0.0f;
+		float softwareWaterSpeed = 0.5f;
+		float TextureToWaveScale = 1.0f;
+		float RippleScale = 1.0f;
+		int pixelate = 1;
+		int WarpStyle_Software_Quality = 1;
 
 		XMFLOAT4 sheenColor = XMFLOAT4(1, 1, 1, 1);
 		float sheenRoughness = 0;
@@ -399,6 +406,14 @@ namespace wi::scene
 
 		inline void SetFlowmapSpeed(float value) { flowmapspeed = value; SetDirty(); }
 		inline void SetFlowmapIntensity(float value) { flowmapintensity = value; SetDirty(); }
+		
+		inline void SetSoftwareWater(int value) { SetDirty(); watertype = wi::enums::SOFTWAREWATER(value); }
+		inline void SetPixelate(int value) { SetDirty(); pixelate = value; }
+		inline void SetWarpStyle_Software_Quality(int value) { SetDirty(); WarpStyle_Software_Quality = value; }
+
+		inline void SetSoftwareWaterSpeed (float value) { softwareWaterSpeed = value; SetDirty(); }
+		inline void SetTextureToWaveScale (float value) { TextureToWaveScale = value; SetDirty(); }
+		inline void SetRippleScale (float value) { RippleScale = value; SetDirty(); }
 
 		XMFLOAT4 baseColor1 = XMFLOAT4(1, 1, 1, 1);
 		XMFLOAT4 baseColor2 = XMFLOAT4(1, 1, 1, 1);
