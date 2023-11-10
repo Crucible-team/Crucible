@@ -565,60 +565,67 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	if (GetMaterial().textures[BASECOLORMAP].IsValid() && (GetFrame().options & OPTION_BIT_DISABLE_ALBEDO_MAPS) == 0)
 #endif // PREPASS
 	{
-		float2 softwaremodeUV;
-		{
 		#ifdef WATER
-			float2 TD;
+		float2 softwaremodeUV;
+		if (GetMaterial().water_type > 0)
+		{
+			
+			{
+			
+				float2 TD;
 
-			Texture2D texture_basecolormap = bindless_textures[GetMaterial().textures[BASECOLORMAP].texture_descriptor];
-			texture_basecolormap.GetDimensions(TD.x,TD.y);
-			float2 uv = uvsets.xy;
-		 	// VERY IMPORTANT: pixelate BEFORE the UV transformations
+				Texture2D texture_basecolormap = bindless_textures[GetMaterial().textures[BASECOLORMAP].texture_descriptor];
+				texture_basecolormap.GetDimensions(TD.x,TD.y);
+				float2 uv = uvsets.xy;
+		 		// VERY IMPORTANT: pixelate BEFORE the UV transformations
 
-			if (GetMaterial().pixelate)
-			{
-				uv = Pixelate( uv,TD );
-			}
+				if (GetMaterial().pixelate)
+				{
+					uv = Pixelate( uv,TD );
+				}
     
-    		// NOTE: faster the time, faster the """framerate""" you perceive
-    		float time = GetFrame().time *  GetMaterial().software_water_speed;
+    			// NOTE: faster the time, faster the """framerate""" you perceive
+    			float time = GetFrame().time *  GetMaterial().software_water_speed;
     
-    		if( GetMaterial().water_type == WarpStyle_GLEnhanced)
-			{
+    			if( GetMaterial().water_type == WarpStyle_GLEnhanced)
+				{
     
-        		uv = Warp( uv, 1.0 /  2.4, 0.045, time * 0.6   );
-        		uv = Warp( uv, 1.0 /  4.1, 0.034, time * 0.378 );
-        		uv = Warp( uv, 1.0 / 13.0, 0.022, time         );
-        		uv = Warp( uv, 1.0 / 32.0, 0.010, time * 2.0   );
-			}
-    		else if (GetMaterial().water_type == WarpStyle_GL)
-			{
+        			uv = Warp( uv, 1.0 /  2.4, 0.045, time * 0.6   );
+        			uv = Warp( uv, 1.0 /  4.1, 0.034, time * 0.378 );
+        			uv = Warp( uv, 1.0 / 13.0, 0.022, time         );
+        			uv = Warp( uv, 1.0 / 32.0, 0.010, time * 2.0   );
+				}
+    			else if (GetMaterial().water_type == WarpStyle_GL)
+				{
     
-        		uv = Warp( uv, 1.0 / 16.00, 0.020, time * 4.0  );
-			}
-    		else if (GetMaterial().water_type == WarpStyle_Software)
-			{    
+        			uv = Warp( uv, 1.0 / 16.00, 0.020, time * 4.0  );
+				}
+    			else if (GetMaterial().water_type == WarpStyle_Software)
+				{    
     
-        		uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
-			}
+        			uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
+				}
     
-    		else if (GetMaterial().water_type == WarpStyle_SoftwareEnhanced)
-			{
+    			else if (GetMaterial().water_type == WarpStyle_SoftwareEnhanced)
+				{
     
-        		uv = Warp( uv, 1.0 / 8.0, 0.01, time * 3.0 );
-        		uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
-        		uv = Warp( uv, 1.0 / 2.124, 0.001, time * 1.87 );
-			}
+        			uv = Warp( uv, 1.0 / 8.0, 0.01, time * 3.0 );
+        			uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
+        			uv = Warp( uv, 1.0 / 2.124, 0.001, time * 1.87 );
+				}
         
     
-			// Double pixelation gives a nice 80s/early 90s sprite game effect
-    		if (GetMaterial().pixelate >= 2)
-			{
-				uv = Pixelate( uv,TD );
+				// Double pixelation gives a nice 80s/early 90s sprite game effect
+    			if (GetMaterial().pixelate >= 2)
+				{
+					uv = Pixelate( uv,TD );
+				}
+				softwaremodeUV = uv;
+			
 			}
-			softwaremodeUV = uv;
-		#endif
+
 		}
+		#endif
 		float4 baseColorpainted = {1,1,1,1};
 	
 		[branch]
@@ -627,15 +634,22 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 			float4 flowmap1 = 0;
 			float4 flowmap2 = 0;
 			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[FLOWMAP].texture_descriptor];
-		
-			float2 Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,uvsets).rg - 1.0;
-			
-			
-			float2 UV_flowMap = GetMaterial().textures[FLOWMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
 
-			#ifdef WATER
+			float2 UV_flowMap = GetMaterial().textures[FLOWMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
+			
+			if (GetMaterial().water_type > 0)
+			{
+				#ifdef WATER
 				UV_flowMap = softwaremodeUV;
-			#endif
+				#endif
+				
+			}
+			float2 Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,float4(UV_flowMap,uvsets.zw)).rg - 1.0;
+			
+			
+			
+
+			
 		
 			float time_phase1 = (GetFrame().time * GetMaterial().flowmapspeed) - floor(GetFrame().time * GetMaterial().flowmapspeed);
 			float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
@@ -658,7 +672,21 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 			if (GetMaterial().textures[PAINTMAP].IsValid())
 			{
 				Texture2D texture_paintmap = bindless_textures[GetMaterial().textures[PAINTMAP].texture_descriptor];
-				float4 Pmap = texture_paintmap.Sample(sampler_objectshader,uvsets).rgba;
+				float4 Pmap;
+
+				#ifdef WATER
+				if (GetMaterial().water_type > 0)
+				{
+					Pmap = texture_paintmap.Sample(sampler_objectshader,float4(softwaremodeUV,uvsets.zw)).rgba;
+				}
+				else
+				{
+					Pmap = texture_paintmap.Sample(sampler_objectshader,uvsets).rgba;
+				}
+				
+				#else
+				Pmap = texture_paintmap.Sample(sampler_objectshader,uvsets).rgba;
+				#endif
 				
 				if(Pmap.x > 0)
 				{
@@ -675,7 +703,15 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 					baseColorpainted.xyz *= ( (GetMaterial().baseColor3.xyz * Pmap.z) + (1 - Pmap.z) );
 				}
 				#ifdef WATER
-					baseColorpainted *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw));
+					if (GetMaterial().water_type > 0)
+					{
+						baseColorpainted *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw));
+					}
+					else
+					{
+						baseColorpainted *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+					}
+					
 				#else
 					baseColorpainted *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
 				#endif
@@ -688,7 +724,15 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 			{
 				#ifdef WATER
 					//surface.baseColor = float4( frac(softwaremodeUV), 0.0, 1.0 );
-					surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw));
+					if (GetMaterial().water_type > 0)
+					{
+						surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw));
+					}
+					else
+					{
+						surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+					}
+					
 				#else
 					surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
 				#endif
@@ -958,26 +1002,125 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	{
 		Texture2D texture_normalmap = bindless_textures[GetMaterial().textures[NORMALMAP].texture_descriptor];
 		const float2 UV_normalMap = GetMaterial().textures[NORMALMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
+		float2 softwaremodeUV;
+		if (GetMaterial().water_type > 0)
+		{
+			
+			{
+			
+				float2 TD;
+
+				texture_normalmap.GetDimensions(TD.x,TD.y);
+				float2 uv = uvsets.xy;
+		 		// VERY IMPORTANT: pixelate BEFORE the UV transformations
+
+				if (GetMaterial().pixelate)
+				{
+					uv = Pixelate( uv,TD );
+				}
+    
+    			// NOTE: faster the time, faster the """framerate""" you perceive
+    			float time = GetFrame().time *  GetMaterial().software_water_speed;
+    
+    			if( GetMaterial().water_type == WarpStyle_GLEnhanced)
+				{
+    
+        			uv = Warp( uv, 1.0 /  2.4, 0.045, time * 0.6   );
+        			uv = Warp( uv, 1.0 /  4.1, 0.034, time * 0.378 );
+        			uv = Warp( uv, 1.0 / 13.0, 0.022, time         );
+        			uv = Warp( uv, 1.0 / 32.0, 0.010, time * 2.0   );
+				}
+    			else if (GetMaterial().water_type == WarpStyle_GL)
+				{
+    
+        			uv = Warp( uv, 1.0 / 16.00, 0.020, time * 4.0  );
+				}
+    			else if (GetMaterial().water_type == WarpStyle_Software)
+				{    
+    
+        			uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
+				}
+    
+    			else if (GetMaterial().water_type == WarpStyle_SoftwareEnhanced)
+				{
+    
+        			uv = Warp( uv, 1.0 / 8.0, 0.01, time * 3.0 );
+        			uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
+        			uv = Warp( uv, 1.0 / 2.124, 0.001, time * 1.87 );
+				}
+        
+    
+				// Double pixelation gives a nice 80s/early 90s sprite game effect
+    			if (GetMaterial().pixelate >= 2)
+				{
+					uv = Pixelate( uv,TD );
+				}
+				softwaremodeUV = uv;
+			
+			}
+
+		}
 		
 		if (GetMaterial().textures[FLOWMAP].IsValid())
 		{
-			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[FLOWMAP].texture_descriptor];
+			
 		
-			float2 Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,uvsets).rg - 1.0;
+			if (GetMaterial().flowmapintensity > 0)
+			{
+				Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[FLOWMAP].texture_descriptor];
+
+				float2 Flowmap;
+
+				if (GetMaterial().water_type > 0)
+				{
+					Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,float4(softwaremodeUV,uvsets.zw)).rg - 1.0;
+				}
+				else
+				{
+					Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,uvsets).rg - 1.0;
+				}
 		
-			float time_phase1 = (GetFrame().time * GetMaterial().flowmapspeed) - floor(GetFrame().time * GetMaterial().flowmapspeed);
-			float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
 		
-			flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
+				float time_phase1 = (GetFrame().time * GetMaterial().flowmapspeed) - floor(GetFrame().time * GetMaterial().flowmapspeed);
+				float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
 		
-			bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +  (Flowmap * time_phase1 * GetMaterial().flowmapintensity)- GetMaterial().texMulAdd.ww).rg - 1;
-			bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +(Flowmap * time_phase2 *GetMaterial().flowmapintensity) + GetMaterial().texMulAdd.zw).rg - 1;
+				flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
+
+				bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +  (Flowmap * time_phase1 * GetMaterial().flowmapintensity)- GetMaterial().texMulAdd.ww).rg - 1;
+				bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +(Flowmap * time_phase2 *GetMaterial().flowmapintensity) + GetMaterial().texMulAdd.zw).rg - 1;
+			}
+			else
+			{
+				
+				if (GetMaterial().water_type > 0)
+				{
+					bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw) - GetMaterial().texMulAdd.ww).rg - 1;
+					bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw) + GetMaterial().texMulAdd.zw).rg - 1;
+				}
+				else
+				{
+				
+					bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
+					bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+				}
+			}
+			
 		
 		}
 		else
 		{
-			bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
-			bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+			if (GetMaterial().water_type > 0)
+			{
+				bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw) - GetMaterial().texMulAdd.ww).rg - 1;
+				bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw) + GetMaterial().texMulAdd.zw).rg - 1;
+			}
+			else
+			{
+				
+				bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
+				bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+			}
+			
 		}
 	}
 	[branch]
