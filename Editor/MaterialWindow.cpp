@@ -515,7 +515,7 @@ void MaterialWindow::Create(EditorComponent* _editor)
 		});
 	AddWidget(&flowmapIntensitySlider);
 
-	softwareWaterComboBox.Create("Color picker mode: ");
+	softwareWaterComboBox.Create("classic water: ");
 	softwareWaterComboBox.SetSize(XMFLOAT2(120, hei));
 	softwareWaterComboBox.SetPos(XMFLOAT2(x + 150, y += step));
 	softwareWaterComboBox.AddItem("NONE");
@@ -535,7 +535,7 @@ void MaterialWindow::Create(EditorComponent* _editor)
 		});
 	AddWidget(&softwareWaterComboBox);
 
-	PixelateComboBox.Create("Color picker mode: ");
+	PixelateComboBox.Create("Pixelate mode: ");
 	PixelateComboBox.SetSize(XMFLOAT2(120, hei));
 	PixelateComboBox.SetPos(XMFLOAT2(x + 150, y += step));
 	PixelateComboBox.AddItem("NONE");
@@ -553,7 +553,7 @@ void MaterialWindow::Create(EditorComponent* _editor)
 		});
 	AddWidget(&PixelateComboBox);
 
-	WarpQualityComboBox.Create("Color picker mode: ");
+	WarpQualityComboBox.Create("Warp Quality: ");
 	WarpQualityComboBox.SetSize(XMFLOAT2(120, hei));
 	WarpQualityComboBox.SetPos(XMFLOAT2(x + 150, y += step));
 	WarpQualityComboBox.AddItem("NONE");
@@ -597,8 +597,8 @@ void MaterialWindow::Create(EditorComponent* _editor)
 		});
 	AddWidget(&waveScaleSlider);
 
-	RippleScaleSlider.Create(0, 1, 0, 1000, "Wave scale ");
-	RippleScaleSlider.SetTooltip("This affects the wave scale for software water.");
+	RippleScaleSlider.Create(0, 1, 0, 1000, "Ripple scale ");
+	RippleScaleSlider.SetTooltip("This affects the ripple scale for software water.");
 	RippleScaleSlider.SetSize(XMFLOAT2(wid, hei));
 	RippleScaleSlider.SetPos(XMFLOAT2(x, y += step));
 	RippleScaleSlider.OnSlide([&](wi::gui::EventArgs args) {
@@ -1022,6 +1022,14 @@ void MaterialWindow::SetEntity(Entity entity)
 		flowmapSpeedSlider.SetValue(material->flowmapspeed);
 		flowmapIntensitySlider.SetValue(material->flowmapintensity);
 
+		softwareWaterComboBox.SetSelected((int)material->watertype);
+		PixelateComboBox.SetSelected(material->pixelate);
+		WarpQualityComboBox.SetSelected(material->WarpStyle_Software_Quality);
+
+		softwareWaterSpeedSlider.SetValue(material->softwareWaterSpeed);
+		waveScaleSlider.SetValue(material->TextureToWaveScale);
+		RippleScaleSlider.SetValue(material->RippleScale);
+
 		shaderTypeComboBox.ClearItems();
 		shaderTypeComboBox.AddItem("PBR", MaterialComponent::SHADERTYPE_PBR);
 		shaderTypeComboBox.AddItem("Planar reflections", MaterialComponent::SHADERTYPE_PBR_PLANARREFLECTION);
@@ -1212,6 +1220,12 @@ void MaterialWindow::ResizeLayout()
 	add(clearcoatRoughnessSlider);
 	add(flowmapSpeedSlider);
 	add(flowmapIntensitySlider);
+	add(softwareWaterComboBox);
+	add(PixelateComboBox);
+	add(WarpQualityComboBox);
+	add(softwareWaterSpeedSlider);
+	add(waveScaleSlider);
+	add(RippleScaleSlider);
 	add(colorComboBox);
 	add_fullwidth(colorPicker);
 	add_fullwidth(colorPicker1);

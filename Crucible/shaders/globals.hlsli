@@ -1627,20 +1627,6 @@ float2 Pixelate( float2 textureCoords, float2 TextureDimensions )
     return round( textureCoords * TextureDimensions ) / TextureDimensions;
 }
 
-// Classic Doom/Quake-style UV warping
-float2 Warp( float2 textureCoords, float waveSize, float waveStrength, float t )
-{
-    waveSize *=  GetMaterial().texture_to_wave_scale;
-    waveStrength *=  GetMaterial().ripple_scale;
-    
-    // If you're here to learn, the core of this warp is:
-    // x' = cos(y)
-    // y' = cos(x)
-    return float2(
-        textureCoords.x + cos( textureCoords.y * (1.0 / waveSize) + t ) * waveStrength,
-        textureCoords.y + cos( textureCoords.x * (1.0 / waveSize) + t ) * waveStrength
-    );
-}
 
 // Your GLSL compiler / GPU driver will optimise this stuff away, don't worry
 float2 SingleRippleOffset( float2 textureCoords, float2 ripplePosition, float3 rippleParams, float t )
@@ -1669,49 +1655,6 @@ static const float2 TileOffsets[] = {
     float2( 1.0, -1.0 ),
 };
 
-// rippleParams.x -> size
-// rippleParams.y -> frequency
-// rippleParams.z -> strength
-float2 Ripple( float2 textureCoords, float3 rippleParams, float t )
-{
-    float2 tile = floor( textureCoords );
 
-    float2 offsetAccum = float2( 0.0,0.0 );
-    for ( int i = 0; i < 3; i++ )
-    {
-        offsetAccum += SingleRippleOffset( textureCoords, tile + RipplePositionPresets[i], rippleParams, t );
-    }
-
-// 0 -> not seamless (1x3 transforms) - fine on small ripple scales
-// 1 -> half seamless (4x3 transforms) - good all-rounder
-// 2 -> fully seamless (9x3 transforms) - expensive but gets rid of seams
-	if (GetMaterial().WarpStyle_Software_Quality > 0)
-	{
-    
-        if (GetMaterial().WarpStyle_Software_Quality == 1)
-		{
-			for ( int tileIndex = 0; tileIndex < 8; tileIndex += 2 )
-			{
-            	for ( int i = 0; i < 3; i++ )
-            	{
-                	offsetAccum += SingleRippleOffset( textureCoords + TileOffsets[tileIndex], tile + RipplePositionPresets[i], rippleParams, t );
-            	}
-        	}
-		}
-        else
-		{
-			for ( int tileIndex = 0; tileIndex < 8; tileIndex ++ )
-        	{
-            	for ( int i = 0; i < 3; i++ )
-            	{
-                	offsetAccum += SingleRippleOffset( textureCoords + TileOffsets[tileIndex], tile + RipplePositionPresets[i], rippleParams, t );
-            	}
-        	}
-		}
-        
-	}
-
-    return textureCoords + offsetAccum;
-}
 
 #endif // WI_SHADER_GLOBALS_HF
