@@ -24,6 +24,8 @@ namespace wi
 		std::string fileName; // save to this file on closing if not empty
 		std::string directory; // the directory part from the fileName
 
+		uint64_t CrucibleVersion = 0; // version number specific to crucible.
+
 		void CreateEmpty(); // creates new archive in write mode
 
 	public:
@@ -46,6 +48,7 @@ namespace wi
 		const uint8_t* GetData() const { return data_ptr; }
 		size_t GetPos() const { return pos; }
 		constexpr uint64_t GetVersion() const { return version; }
+		constexpr uint64_t GetCrucibleVersion() const { return CrucibleVersion; }
 		constexpr bool IsReadMode() const { return readMode; }
 		// This can set the archive into either read or write mode, and it will reset it's position
 		void SetReadModeAndResetPos(bool isReadMode);

@@ -5,9 +5,12 @@ namespace wi
 {
 
 	// this should always be only INCREMENTED and only if a new serialization is implemeted somewhere!
-	static constexpr uint64_t __archiveVersion = 153;
+	static constexpr uint64_t __archiveVersion = 154;
 	// this is the version number of which below the archive is not compatible with the current version
 	static constexpr uint64_t __archiveVersionBarrier = 22;
+
+	// this should always be only INCREMENTED and only if a new serialization is implemeted somewhere!
+	static constexpr uint64_t __archiveCrucibleVersion = 1;
 
 	// version history is logged in ArchiveVersionHistory.txt file!
 
@@ -55,6 +58,7 @@ namespace wi
 	void Archive::CreateEmpty()
 	{
 		version = __archiveVersion;
+		CrucibleVersion = __archiveCrucibleVersion;
 		DATA.resize(128); // starting size
 		data_ptr = DATA.data();
 		SetReadModeAndResetPos(false);
@@ -68,10 +72,16 @@ namespace wi
 		if (readMode)
 		{
 			(*this) >> version;
+			/*if (version > 90 || version != 90 || version != 150 || version != 151 || version != 152 || version != 153)
+			{
+				(*this) >> CrucibleVersion;
+			}*/
+			
 		}
 		else
 		{
 			(*this) << version;
+			//(*this) << CrucibleVersion;
 		}
 	}
 
