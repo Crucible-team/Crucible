@@ -14,6 +14,8 @@ public:
 
 	void UpdateData();
 
+	void  RefreshColorsList();
+
 	wi::EmittedParticleSystem* GetEmitter();
 
 	wi::gui::Button restartButton;
@@ -63,8 +65,9 @@ public:
 
 	//curcible
 	//user defined colors
+	wi::gui::Button AddColorButton;
+	wi::gui::TreeList ColorList;
 	wi::gui::ColorPicker colorPicker1;
-	wi::gui::ColorPicker colorPicker2;
 
 	void ResizeLayout() override;
 };

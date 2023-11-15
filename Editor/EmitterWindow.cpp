@@ -514,7 +514,57 @@ void EmitterWindow::Create(EditorComponent* _editor)
 	emitColorRandomnessSlider.SetTooltip("Set the randomness of color for the emitted particles.");
 	AddWidget(&emitColorRandomnessSlider);
 
-	colorPicker1.Create("Color1", wi::gui::Window::WindowControls::NONE);
+	AddColorButton.Create("Add Color");
+	AddColorButton.SetPos(XMFLOAT2(x, y += step));
+	AddColorButton.SetSize(XMFLOAT2(wid, itemheight));
+	AddColorButton.OnClick([&](wi::gui::EventArgs args) {
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			if (emitter->user_defined_colors.size() < 32 )
+			{
+				emitter->user_defined_colors.push_back(float4(wi::random::GetRandom(0.0f, 1.0f), wi::random::GetRandom(0.0f, 1.0f), wi::random::GetRandom(0.0f, 1.0f), 1.0f));
+				RefreshColorsList();
+			}
+			
+		}
+		});
+	AddColorButton.SetTooltip("Add a color for color randomness.");
+	AddWidget(&AddColorButton);
+
+	ColorList.Create("Colors");
+	ColorList.SetSize(XMFLOAT2(wid, 200));
+	ColorList.SetPos(XMFLOAT2(x, y += step));
+	ColorList.OnSelect([=](wi::gui::EventArgs args) {
+		wi::scene::Scene& scene = editor->GetCurrentScene();
+
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			uint32_t channelIndex = args.userdata;
+			if (emitter->user_defined_colors.size() > channelIndex)
+			{
+				colorPicker1.SetPickColor(wi::Color::fromFloat4(emitter->user_defined_colors[channelIndex]));
+			}
+			
+		}
+		});
+	ColorList.OnDelete([=](wi::gui::EventArgs args) {
+		wi::scene::Scene& scene = editor->GetCurrentScene();
+
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			uint32_t channelIndex = args.userdata;
+			emitter->user_defined_colors.erase(emitter->user_defined_colors.begin() + channelIndex);
+		}
+		RefreshColorsList();
+		});
+	AddWidget(&ColorList);
+
+	y += ColorList.GetScale().y;
+
+	colorPicker1.Create("Color", wi::gui::Window::WindowControls::NONE);
 	colorPicker1.SetPos(XMFLOAT2(10, y += step));
 	colorPicker1.SetVisible(true);
 	colorPicker1.SetEnabled(true);
@@ -523,28 +573,22 @@ void EmitterWindow::Create(EditorComponent* _editor)
 		auto emitter = GetEmitter();
 		if (emitter != nullptr)
 		{
-			emitter->user_defined_colors[0] = args.color.toFloat4();
+			int count = ColorList.GetItemCount();
+			for (int i = 0; i < count; ++i)
+			{
+				if (!ColorList.GetItem(i).selected)
+					continue;
+				if (i >= emitter->user_defined_colors.size())
+					return;
+
+				emitter->user_defined_colors[i] = args.color.toFloat4();
+			}
+			
 		}
 	});
 	AddWidget(&colorPicker1);
 
 	y += colorPicker1.GetScale().y;
-
-	colorPicker2.Create("Color2", wi::gui::Window::WindowControls::NONE);
-	colorPicker2.SetPos(XMFLOAT2(10, y += step));
-	colorPicker2.SetVisible(true);
-	colorPicker2.SetEnabled(true);
-	colorPicker2.OnColorChanged([&](wi::gui::EventArgs args) {
-
-		auto emitter = GetEmitter();
-		if (emitter != nullptr)
-		{
-			emitter->user_defined_colors[1] = args.color.toFloat4();
-		}
-		});
-	AddWidget(&colorPicker2);
-
-	y += colorPicker2.GetScale().y;
 
 	emitMotionBlurSlider.Create(0.0f, 1.0f, 1.0f, 100000, "Motion blur: ");
 	emitMotionBlurSlider.SetSize(XMFLOAT2(wid, itemheight));
@@ -690,6 +734,9 @@ void EmitterWindow::Create(EditorComponent* _editor)
 
 void EmitterWindow::SetEntity(Entity entity)
 {
+	if (this->entity == entity)
+		return;
+
 	this->entity = entity;
 
 	auto emitter = GetEmitter();
@@ -724,9 +771,13 @@ void EmitterWindow::SetEntity(Entity entity)
 		emitRandomnessSlider.SetValue(emitter->random_factor);
 
 		colorPicker1.SetEnabled(true);
-		colorPicker2.SetEnabled(true);
-		colorPicker1.SetPickColor(wi::Color::fromFloat4(emitter->user_defined_colors[0]));
-		colorPicker2.SetPickColor(wi::Color::fromFloat4(emitter->user_defined_colors[1]));
+
+		RefreshColorsList();
+
+		if (ColorList.GetItemCount() > 0)
+		{
+			ColorList.Select(0);
+		}
 
 		emitLifeRandomnessSlider.SetValue(emitter->random_life);
 		emitColorRandomnessSlider.SetValue(emitter->random_color);
@@ -813,6 +864,33 @@ void EmitterWindow::UpdateData()
 
 }
 
+void EmitterWindow::RefreshColorsList()
+{
+	auto emitter = GetEmitter();
+	if (emitter == nullptr)
+	{
+		return;
+	}
+
+	
+
+	uint32_t channelIndex = 0;
+	ColorList.ClearItems();
+	for (const float4& channel : emitter->user_defined_colors)
+	{
+		wi::gui::TreeList::Item item;
+
+		int nameNum = channelIndex + 1;
+		item.name = "color " + std::to_string(nameNum);
+
+		//item.userdata = 0ull;
+		item.userdata = channelIndex;
+		ColorList.AddItem(item);
+
+		channelIndex++;
+	}
+}
+
 void EmitterWindow::ResizeLayout()
 {
 	wi::gui::Window::ResizeLayout();
@@ -873,8 +951,10 @@ void EmitterWindow::ResizeLayout()
 	add(emitRandomnessSlider);
 	add(emitColorRandomnessSlider);
 
+	add_fullwidth(AddColorButton);
+	add_fullwidth(ColorList);
+
 	add_fullwidth(colorPicker1);
-	add_fullwidth(colorPicker2);
 
 	add(emitMotionBlurSlider);
 	add(emitMassSlider);
