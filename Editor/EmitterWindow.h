@@ -31,6 +31,7 @@ public:
 	wi::gui::CheckBox volumeCheckBox;
 	wi::gui::CheckBox frameBlendingCheckBox;
 	wi::gui::CheckBox collidersDisabledCheckBox;
+	wi::gui::CheckBox takeColorCheckBox;
 	wi::gui::Slider emitCountSlider;
 	wi::gui::Slider emitSizeSlider;
 	wi::gui::Slider emitRotationSlider;
