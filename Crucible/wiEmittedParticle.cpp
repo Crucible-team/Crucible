@@ -442,7 +442,9 @@ namespace wi
 			{
 				cb.numColors = 0;
 			}
-			
+
+			cb.volumetype = (uint32_t)volumetype;
+			cb.sphereradius = sphere_radius;
 
 			cb.xEmitterOptions = 0;
 			if (IsSPHEnabled())
@@ -1048,6 +1050,12 @@ namespace wi
 				}
 			}
 
+			if (archive.GetVersion() >= 155)
+			{
+				archive >> (uint32_t&)volumetype;
+				archive >> sphere_radius;
+			}
+
 			
 
 		}
@@ -1103,6 +1111,12 @@ namespace wi
 				{
 					archive << user_defined_colors[i];
 				}
+			}
+
+			if (archive.GetVersion() >= 155)
+			{
+				archive << (uint32_t)volumetype;
+				archive << sphere_radius;
 			}
 		}
 	}

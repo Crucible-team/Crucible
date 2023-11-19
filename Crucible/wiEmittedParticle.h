@@ -90,6 +90,12 @@ namespace wi
 			FLAG_USE_RAIN_BLOCKER = 1 << 8,
 			FLAG_TAKE_COLOR_FROM_MESH = 1 << 9,
 		};
+
+		enum class VolumeType
+		{
+			Box,
+			Sphere,
+		} volumetype = VolumeType::Sphere;
 		uint32_t _flags = FLAG_EMPTY;
 
 		PARTICLESHADERTYPE shaderType = SOFT;
@@ -109,7 +115,8 @@ namespace wi
 		float rotation = 0.0f;
 		float motionBlurAmount = 0.0f;
 		float mass = 1.0f;
-		float random_color = 0;
+		float random_color = 0.0f;
+		float sphere_radius = 0.0f;
 
 		XMFLOAT3 velocity = {}; // starting velocity of all new particles
 		XMFLOAT3 gravity = {}; // constant gravity force

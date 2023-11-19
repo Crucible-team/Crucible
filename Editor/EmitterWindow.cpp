@@ -83,6 +83,36 @@ void EmitterWindow::Create(EditorComponent* _editor)
 	shaderTypeComboBox.SetTooltip("Choose a shader type for the particles. This is responsible of how they will be rendered.");
 	AddWidget(&shaderTypeComboBox);
 
+	VolumetypeComboBox.Create("VolumeType: ");
+	VolumetypeComboBox.SetPos(XMFLOAT2(x, y += step));
+	VolumetypeComboBox.SetSize(XMFLOAT2(wid, itemheight));
+	VolumetypeComboBox.AddItem("BOX", (uint64_t)wi::EmittedParticleSystem::VolumeType::Box);
+	VolumetypeComboBox.AddItem("SPHERE", (uint64_t)wi::EmittedParticleSystem::VolumeType::Sphere);
+	VolumetypeComboBox.OnSelect([&](wi::gui::EventArgs args) {
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			emitter->volumetype = (wi::EmittedParticleSystem::VolumeType)args.userdata;
+		}
+		});
+	VolumetypeComboBox.SetEnabled(false);
+	VolumetypeComboBox.SetTooltip("Choose a volume type for the particles. This is responsible of how they will be spawned with out a mesh.");
+	AddWidget(&VolumetypeComboBox);
+
+	sphereradius_Slider.Create(0.0f, 100.0f, 1.0f, 100000, "Sphere Radius: ");
+	sphereradius_Slider.SetSize(XMFLOAT2(wid, itemheight));
+	sphereradius_Slider.SetPos(XMFLOAT2(x, y += step));
+	sphereradius_Slider.OnSlide([&](wi::gui::EventArgs args) {
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			emitter->sphere_radius = args.fValue;
+		}
+		});
+	sphereradius_Slider.SetEnabled(false);
+	sphereradius_Slider.SetTooltip("Set the sphere radius of the particles that they spawn in.");
+	AddWidget(&sphereradius_Slider);
+
 
 	sortCheckBox.Create("Sorting: ");
 	sortCheckBox.SetPos(XMFLOAT2(x, y += step));
@@ -761,6 +791,7 @@ void EmitterWindow::SetEntity(Entity entity)
 		SetEnabled(true);
 
 		shaderTypeComboBox.SetSelectedByUserdataWithoutCallback((uint64_t)emitter->shaderType);
+		VolumetypeComboBox.SetSelectedByUserdataWithoutCallback((uint64_t)emitter->volumetype);
 
 		sortCheckBox.SetCheck(emitter->IsSorted());
 		depthCollisionsCheckBox.SetCheck(emitter->IsDepthCollisionEnabled());
@@ -785,6 +816,8 @@ void EmitterWindow::SetEntity(Entity entity)
 		emitScalingSlider.SetValue(emitter->scaleX);
 		emitLifeSlider.SetValue(emitter->life);
 		emitRandomnessSlider.SetValue(emitter->random_factor);
+
+		sphereradius_Slider.SetValue(emitter->sphere_radius);
 
 		colorPicker1.SetEnabled(true);
 
@@ -948,6 +981,8 @@ void EmitterWindow::ResizeLayout()
 	add_fullwidth(restartButton);
 	add(meshComboBox);
 	add(shaderTypeComboBox);
+	add(VolumetypeComboBox);
+	add(sphereradius_Slider);
 	add_right(sortCheckBox);
 	add_right(depthCollisionsCheckBox);
 	add_right(sphCheckBox);

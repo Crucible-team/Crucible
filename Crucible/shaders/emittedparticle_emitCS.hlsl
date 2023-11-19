@@ -141,7 +141,25 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 #ifdef EMITTER_VOLUME
 	// Emit inside volume:
-	emitPos = float3(rng.next_float() * 2 - 1, rng.next_float() * 2 - 1, rng.next_float() * 2 - 1);
+	if(volumetype == 0)
+	{
+		emitPos = float3(rng.next_float() * 2 - 1, rng.next_float() * 2 - 1, rng.next_float() * 2 - 1);
+	}
+	else
+	{
+		float z = rng.next_float() * 2 - 1; // Random z value between -1 and 1
+		float t = rng.next_float() * 2 * 3.14159265; // Random angle
+		float r = sqrt(1 - z * z); // Radius on the xy-plane
+		float x = r * cos(t); // x-coordinate
+		float y = r * sin(t); // y-coordinate
+		
+		float3 sphere = float3(x, y, z);
+		
+		float sphereRadius = 5.0; // Set the radius of your sphere
+
+		// Generate a random position within the sphere
+		emitPos = sphere * (rng.next_float() * sphereRadius);
+	}
 #else
 	// Just emit from center point:
 	emitPos = 0;

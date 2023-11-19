@@ -70,6 +70,10 @@ public:
 	wi::gui::TreeList ColorList;
 	wi::gui::ColorPicker colorPicker1;
 
+	wi::gui::ComboBox VolumetypeComboBox;
+
+	wi::gui::Slider sphereradius_Slider;
+
 	void ResizeLayout() override;
 };
 

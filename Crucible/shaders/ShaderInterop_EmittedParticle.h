@@ -94,8 +94,13 @@ CBUFFER(EmittedParticleCB, CBSLOT_OTHER_EMITTEDPARTICLE)
 	float3		xParticleVelocity;
 	float		xParticleDrag;
 
+	// Crucible changes
 	float4 colors[32];
-	uint3 padding; // padding numColors to uint4
+	uint3 padding; // padding sphereradius to uint4
+	float sphereradius;
+	uint3 padding1; // padding volumetype to uint4
+	uint volumetype;
+	uint3 padding2; // padding numColors to uint4
 	uint numColors;
 };
 
