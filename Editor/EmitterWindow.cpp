@@ -99,7 +99,7 @@ void EmitterWindow::Create(EditorComponent* _editor)
 	VolumetypeComboBox.SetTooltip("Choose a volume type for the particles. This is responsible of how they will be spawned with out a mesh.");
 	AddWidget(&VolumetypeComboBox);
 
-	sphereradius_Slider.Create(0.0f, 100.0f, 1.0f, 100000, "Sphere Radius: ");
+	sphereradius_Slider.Create(0.0f, 100.0f, 1.0f, 100000, " Outer Sphere Radius: ");
 	sphereradius_Slider.SetSize(XMFLOAT2(wid, itemheight));
 	sphereradius_Slider.SetPos(XMFLOAT2(x, y += step));
 	sphereradius_Slider.OnSlide([&](wi::gui::EventArgs args) {
@@ -110,8 +110,40 @@ void EmitterWindow::Create(EditorComponent* _editor)
 		}
 		});
 	sphereradius_Slider.SetEnabled(false);
-	sphereradius_Slider.SetTooltip("Set the sphere radius of the particles that they spawn in.");
+	sphereradius_Slider.SetTooltip("Set the sphere radius of the particles they spawn in.");
 	AddWidget(&sphereradius_Slider);
+
+	innersphereradius_Slider.Create(0.0f, 100.0f, 1.0f, 100000, "Inner Sphere Radius: ");
+	innersphereradius_Slider.SetSize(XMFLOAT2(wid, itemheight));
+	innersphereradius_Slider.SetPos(XMFLOAT2(x, y += step));
+	innersphereradius_Slider.OnSlide([&](wi::gui::EventArgs args) {
+		auto emitter = GetEmitter();
+		//Scene& scene = editor->GetCurrentScene();
+		//float dTime = scene.time + 5;
+		if (emitter != nullptr)
+		{
+			if (args.fValue > emitter->sphere_radius)
+			{
+				emitter->inner_sphere_radius = emitter->sphere_radius;
+				innersphereradius_Slider.SetValue(emitter->sphere_radius);
+				
+				//TODO: figure out how to get delta time???
+				
+				/*if (dTime < scene.time)
+				{
+					wi::backlog::post("what the hell ya doing fool you can't have the inner higher than outer!", wi::backlog::LogLevel::Error);
+				}*/
+				
+			}
+			else
+			{
+				emitter->inner_sphere_radius = args.fValue;
+			}
+		}
+		});
+	innersphereradius_Slider.SetEnabled(false);
+	innersphereradius_Slider.SetTooltip("Set the innersphere radius of the particles they wont spawn in.");
+	AddWidget(&innersphereradius_Slider);
 
 
 	sortCheckBox.Create("Sorting: ");
@@ -818,6 +850,7 @@ void EmitterWindow::SetEntity(Entity entity)
 		emitRandomnessSlider.SetValue(emitter->random_factor);
 
 		sphereradius_Slider.SetValue(emitter->sphere_radius);
+		innersphereradius_Slider.SetValue(emitter->inner_sphere_radius);
 
 		colorPicker1.SetEnabled(true);
 
@@ -983,6 +1016,7 @@ void EmitterWindow::ResizeLayout()
 	add(shaderTypeComboBox);
 	add(VolumetypeComboBox);
 	add(sphereradius_Slider);
+	add(innersphereradius_Slider);
 	add_right(sortCheckBox);
 	add_right(depthCollisionsCheckBox);
 	add_right(sphCheckBox);

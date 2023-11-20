@@ -155,10 +155,14 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		
 		float3 sphere = float3(x, y, z);
 		
-		float sphereRadius = 5.0; // Set the radius of your sphere
+		//float sphereRadius = 5.0; // Set the radius of your sphere
+
+		// Generate a random radius between innerRadius and outerRadius
+		float radius = innersphereradius + (sphereradius - innersphereradius) * sqrt(rng.next_float());
+    
 
 		// Generate a random position within the sphere
-		emitPos = sphere * (rng.next_float() * sphereRadius);
+		emitPos = sphere * radius;
 	}
 #else
 	// Just emit from center point:

@@ -445,6 +445,7 @@ namespace wi
 
 			cb.volumetype = (uint32_t)volumetype;
 			cb.sphereradius = sphere_radius;
+			cb.innersphereradius = inner_sphere_radius;
 
 			cb.xEmitterOptions = 0;
 			if (IsSPHEnabled())

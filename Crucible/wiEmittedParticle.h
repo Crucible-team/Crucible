@@ -117,6 +117,7 @@ namespace wi
 		float mass = 1.0f;
 		float random_color = 0.0f;
 		float sphere_radius = 0.0f;
+		float inner_sphere_radius = 0.0f;
 
 		XMFLOAT3 velocity = {}; // starting velocity of all new particles
 		XMFLOAT3 gravity = {}; // constant gravity force

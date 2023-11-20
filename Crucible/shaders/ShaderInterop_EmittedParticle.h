@@ -96,7 +96,8 @@ CBUFFER(EmittedParticleCB, CBSLOT_OTHER_EMITTEDPARTICLE)
 
 	// Crucible changes
 	float4 colors[32];
-	uint3 padding; // padding sphereradius to uint4
+	uint2 padding; // padding sphereradius to uint4
+	float innersphereradius;
 	float sphereradius;
 	uint3 padding1; // padding volumetype to uint4
 	uint volumetype;

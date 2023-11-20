@@ -73,6 +73,7 @@ public:
 	wi::gui::ComboBox VolumetypeComboBox;
 
 	wi::gui::Slider sphereradius_Slider;
+	wi::gui::Slider innersphereradius_Slider;
 
 	void ResizeLayout() override;
 };
