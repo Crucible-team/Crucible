@@ -1309,19 +1309,9 @@ void EditorComponent::Update(float dt)
 			else
 			{
 				// Physics pick dragger:
-				if (wi::input::Down(wi::input::MOUSE_BUTTON_LEFT) )
+				if (wi::input::Down(wi::input::MOUSE_BUTTON_LEFT))
 				{
-					auto pick  = pickRay;
-
-					if (hovered.entity != INVALID_ENTITY)
-					{
-						RigidBodyPhysicsComponent* rigidbody = scene.rigidbodies.GetComponent(hovered.entity);
-						if (rigidbody != nullptr)
-						{
-							wi::physics::PickDrag(scene, pickRay, physicsDragOp);
-						}
-					}
-					
+					wi::physics::PickDrag(scene, pickRay, physicsDragOp);
 				}
 				else
 				{
