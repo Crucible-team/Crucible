@@ -1614,6 +1614,27 @@ using namespace dx12_internal;
 	void GraphicsDevice_DX12::CopyAllocator::init(GraphicsDevice_DX12* device)
 	{
 		this->device = device;
+#ifdef PLATFORM_XBOX
+		queue = device->queues[QUEUE_COPY].queue;
+#else
+		// On PC we can create secondary copy queue for background uploading tasks:
+		D3D12_COMMAND_QUEUE_DESC desc = {};
+		desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+		desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+		desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+		desc.NodeMask = 0;
+		HRESULT hr = device->device->CreateCommandQueue(&desc, PPV_ARGS(queue));
+		assert(SUCCEEDED(hr));
+		if (FAILED(hr))
+		{
+			std::stringstream ss("");
+			ss << "ID3D12Device::CreateCommandQueue[CopyAllocator] failed! ERROR: 0x" << std::hex << hr;
+			wi::helper::messageBox(ss.str(), "Error!");
+			wi::platform::Exit();
+		}
+		hr = queue->SetName(L"CopyAllocator");
+		assert(SUCCEEDED(hr));
+#endif // PLATFORM_XBOX
 	}
 	GraphicsDevice_DX12::CopyAllocator::CopyCMD GraphicsDevice_DX12::CopyAllocator::allocate(uint64_t staging_size)
 	{
@@ -1683,12 +1704,16 @@ using namespace dx12_internal;
 #ifdef PLATFORM_XBOX
 		std::scoped_lock lock(device->queue_locker); // queue operations are not thread-safe on XBOX
 #endif // PLATFORM_XBOX
-		device->queues[QUEUE_COPY].queue->ExecuteCommandLists(1, commandlists);
-		hr = device->queues[QUEUE_COPY].queue->Signal(cmd.fence.Get(), cmd.fenceValueSignaled);
+
+		queue->ExecuteCommandLists(1, commandlists);
+		hr = queue->Signal(cmd.fence.Get(), cmd.fenceValueSignaled);
 		assert(SUCCEEDED(hr));
+
 		hr = device->queues[QUEUE_GRAPHICS].queue->Wait(cmd.fence.Get(), cmd.fenceValueSignaled);
 		assert(SUCCEEDED(hr));
 		hr = device->queues[QUEUE_COMPUTE].queue->Wait(cmd.fence.Get(), cmd.fenceValueSignaled);
+		assert(SUCCEEDED(hr));
+		hr = device->queues[QUEUE_COPY].queue->Wait(cmd.fence.Get(), cmd.fenceValueSignaled);
 		assert(SUCCEEDED(hr));
 		if (device->queues[QUEUE_VIDEO_DECODE].queue)
 		{
@@ -2433,6 +2458,8 @@ using namespace dx12_internal;
 				wi::helper::messageBox(ss.str(), "Error!");
 				wi::platform::Exit();
 			}
+			hr = queues[QUEUE_GRAPHICS].queue->SetName(L"QUEUE_GRAPHICS");
+			assert(SUCCEEDED(hr));
 			hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, PPV_ARGS(queues[QUEUE_GRAPHICS].fence));
 			assert(SUCCEEDED(hr));
 			if (FAILED(hr))
@@ -2458,6 +2485,8 @@ using namespace dx12_internal;
 				wi::helper::messageBox(ss.str(), "Error!");
 				wi::platform::Exit();
 			}
+			hr = queues[QUEUE_COMPUTE].queue->SetName(L"QUEUE_COMPUTE");
+			assert(SUCCEEDED(hr));
 			hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, PPV_ARGS(queues[QUEUE_COMPUTE].fence));
 			assert(SUCCEEDED(hr));
 			if (FAILED(hr))
@@ -2483,6 +2512,8 @@ using namespace dx12_internal;
 				wi::helper::messageBox(ss.str(), "Error!");
 				wi::platform::Exit();
 			}
+			hr = queues[QUEUE_COPY].queue->SetName(L"QUEUE_COPY");
+			assert(SUCCEEDED(hr));
 			hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, PPV_ARGS(queues[QUEUE_COPY].fence));
 			assert(SUCCEEDED(hr));
 			if (FAILED(hr))
@@ -2506,6 +2537,8 @@ using namespace dx12_internal;
 			if (SUCCEEDED(hr))
 			{
 				capabilities |= GraphicsDeviceCapability::VIDEO_DECODE_H264;
+				hr = queues[QUEUE_VIDEO_DECODE].queue->SetName(L"QUEUE_VIDEO_DECODE");
+				assert(SUCCEEDED(hr));
 				hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, PPV_ARGS(queues[QUEUE_VIDEO_DECODE].fence));
 				assert(SUCCEEDED(hr));
 				if (FAILED(hr))
@@ -2687,6 +2720,35 @@ using namespace dx12_internal;
 			{
 				adapterType = features.UMA() ? AdapterType::IntegratedGpu : AdapterType::DiscreteGpu;
 			}
+		}
+
+		if (features.HighestShaderModel() < D3D_SHADER_MODEL_6_0)
+		{
+			std::string error = "Shader model 6.0 is required, but not supported by your system!\n";
+			error += "Adapter name: " + adapterName + "\n";
+			error += "Adapter type: ";
+			switch (adapterType)
+			{
+			case wi::graphics::AdapterType::IntegratedGpu:
+				error += "Integrated GPU";
+				break;
+			case wi::graphics::AdapterType::DiscreteGpu:
+				error += "Discrete GPU";
+				break;
+			case wi::graphics::AdapterType::VirtualGpu:
+				error += "Virtual GPU";
+				break;
+			case wi::graphics::AdapterType::Cpu:
+				error += "CPU";
+				break;
+			default:
+				error += "Unknown";
+				break;
+			}
+			error += "\nExiting.";
+			wi::helper::messageBox(error, "Error!");
+			wi::backlog::post(error, wi::backlog::LogLevel::Error);
+			wi::platform::Exit();
 		}
 
 		if (features.ConservativeRasterizationTier() >= D3D12_CONSERVATIVE_RASTERIZATION_TIER_1)
@@ -3300,12 +3362,19 @@ using namespace dx12_internal;
 				&allocationInfo,
 				&internal_state->allocation
 			);
-
 			assert(SUCCEEDED(hr));
-			return SUCCEEDED(hr);
-		}
 
-		if (has_flag(desc->misc_flags, ResourceMiscFlag::SPARSE))
+			hr = device->CreatePlacedResource(
+				internal_state->allocation->GetHeap(),
+				internal_state->allocation->GetOffset(),
+				&resourceDesc,
+				resourceState,
+				nullptr,
+				PPV_ARGS(internal_state->resource)
+			);
+			assert(SUCCEEDED(hr));
+		}
+		else if (has_flag(desc->misc_flags, ResourceMiscFlag::SPARSE))
 		{
 			hr = device->CreateReservedResource(
 				&resourceDesc,
@@ -3313,6 +3382,7 @@ using namespace dx12_internal;
 				nullptr,
 				PPV_ARGS(internal_state->resource)
 			);
+			assert(SUCCEEDED(hr));
 			buffer->sparse_page_size = D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES;
 		}
 		else
@@ -3325,8 +3395,9 @@ using namespace dx12_internal;
 				&internal_state->allocation,
 				PPV_ARGS(internal_state->resource)
 			);
+			assert(SUCCEEDED(hr));
 		}
-		assert(SUCCEEDED(hr));
+
 		if (!SUCCEEDED(hr))
 			return false;
 
@@ -3387,18 +3458,24 @@ using namespace dx12_internal;
 			if (has_flag(desc->bind_flags, BindFlag::UNORDERED_ACCESS))
 			{
 				CreateSubresource(buffer, SubresourceType::UAV, 0);
-
-				if (has_flag(desc->bind_flags, BindFlag::UNORDERED_ACCESS) && !has_flag(desc->misc_flags, ResourceMiscFlag::BUFFER_RAW))
-				{
-					// Create raw buffer if doesn't exist for ClearUAV:
-					D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
-					uav_desc.Format = DXGI_FORMAT_R32_TYPELESS;
-					uav_desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-					uav_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-					uav_desc.Buffer.NumElements = uint32_t(desc->size / sizeof(uint32_t));
-					internal_state->uav_raw.init(this, uav_desc, internal_state->resource.Get());
-				}
 			}
+		}
+
+		if (
+			has_flag(desc->bind_flags, BindFlag::UNORDERED_ACCESS) &&
+			(
+				!has_flag(desc->misc_flags, ResourceMiscFlag::BUFFER_RAW) ||
+				has_flag(desc->misc_flags, ResourceMiscFlag::NO_DEFAULT_DESCRIPTORS)
+			)
+		)
+		{
+			// Create raw buffer if doesn't exist for ClearUAV:
+			D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
+			uav_desc.Format = DXGI_FORMAT_R32_TYPELESS;
+			uav_desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+			uav_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+			uav_desc.Buffer.NumElements = uint32_t(desc->size / sizeof(uint32_t));
+			internal_state->uav_raw.init(this, uav_desc, internal_state->resource.Get());
 		}
 
 		return SUCCEEDED(hr);
@@ -3546,6 +3623,7 @@ using namespace dx12_internal;
 			}
 		}
 
+#ifndef PLATFORM_XBOX // Xbox is detected as UMA, but the UMA texture upload path is disabled for now
 		if (
 			initial_data != nullptr &&
 			allocationDesc.HeapType == D3D12_HEAP_TYPE_DEFAULT &&
@@ -3556,6 +3634,7 @@ using namespace dx12_internal;
 			//	It will be used with WriteToSubresource to avoid GPU copy from UPLOAD to DEAFULT
 			allocationDesc.CustomPool = allocationhandler->uma_pool.Get();
 		}
+#endif // PLATFORM_XBOX
 
 #ifdef PLATFORM_XBOX
 		wi::graphics::xbox::ApplyTextureCreationFlags(texture->desc, resourcedesc.Flags, allocationDesc.ExtraHeapFlags);

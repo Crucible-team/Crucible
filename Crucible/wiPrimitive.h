@@ -5,6 +5,7 @@
 #include "wiECS.h"
 
 #include <limits>
+#include <cassert>
 
 namespace wi::primitive
 {
@@ -38,6 +39,7 @@ namespace wi::primitive
 		XMFLOAT3 getCenter() const;
 		XMFLOAT3 getHalfWidth() const;
 		XMMATRIX getAsBoxMatrix() const;
+		XMMATRIX getUnormRemapMatrix() const;
 		float getArea() const;
 		float getRadius() const;
 		INTERSECTION_TYPE intersects2D(const AABB& b) const;
@@ -81,7 +83,10 @@ namespace wi::primitive
 		XMFLOAT3 center;
 		float radius;
 		Sphere() :center(XMFLOAT3(0, 0, 0)), radius(0) {}
-		Sphere(const XMFLOAT3& c, float r) :center(c), radius(r) {}
+		Sphere(const XMFLOAT3& c, float r) :center(c), radius(r)
+		{
+			assert(radius >= 0);
+		}
 		bool intersects(const AABB& b) const;
 		bool intersects(const Sphere& b) const;
 		bool intersects(const Sphere& b, float& dist) const;
@@ -95,6 +100,9 @@ namespace wi::primitive
 		bool intersects(const Ray& b) const;
 		bool intersects(const Ray& b, float& dist) const;
 		bool intersects(const Ray& b, float& dist, XMFLOAT3& direction) const;
+
+		// Construct a matrix that will orient to position according to surface normal:
+		XMFLOAT4X4 GetPlacementOrientation(const XMFLOAT3& position, const XMFLOAT3& normal) const;
 	};
 	struct Capsule
 	{
@@ -102,12 +110,17 @@ namespace wi::primitive
 		XMFLOAT3 tip = XMFLOAT3(0, 0, 0);
 		float radius = 0;
 		Capsule() = default;
-		Capsule(const XMFLOAT3& base, const XMFLOAT3& tip, float radius) :base(base), tip(tip), radius(radius) {}
+		Capsule(const XMFLOAT3& base, const XMFLOAT3& tip, float radius) :base(base), tip(tip), radius(radius)
+		{
+			assert(radius >= 0);
+		}
 		Capsule(const Sphere& sphere, float height) :
 			base(XMFLOAT3(sphere.center.x, sphere.center.y - sphere.radius, sphere.center.z)),
 			tip(XMFLOAT3(base.x, base.y + height, base.z)),
 			radius(sphere.radius)
-		{}
+		{
+			assert(radius >= 0);
+		}
 		inline AABB getAABB() const
 		{
 			XMFLOAT3 halfWidth = XMFLOAT3(radius, radius, radius);
@@ -115,7 +128,9 @@ namespace wi::primitive
 			base_aabb.createFromHalfWidth(base, halfWidth);
 			AABB tip_aabb;
 			tip_aabb.createFromHalfWidth(tip, halfWidth);
-			return AABB::Merge(base_aabb, tip_aabb);
+			AABB result = AABB::Merge(base_aabb, tip_aabb);
+			assert(result.IsValid());
+			return result;
 		}
 		bool intersects(const Capsule& b, XMFLOAT3& position, XMFLOAT3& incident_normal, float& penetration_depth) const;
 		bool intersects(const Sphere& b) const;
@@ -128,6 +143,9 @@ namespace wi::primitive
 		bool intersects(const Ray& b, float& dist) const;
 		bool intersects(const Ray& b, float& dist, XMFLOAT3& direction) const;
 		bool intersects(const XMFLOAT3& point) const;
+
+		// Construct a matrix that will orient to position according to surface normal:
+		XMFLOAT4X4 GetPlacementOrientation(const XMFLOAT3& position, const XMFLOAT3& normal) const;
 	};
 	struct Plane
 	{
@@ -176,6 +194,9 @@ namespace wi::primitive
 		bool intersects(const Plane& b, float& dist, XMFLOAT3& direction) const;
 
 		void CreateFromPoints(const XMFLOAT3& a, const XMFLOAT3& b);
+
+		// Construct a matrix that will orient to position according to surface normal:
+		XMFLOAT4X4 GetPlacementOrientation(const XMFLOAT3& position, const XMFLOAT3& normal) const;
 	};
 
 	struct Frustum

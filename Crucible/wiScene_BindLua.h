@@ -2,8 +2,7 @@
 #include "wiLua.h"
 #include "wiLuna.h"
 #include "wiScene.h"
-#include <LUA/lua.h>
-#include <wiMath_BindLua.h>
+#include "wiMath_BindLua.h"
 
 namespace wi::lua::scene
 {
@@ -40,6 +39,7 @@ namespace wi::lua::scene
 
 		int Intersects(lua_State* L);
 
+		int FindAllEntities(lua_State* L);
 		int Entity_FindByName(lua_State* L);
 		int Entity_Remove(lua_State* L);
 		int Entity_Duplicate(lua_State* L);
@@ -65,6 +65,8 @@ namespace wi::lua::scene
 		int Component_CreateExpression(lua_State* L);
 		int Component_CreateHumanoid(lua_State* L);
 		int Component_CreateDecal(lua_State* L);
+		int Component_CreateSprite(lua_State* L);
+		int Component_CreateFont(lua_State* L);
 
 		int Component_GetName(lua_State* L);
 		int Component_GetLayer(lua_State* L);
@@ -89,6 +91,8 @@ namespace wi::lua::scene
 		int Component_GetExpression(lua_State* L);
 		int Component_GetHumanoid(lua_State* L);
 		int Component_GetDecal(lua_State* L);
+		int Component_GetSprite(lua_State* L);
+		int Component_GetFont(lua_State* L);
 
 		int Component_GetNameArray(lua_State* L);
 		int Component_GetLayerArray(lua_State* L);
@@ -113,6 +117,8 @@ namespace wi::lua::scene
 		int Component_GetExpressionArray(lua_State* L);
 		int Component_GetHumanoidArray(lua_State* L);
 		int Component_GetDecalArray(lua_State* L);
+		int Component_GetSpriteArray(lua_State* L);
+		int Component_GetFontArray(lua_State* L);
 
 		int Entity_GetNameArray(lua_State* L);
 		int Entity_GetLayerArray(lua_State* L);
@@ -138,6 +144,8 @@ namespace wi::lua::scene
 		int Entity_GetExpressionArray(lua_State* L);
 		int Entity_GetHumanoidArray(lua_State* L);
 		int Entity_GetDecalArray(lua_State* L);
+		int Entity_GetSpriteArray(lua_State* L);
+		int Entity_GetFontArray(lua_State* L);
 
 		int Component_RemoveName(lua_State* L);
 		int Component_RemoveLayer(lua_State* L);
@@ -163,6 +171,8 @@ namespace wi::lua::scene
 		int Component_RemoveExpression(lua_State* L);
 		int Component_RemoveHumanoid(lua_State* L);
 		int Component_RemoveDecal(lua_State* L);
+		int Component_RemoveSprite(lua_State* L);
+		int Component_RemoveFont(lua_State* L);
 
 		int Component_Attach(lua_State* L);
 		int Component_Detach(lua_State* L);
@@ -199,6 +209,8 @@ namespace wi::lua::scene
 		int Component_GetArmorArray(lua_State* L);
 		int Entity_GetArmorArray(lua_State* L);
 		int Component_RemoveArmor(lua_State* L);
+
+		int Entity_FindAllByName(lua_State* L);
 
 
 	};
@@ -353,6 +365,9 @@ namespace wi::lua::scene
 		int GetScale(lua_State* L);
 		int IsDirty(lua_State* L);
 		int SetDirty(lua_State* L);
+		int SetScale(lua_State* L);
+		int SetRotation(lua_State* L);
+		int SetPosition(lua_State* L);
 	};
 
 	class CameraComponent_BindLua
@@ -392,6 +407,7 @@ namespace wi::lua::scene
 		int GetPosition(lua_State* L);
 		int GetLookDirection(lua_State* L);
 		int GetUpDirection(lua_State* L);
+		int GetRightDirection(lua_State* L);
 		int SetPosition(lua_State* L);
 		int SetLookDirection(lua_State* L);
 		int SetUpDirection(lua_State* L);
@@ -832,6 +848,8 @@ namespace wi::lua::scene
 		int GetLodDistanceMultiplier(lua_State* L);
 		int GetDrawDistance(lua_State* L);
 		int IsForeground(lua_State* L);
+		int IsNotVisibleInMainCamera(lua_State* L);
+		int IsNotVisibleInReflections(lua_State* L);
 
 		int SetMeshID(lua_State* L);
 		int SetCascadeMask(lua_State* L);
@@ -842,6 +860,9 @@ namespace wi::lua::scene
 		int SetLodDistanceMultiplier(lua_State* L);
 		int SetDrawDistance(lua_State* L);
 		int SetForeground(lua_State* L);
+		int SetNotVisibleInMainCamera(lua_State* L);
+		int SetNotVisibleInReflections(lua_State* L);
+		int SetRenderable(lua_State* L);
 	};
 
 	class InverseKinematicsComponent_BindLua
@@ -1523,6 +1544,11 @@ namespace wi::lua::scene
 			windWaveSize = FloatProperty(&component->windWaveSize);
 			windSpeed = FloatProperty(&component->windSpeed);
 			stars = FloatProperty(&component->stars);
+			rainAmount = FloatProperty(&component->rain_amount);
+			rainLength = FloatProperty(&component->rain_length);
+			rainSpeed = FloatProperty(&component->rain_speed);
+			rainScale = FloatProperty(&component->rain_scale);
+			rainColor = VectorProperty(&component->rain_color);
 			gravity = VectorProperty(&component->gravity);
 
 			OceanParameters = Weather_OceanParams_Property(&component->oceanParameters);
@@ -1567,6 +1593,11 @@ namespace wi::lua::scene
 		FloatProperty windWaveSize;
 		FloatProperty windSpeed;
 		FloatProperty stars;
+		FloatProperty rainAmount;
+		FloatProperty rainLength;
+		FloatProperty rainSpeed;
+		FloatProperty rainScale;
+		VectorProperty rainColor;
 
 		PropertyFunction(sunColor)
 		PropertyFunction(sunDirection)
@@ -1591,6 +1622,11 @@ namespace wi::lua::scene
 		PropertyFunction(windWaveSize)
 		PropertyFunction(windSpeed)
 		PropertyFunction(stars)
+		PropertyFunction(rainAmount)
+		PropertyFunction(rainLength)
+		PropertyFunction(rainSpeed)
+		PropertyFunction(rainScale)
+		PropertyFunction(rainColor)
 
 		Weather_OceanParams_Property OceanParameters;
 		Weather_AtmosphereParams_Property AtmosphereParameters;
@@ -1775,6 +1811,8 @@ namespace wi::lua::scene
 		int GetBoneEntity(lua_State* L);
 		int SetLookAtEnabled(lua_State* L);
 		int SetLookAt(lua_State* L);
+		int SetRagdollPhysicsEnabled(lua_State* L);
+		int IsRagdollPhysicsEnabled(lua_State* L);
 	};
 
 	class DecalComponent_BindLua

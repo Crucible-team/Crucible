@@ -14,6 +14,8 @@ public:
 
 	void UpdateData();
 
+	void  RefreshColorsList();
+
 	wi::EmittedParticleSystem* GetEmitter();
 
 	wi::gui::Button restartButton;
@@ -29,6 +31,7 @@ public:
 	wi::gui::CheckBox volumeCheckBox;
 	wi::gui::CheckBox frameBlendingCheckBox;
 	wi::gui::CheckBox collidersDisabledCheckBox;
+	wi::gui::CheckBox takeColorCheckBox;
 	wi::gui::Slider emitCountSlider;
 	wi::gui::Slider emitSizeSlider;
 	wi::gui::Slider emitRotationSlider;
@@ -60,6 +63,17 @@ public:
 	wi::gui::TextInputField framesYInput;
 	wi::gui::TextInputField frameCountInput;
 	wi::gui::TextInputField frameStartInput;
+
+	//curcible
+	//user defined colors
+	wi::gui::Button AddColorButton;
+	wi::gui::TreeList ColorList;
+	wi::gui::ColorPicker colorPicker1;
+
+	wi::gui::ComboBox VolumetypeComboBox;
+
+	wi::gui::Slider sphereradius_Slider;
+	wi::gui::Slider innersphereradius_Slider;
 
 	void ResizeLayout() override;
 };

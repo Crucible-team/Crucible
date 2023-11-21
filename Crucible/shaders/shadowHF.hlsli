@@ -64,7 +64,7 @@ inline float3 shadow_2D(in ShaderEntity light, in float3 shadow_pos, in float2 s
 
 inline float3 shadow_cube(in ShaderEntity light, in float3 Lunnormalized)
 {
-	const float remapped_distance = light.GetCubemapDepthRemapNear() + light.GetCubemapDepthRemapFar() / (max(max(abs(Lunnormalized.x), abs(Lunnormalized.y)), abs(Lunnormalized.z)));
+	const float remapped_distance = light.GetCubemapDepthRemapNear() + light.GetCubemapDepthRemapFar() / (max(max(abs(Lunnormalized.x), abs(Lunnormalized.y)), abs(Lunnormalized.z)) * 0.989); // little bias to avoid artifact
 	const float3 uv_slice = cubemap_to_uv(-Lunnormalized);
 	float2 shadow_uv = uv_slice.xy;
 	shadow_border_shrink(light, shadow_uv);
@@ -118,6 +118,77 @@ inline bool furthest_cascade_volumetrics(inout ShaderEntity light, inout uint fu
 		return true;
 	}
 	
+	return false;
+}
+
+static const float rain_blocker_head_size = 1;
+static const float rain_blocker_head_size_sq = rain_blocker_head_size * rain_blocker_head_size;
+
+// Checks whether position is below or above rain blocker
+//	true: below
+//	false: above
+inline bool rain_blocker_check(in float3 P)
+{
+	// Before checking blocker shadow map, check "head" blocker:
+	if(P.y < GetCamera().position.y + rain_blocker_head_size)
+	{
+		float2 diff = GetCamera().position.xz - P.xz;
+		float distsq = dot(diff, diff);
+		if(distsq < rain_blocker_head_size_sq)
+			return true;
+	}
+
+	[branch]
+	if (GetFrame().texture_shadowatlas_index < 0 || !any(GetFrame().rain_blocker_mad))
+		return false;
+		
+	Texture2D texture_shadowatlas = bindless_textures[GetFrame().texture_shadowatlas_index];
+	float3 shadow_pos = mul(GetFrame().rain_blocker_matrix, float4(P, 1)).xyz;
+	float3 shadow_uv = clipspace_to_uv(shadow_pos);
+	if (is_saturated(shadow_uv))
+	{
+		shadow_uv.xy = mad(shadow_uv.xy, GetFrame().rain_blocker_mad.xy, GetFrame().rain_blocker_mad.zw);
+		float shadow = texture_shadowatlas.SampleLevel(sampler_point_clamp, shadow_uv.xy, 0).r;
+
+		if(shadow > shadow_pos.z)
+		{
+			return true;
+		}
+		
+	}
+	return false;
+}
+
+// Same as above but using previous frame's values
+inline bool rain_blocker_check_prev(in float3 P)
+{
+	// Before checking blocker shadow map, check "head" blocker:
+	if(P.y < GetCamera().position.y + rain_blocker_head_size)
+	{
+		float2 diff = GetCamera().position.xz - P.xz;
+		float distsq = dot(diff, diff);
+		if(distsq < rain_blocker_head_size_sq)
+			return true;
+	}
+		
+	[branch]
+	if (GetFrame().texture_shadowatlas_index < 0 || !any(GetFrame().rain_blocker_mad_prev))
+		return false;
+		
+	Texture2D texture_shadowatlas = bindless_textures[GetFrame().texture_shadowatlas_index];
+	float3 shadow_pos = mul(GetFrame().rain_blocker_matrix_prev, float4(P, 1)).xyz;
+	float3 shadow_uv = clipspace_to_uv(shadow_pos);
+	if (is_saturated(shadow_uv))
+	{
+		shadow_uv.xy = mad(shadow_uv.xy, GetFrame().rain_blocker_mad_prev.xy, GetFrame().rain_blocker_mad_prev.zw);
+		float shadow = texture_shadowatlas.SampleLevel(sampler_point_clamp, shadow_uv.xy, 0).r;
+
+		if(shadow > shadow_pos.z)
+		{
+			return true;
+		}
+		
+	}
 	return false;
 }
 

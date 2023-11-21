@@ -105,6 +105,8 @@ This section describes the common tools for scripting which are not necessarily 
 - math.clamp(float x,min,max)  -- clamp x between min and max
 - math.saturate(float x)  -- clamp x between 0 and 1
 - math.round(float x)  -- round x to nearest integer
+- dobinaryfile(string filename) -- executes a binary LUA file
+- compilebinaryfile(string filename_src, dilename_dst) -- compiles a text LUA file (filename_src) into a binary LUA file (filename_dst)
 
 ## Engine Bindings
 The scripting API provides functions for the developer to manipulate engine behaviour or query it for information.
@@ -118,6 +120,10 @@ The scripting API provides some functions which manipulate the BackLog. These fu
 - backlog_fontsize(int size)  -- modify the fint size of the backlog
 - backlog_isactive() : boolean result  -- returns true if the backlog is active, false otherwise
 - backlog_fontrowspacing(float spacing)  -- set a row spacing to the backlog
+- backlog_lock() -- disable and lock the backlog so HOME key doesn't bring it up
+- backlog_unlock() -- unlock the backlog so it can be toggled with the HOME key
+- backlog_blocklua() -- disable LUA code execution in the backlog
+- backlog_unblocklua() -- undisable LUA code execution in the backlog
 
 ### Renderer
 This is the graphics renderer, which is also responsible for managing the scene graph which consists of keeping track of
@@ -125,8 +131,8 @@ parent-child relationships between the scene hierarchy, updating the world, anim
 You can use the Renderer with the following functions, all of which are in the global scope:
 - GetGameSpeed() : float result
 - SetGameSpeed(float speed)
-- GetScreenWidth() : float result  -- (deprecated, use MainComponent::GetCanvas().GetLogicalWidth() instead)
-- GetScreenHeight() : float result  -- (deprecated, use MainComponent::GetCanvas().GetLogicalHeight() instead)
+- GetScreenWidth() : float result  -- (deprecated, use application.GetCanvas().GetLogicalWidth() instead)
+- GetScreenHeight() : float result  -- (deprecated, use application.GetCanvas().GetLogicalHeight() instead)
 - HairParticleSettings(opt int lod0, opt int lod1, opt int lod2)
 - SetShadowProps2D(int resolution, int count)
 - SetShadowPropsCube(int resolution, int count)
@@ -146,14 +152,15 @@ You can use the Renderer with the following functions, all of which are in the g
 	[outer]DEBUG_TEXT_DEPTH_TEST		-- text can be occluded by geometry
 	[outer]DEBUG_TEXT_CAMERA_FACING		-- text will be rotated to face the camera
 	[outer]DEBUG_TEXT_CAMERA_SCALING	-- text will be always the same size, independent of distance to camera
-- PutWaterRipple(String imagename, Vector position)
+- PutWaterRipple(Vector position) -- put down a water ripple with default embedded asset
+- PutWaterRipple(string imagename, Vector position) -- put down water ripple texture from image asset file
 - ClearWorld(opt Scene scene) -- Clears the scene and the associated renderer resources. If parmaeter is not specified, it will clear the global scene
 - ReloadShaders()
 
 ### Sprite
 Render images on the screen.
 - Params : ImageParams
-- Anim : SpriteAnim 
+- Anim : SpriteAnim
 
 </br>
 
@@ -203,7 +210,7 @@ Specify Sprite properties, like position, size, etc.
 - SetPos(Vector pos)
 - SetSize(Vector size)
 - SetPivot(Vector value)
-- SetColor(Vector size)
+- SetColor(Vector value)
 - SetOpacity(float opacity)
 - SetFade(float fade)
 - SetStencil(int stencilMode,stencilRef)
@@ -270,6 +277,8 @@ Animate Sprites easily with this helper.
 - SetRotation(float val)
 - SetOpacity(float val)
 - SetFade(float val)
+- SetWobbleAnimAmount(float val)
+- SetWobbleAnimSpeed(float val)
 - SetRepeatable(boolean val)
 - SetVelocity(Vector val)
 - SetScaleX(float val)
@@ -384,6 +393,55 @@ Gives you the ability to render text with a custom font.
 ### Texture
 Just holds texture information in VRAM.
 - [constructor]Texture(opt string filename)	-- creates a texture from file
+- [outer]texturehelper -- a global helper texture creation utility
+- GetLogo() : Texture -- returns the Wicked Engine logo texture
+- CreateGradientTexture(
+	GradientType type = GradientType.Linear, 
+	int width = 256,
+	int height = 256, 
+	Vector uv_start = Vector(0,0),
+	Vector uv_end = Vector(0,0), 
+	GradientFlags flags = GradientFlags.None, 
+	string swizzle = "rgba", 
+	float perlin_scale = 1,
+	int perlin_seed = 1234, 
+	int perlin_octaves = 8, 
+	float perlin_persistence = 0.5) -- creates a gradient texture from parameters
+- Save(string filename) -- saves texture into a file. Provide the extension in the filename, it should be one of the following: .JPG, .PNG, .TGA, .BMP, .DDS, .KTX2, .BASIS
+
+```lua
+GradientType = {
+	Linear = 0,
+	Circular = 1,
+	Angular = 2,
+}
+
+GradientFlags = {
+	None = 0,
+	Inverse = 1 << 0,	
+	Smoothstep = 1 << 1,
+	PerlinNoise = 1 << 2,
+	R16Unorm = 1 << 3,
+}
+```
+
+Example texture creation:
+```lua
+texture = texturehelper.CreateGradientTexture(
+	GradientType.Circular, -- gradient type
+	256, 256, -- resolution of the texture
+	Vector(0.5, 0.5), Vector(0.5, 0), -- start and end uv coordinates will specify the gradient direction and extents
+	GradientFlags.Inverse | GradientFlags.Smoothstep | GradientFlags.PerlinNoise, -- modifier flags bitwise combination
+	"rrr1", -- for each channel ,you can specify one of the following characters: 0, 1, r, g, b, a
+	2, -- perlin noise scale
+	123, -- perlin noise seed
+	6, -- perlin noise octaves
+	0.8 -- perlin noise persistence
+)
+texture.Save("gradient.png") -- you can save it to file
+sprite.SetTexture(texture) -- you can set it to a sprite
+material.SetTexture(TextureSlot.BASECOLORMAP, texture) -- you can set it to a material
+```
 
 ### Audio
 Loads and plays an audio files.
@@ -404,11 +462,26 @@ Loads and plays an audio files.
 #### Sound
 An audio file. Can be instanced several times via SoundInstance.
 - [constructor]Sound()  -- creates an empty sound. Use the audio device to load sounds from files
+- IsValid() : bool -- returns whether the sound was created successfully
 
 #### SoundInstance
-An audio file instance that can be played.
+An audio file instance that can be played. Note: after modifying parameters of the SoundInstance, the SoundInstance will need to be recreated from a specified sound
 - [constructor]SoundInstance()  -- creates an empty soundinstance. Use the audio device to clone sounds
 - SetSubmixType(int submixtype)  -- set a submix type group (default is SUBMIX_TYPE_SOUNDEFFECT)
+- SetBegin(float seconds) -- beginning of the playback in seconds, relative to the Sound it will be created from (0 = from beginning)
+- SetLength(float seconds) -- length in seconds (0 = until end)
+- SetLoopBegin(float seconds) -- loop region begin in seconds, relative to the instance begin time (0 = from beginning)
+- SetLoopLength(float seconds) -- loop region length in seconds (0 = until the end)
+- SetEnableReverb(bool value) -- enable/disable reverb for the sound instance
+- SetLooped(bool value) -- enable/disable looping for the sound instance
+- GetSubmixType() : int
+- GetBegin() : float
+- GetLength() : float
+- GetLoopBegin() : float
+- GetLoopLength() : float
+- IsEnableReverb() : bool
+- IsLooped() : bool
+- IsValid() : bool -- returns whether the sound instance was created successfully
 
 #### SoundInstance3D
 Describes the relation between a sound instance and a listener in a 3D world
@@ -468,6 +541,7 @@ A four component floating point vector. Provides efficient calculations with SIM
 - X : float
 - Y : float
 - Z : float
+- W : float
 
 </br>
 
@@ -481,9 +555,16 @@ A four component floating point vector. Provides efficient calculations with SIM
 - SetY(float value)
 - SetZ(float value)
 - SetW(float value)
-- Length() : float result
-- Normalize() : Vector result
-- QuaternionNormalize() : Vector result
+- Length() : float result	-- old syntax with operation on current object
+- Length(Vector v) : float result
+- Normalize() : Vector result	-- old syntax with operation on current object
+- Normalize(Vector v) : Vector result
+- QuaternionNormalize() : Vector result	-- old syntax with operation on current object
+- QuaternionNormalize(Vector v) : Vector result
+- Clamp(float min,max) : Vector result	-- old syntax with operation on current object
+- Clamp(Vector v, float min,max) : Vector result
+- Saturate() : Vector result	-- old syntax with operation on current object
+- Saturate(Vector v) : Vector result
 - Transform(Vector vec, Matrix matrix)
 - TransformNormal(Vector vec, Matrix matrix)
 - TransformCoord(Vector vec, Matrix matrix)
@@ -512,6 +593,7 @@ A four by four matrix, efficient calculations with SIMD support.
 - RotationZ(opt float angleInRadians) : Matrix result
 - RotationQuaternion(opt Vector quaternion) : Matrix result
 - Scale(opt Vector scaleXYZ) : Matrix result
+- Scale(float scaleXYZ) : Matrix result
 - LookTo(Vector eye,direction, opt Vector up) : Matrix result
 - LookAt(Vector eye,focusPos, opt Vector up) : Matrix result
 - Multiply(Matrix m1,m2) : Matrix result
@@ -548,32 +630,38 @@ The scene holds components. Entity handles can be used to retrieve associated co
 - [outer]FILTER_OBJECT_ALL : uint	-- include all objects, meshes
 - [outer]FILTER_COLLIDER : uint	-- include colliders
 - [outer]FILTER_ALL : uint	-- include everything
-- Intersects(Ray|Sphere|Capsule primitive, opt uint filterMask = ~0u, opt uint layerMask = ~0u, opt uint lod = 0) : int entity, Vector position,normal, float distance, Vector velocity	-- intersects a primitive with the scene and return collision parameters
+- Intersects(Ray|Sphere|Capsule primitive, opt uint filterMask = ~0u, opt uint layerMask = ~0u, opt uint lod = 0) : int entity, Vector position,normal, float distance, Vector velocity, int subsetIndex, Matrix orientation	-- intersects a primitive with the scene and returns collision parameters
 - Update()  -- updates the scene and every entity and component inside the scene
 - Clear()  -- deletes every entity and component inside the scene
 - Merge(Scene other)  -- moves contents from an other scene into this one. The other scene will be empty after this operation (contents are moved, not copied)
 - UpdateHierarchy()	-- updates the full scene hierarchy system. Useful if you modified for example a parent transform and children immediately need up to date result in the script
 
 - CreateEntity() : int entity  -- creates an empty entity and returns it
+- FindAllEntities() : table[entities] -- returns a table with all the entities present in the given scene
 - Entity_FindByName(string value, opt Entity ancestor = INVALID_ENTITY) : int entity  -- returns an entity ID if it exists, and INVALID_ENTITY otherwise. You can specify an ancestor entity if you only want to find entities that are descendants of ancestor entity
-- Entity_Remove(Entity entity)  -- removes an entity and deletes all its components if it exists
+- Entity_Remove(Entity entity, bool recursive = true, bool keep_sorted = false)  -- removes an entity and deletes all its components if it exists. If recursive is specified, then all children will be removed as well (enabled by default). If keep_sorted is specified, then component order will be kept (disabled by default, slower)
 - Entity_Duplicate(Entity entity) : int entity  -- duplicates all of an entity's components and creates a new entity with them. Returns the clone entity handle
 - Entity_IsDescendant(Entity entity, Entity ancestor) : bool result	-- Check whether entity is a descendant of ancestor. Returns `true` if entity is in the hierarchy tree of ancestor, `false` otherwise
 
-- Component_CreateName(Entity entity) : NameComponent result  -- attach a name component to an entity. The returned NameComponent is associated with the entity and can be manipulated
-- Component_CreateLayer(Entity entity) : LayerComponent result  -- attach a layer component to an entity. The returned LayerComponent is associated with the entity and can be manipulated
-- Component_CreateTransform(Entity entity) : TransformComponent result  -- attach a transform component to an entity. The returned TransformComponent is associated with the entity and can be manipulated
-- Component_CreateLight(Entity entity) : LightComponent result  -- attach a light component to an entity. The returned LightComponent is associated with the entity and can be manipulated
-- Component_CreateObject(Entity entity) : ObjectComponent result  -- attach an object component to an entity. The returned ObjectComponent is associated with the entity and can be manipulated
-- Component_CreateInverseKinematics(Entity entity) : InverseKinematicsComponent result  -- attach an IK component to an entity. The returned InverseKinematicsComponent is associated with the entity and can be manipulated
-- Component_CreateSpring(Entity entity) : SpringComponent result  -- attach a spring component to an entity. The returned SpringComponent is associated with the entity and can be manipulated
-- Component_CreateScript(Entity entity) : ScriptComponent result  -- attach a script component to an entity. The returned ScriptComponent is associated with the entity and can be manipulated
-- Component_CreateRigidBodyPhysics(Entity entity) : RigidBodyPhysicsComponent result  -- attach a RigidBodyPhysicsComponent to an entity. The returned RigidBodyPhysicsComponent is associated with the entity and can be manipulated
-- Component_CreateSoftBodyPhysics(Entity entity) : SoftBodyPhysicsComponent result  -- attach a SoftBodyPhysicsComponent to an entity. The returned SoftBodyPhysicsComponent is associated with the entity and can be manipulated
-- Component_CreateForceField(Entity entity) : ForceFieldComponent result  -- attach a ForceFieldComponent to an entity. The returned ForceFieldComponent is associated with the entity and can be manipulated
-- Component_CreateWeather(Entity entity) : WeatherComponent result  -- attach a WeatherComponent to an entity. The returned WeatherComponent is associated with the entity and can be manipulated
-- Component_CreateSound(Entity entity) : SoundComponent result  -- attach a SoundComponent to an entity. The returned SoundComponent is associated with the entity and can be manipulated
-- Component_CreateCollider(Entity entity) : ColliderComponent result  -- attach a script to an entity. The returned ColliderComponent is associated with the entity and can be manipulated
+- Component_CreateName(Entity entity) : NameComponent result  -- attach a name component to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateLayer(Entity entity) : LayerComponent result  -- attach a layer component to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateTransform(Entity entity) : TransformComponent result  -- attach a transform component to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateLight(Entity entity) : LightComponent result  -- attach a light component to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateObject(Entity entity) : ObjectComponent result  -- attach an object component to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateInverseKinematics(Entity entity) : InverseKinematicsComponent result  -- attach an IK component to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateSpring(Entity entity) : SpringComponent result  -- attach a spring component to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateScript(Entity entity) : ScriptComponent result  -- attach a script component to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateRigidBodyPhysics(Entity entity) : RigidBodyPhysicsComponent result  -- attach a RigidBodyPhysicsComponent to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateSoftBodyPhysics(Entity entity) : SoftBodyPhysicsComponent result  -- attach a SoftBodyPhysicsComponent to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateForceField(Entity entity) : ForceFieldComponent result  -- attach a ForceFieldComponent to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateWeather(Entity entity) : WeatherComponent result  -- attach a WeatherComponent to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateSound(Entity entity) : SoundComponent result  -- attach a SoundComponent to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateCollider(Entity entity) : ColliderComponent result  -- attach a ColliderComponent to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateExpression(Entity entity) : ExpressionComponent result  -- attach a ExpressionComponent to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateHumanoid(Entity entity) : HumanoidComponent result  -- attach a HumanoidComponent to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateDecal(Entity entity) : DecalComponent result  -- attach a DecalComponent to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateSprite(Entity entity) : Sprite result  -- attach a Sprite to an entity. The returned component is associated with the entity and can be manipulated
+- Component_CreateFont(Entity entity) : SpriteFont result  -- attach a SpriteFont to an entity. The returned component is associated with the entity and can be manipulated
 
 - Component_GetName(Entity entity) : NameComponent? result  -- query the name component of the entity (if exists)
 - Component_GetLayer(Entity entity) : LayerComponent? result  -- query the layer component of the entity (if exists)
@@ -593,6 +681,11 @@ The scene holds components. Entity handles can be used to retrieve associated co
 - Component_GetWeather(Entity entity) : WeatherComponent? result  -- query the WeatherComponent of the entity (if exists)
 - Component_GetSound(Entity entity) : SoundComponent? result  -- query the SoundComponent of the entity (if exists)
 - Component_GetCollider(Entity entity) : ColliderComponent? result  -- query the ColliderComponent of the entity (if exists)
+- Component_GetExpression(Entity entity) : ExpressionComponent? result  -- query the ExpressionComponent of the entity (if exists)
+- Component_GetHumanoid(Entity entity) : HumanoidComponent? result  -- query the HumanoidComponent of the entity (if exists)
+- Component_GetDecal(Entity entity) : DecalComponent? result  -- query the DecalComponent of the entity (if exists)
+- Component_GetSprite(Entity entity) : Sprite? result  -- query the Sprite of the entity (if exists)
+- Component_GetFont(Entity entity) : SpriteFont? result  -- query the SpriteFont of the entity (if exists)
 
 - Component_GetNameArray() : NameComponent[] result  -- returns the array of all components of this type
 - Component_GetLayerArray() : LayerComponent[] result  -- returns the array of all components of this type
@@ -612,6 +705,11 @@ The scene holds components. Entity handles can be used to retrieve associated co
 - Component_GetWeatherArray() : WeatherComponent[] result  -- returns the array of all components of this type
 - Component_GetSoundArray() : SoundComponent[] result  -- returns the array of all components of this type
 - Component_GetColliderArray() : ColliderComponent[] result  -- returns the array of all components of this type
+- Component_GetExpressionArray() : ExpressionComponent[] result  -- returns the array of all components of this type
+- Component_GetHumanoidArray() : HumanoidComponent[] result  -- returns the array of all components of this type
+- Component_GetDecalArray() : DecalComponent[] result  -- returns the array of all components of this type
+- Component_GetSpriteArray() : Sprite[] result  -- returns the array of all components of this type
+- Component_GetFontArray() : SpriteFont[] result  -- returns the array of all components of this type
 
 - Entity_GetNameArray() : Entity[] result  -- returns the array of all entities that have this component type
 - Entity_GetLayerArray() : Entity[] result  -- returns the array of all entities that have this component type
@@ -632,6 +730,11 @@ The scene holds components. Entity handles can be used to retrieve associated co
 - Entity_GetWeatherArray() : Entity[] result  -- returns the array of all entities that have this component type
 - Entity_GetSoundArray() : Entity[] result  -- returns the array of all entities that have this component type
 - Entity_GetColliderArray() : Entity[] result  -- returns the array of all entities that have this component type
+- Entity_GetExpressionArray() : Entity[] result  -- returns the array of all entities that have this component type
+- Entity_GetHumanoidArray() : Entity[] result  -- returns the array of all entities that have this component type
+- Entity_GetDecalArray() : Entity[] result  -- returns the array of all entities that have this component type
+- Entity_GetSpriteArray() : Entity[] result  -- returns the array of all entities that have this component type
+- Entity_GetFontArray() : Entity[] result  -- returns the array of all entities that have this component type
 
 - Component_RemoveName(Entity entity)  -- remove the name component of the entity (if exists)
 - Component_RemoveLayer(Entity entity)  -- remove the layer component of the entity (if exists)
@@ -652,6 +755,11 @@ The scene holds components. Entity handles can be used to retrieve associated co
 - Component_RemoveWeather(Entity entity) -- remove the WeatherComponent of the entity (if exists)
 - Component_RemoveSound(Entity entity)  -- remove the SoundComponent of the entity (if exists)
 - Component_RemoveCollider(Entity entity)  -- remove the ColliderComponent of the entity (if exists)
+- Component_RemoveExpression(Entity entity)  -- remove the ExpressionComponent of the entity (if exists)
+- Component_RemoveHumanoid(Entity entity)  -- remove the HumanoidComponent of the entity (if exists)
+- Component_RemoveDecal(Entity entity)  -- remove the DecalComponent of the entity (if exists)
+- Component_RemoveSprite(Entity entity)  -- remove the Sprite of the entity (if exists)
+- Component_RemoveFont(Entity entity)  -- remove the SpriteFont of the entity (if exists)
 
 - Component_Attach(Entity entity,parent, opt bool child_already_in_local_space = false)  -- attaches entity to parent (adds a hierarchy component to entity). From now on, entity will inherit certain properties from parent, such as transform (entity will move with parent) or layer (entity's layer will be a sublayer of parent's layer). If child_already_in_local_space is false, then child will be transformed into parent's local space, if true, it will be used as-is.
 - Component_Detach(Entity entity)  -- detaches entity from parent (if hierarchycomponent exists for it). Restores entity's original layer, and applies current transformation to entity
@@ -698,6 +806,9 @@ Describes an orientation in 3D space.
 - GetPosition() : Vector resultXYZ  -- query the position in world space
 - GetRotation() : Vector resultQuaternion  -- query the rotation as a quaternion in world space
 - GetScale() : Vector resultXYZ  -- query the scaling in world space
+- SetScale(Vector value) -- set scale in local space
+- SetRotation(Vector quaternnion) -- set rotation quaternion in local space
+- SetPosition(Vector value) -- set position in local space
 
 #### CameraComponent
 - FOV : float
@@ -733,6 +844,7 @@ Describes an orientation in 3D space.
 - GetPosition() : Vector result
 - GetLookDirection() : Vector result
 - GetUpDirection() : Vector result
+- GetRightDirection() : Vector result
 - SetPosition(Vector value)	-- Sets the position of the camera. `UpdateCamera()` should be used after this to apply the value. 
 - SetLookDirection(Vector value)		-- Sets the look direction of the camera. The value must be a normalized direction `Vector`, relative to the camera position, and also perpendicular to the up direction. `UpdateCamera()` should be used after this to apply the value. This value will also be set if using the `TransformCamera()` function, from the transform's rotation.
 - SetUpDirection(Vector value)		-- Sets the up direction of the camera. This must be a normalized direction `Vector`, relative to the camera position, and also perpendicular to the look direction. `UpdateCamera()` should be used after this to apply the value. This value will also be set if using the `TransformCamera()` function, from the transform's rotation.
@@ -913,7 +1025,7 @@ TextureSlot = {
 </br>
 
 - SetMeshSubsetMaterialID(int subsetindex, Entity materialID)
-- GetMeshSubsetMaterialID(int subsetindex)
+- GetMeshSubsetMaterialID(int subsetindex) : Entity entity
 
 #### EmitterComponent
 - _flags : int
@@ -1032,8 +1144,12 @@ TextureSlot = {
 - SetUserStencilRef(int value)
 - SetLodDistanceMultiplier(float value)
 - SetDrawDistance(float value)
-- SetForeground(bool value) -- enable/disable foreground object rendering. Foreground objects will be always rendered on top of regular objects
+- SetForeground(bool value) -- enable/disable foreground object rendering. Foreground objects will be always rendered on top of regular objects, useful for FPS weapon or hands
 - IsForeground() : bool
+- SetNotVisibleInMainCamera(bool value) -- you can set the object to not be visible in main camera, but it will remain visible in reflections and shadows, useful for FPS character model
+- IsNotVisibleInMainCamera() : bool
+- SetNotVisibleInReflections(bool value) -- you can set the object to not be visible in main camera, but it will remain visible in reflections and shadows, useful for vampires
+- IsNotVisibleInReflections() : bool
 
 #### InverseKinematicsComponent
 Describes an Inverse Kinematics effector.
@@ -1119,7 +1235,27 @@ Describes a Weather
 - VolumetricCloudParameters : VolumetricCloudParameters -- Returns a table to modify volumetric cloud parameters
 - SkyMapName : string -- Resource name for sky texture
 - ColorGradingMapName : string -- Resource name for color grading map
-- Gravity : Vector
+- sunColor : Vector
+- sunDirection : Vector
+- skyExposure : float
+- horizon : Vector
+- zenith : Vector
+- ambient : Vector
+- fogStart : float
+- fog Density : float
+- fogHeightStart : float
+- fogHeightEnd : float
+- windDirection : Vector
+- windRandomness : float
+- windWaveSize : float
+- windSpeed : float
+- stars : float
+- rainAmount : float
+- rainLenght : float
+- rainSpeed : float
+- rainScale : float
+- rainColor : Vector
+- gravity : Vector
 
 </br>
 
@@ -1143,7 +1279,7 @@ Describes a Sound object.
 
 - Play() -- Plays the sound
 - Stop() -- Stop the sound
-- SetLoop(bool value = true) -- Sets if the sound is looping when playing
+- SetLooped(bool value = true) -- Sets if the sound is looping when playing
 - SetDisable3D(bool value = true) -- Disable/Enable 3D sounds
 - IsPlaying() : bool result -- Check if sound is playing
 - IsLooped() : bool result -- Check if sound is looping
@@ -1215,6 +1351,8 @@ Describes a Collider object.
 - GetBoneEntity(HumanoidBone bone) : int	-- Get the entity that is mapped to the specified humanoid bone. Use HumanoidBone table to get access to humanoid bone values
 - SetLookAtEnabled(bool value)	-- Enable/disable automatic lookAt (for head and eyes movement)
 - SetLookAt(Vector value)	-- Set a target lookAt position (for head an eyes movement)
+- SetRagdollPhysicsEnabled(bool value) -- Activate dynamic ragdoll physics. Note that kinematic ragdoll physics is always active (ragdoll is animation-driven/kinematic by default).
+- IsRagdollPhysicsEnabled() : bool
 
 [outer] HumanoidBone = {
 	Hips = 0,
@@ -1466,6 +1604,7 @@ A ray is defined by an origin Vector and a normalized direction Vector. It can b
 - SetOrigin(Vector vector)
 - SetDirection(Vector vector)
 - CreateFromPoints(Vector a,b)	-- creates a ray from two points. Point a will be the ray origin, pointing towards point b
+- GetSurfaceOrientation(Vector position, normal) : Matrix -- compute placement orientation matrix at intersection result. This matrix can be used to place entities in the scene oriented on the surface.
 
 #### AABB
 Axis Aligned Bounding Box. Can be intersected with other primitives.
@@ -1503,6 +1642,7 @@ Sphere defined by center Vector and radius. Can be intersected with other primit
 - GetRadius() : float result
 - SetCenter(Vector value)
 - SetRadius(float value)
+- GetSurfaceOrientation(Vector position, normal) : Matrix -- compute placement orientation matrix at intersection result. This matrix can be used to place entities in the scene oriented on the surface.
 
 #### Capsule
 It's like two spheres connected by a cylinder. Base and Tip are the two endpoints, radius is the cylinder's radius.
@@ -1523,6 +1663,7 @@ It's like two spheres connected by a cylinder. Base and Tip are the two endpoint
 - SetBase(Vector value)
 - SetTip(Vector value)
 - SetRadius(float value)
+- GetSurfaceOrientation(Vector position, normal) : Matrix -- compute placement orientation matrix at intersection result. This matrix can be used to place entities in the scene oriented on the surface.
 
 ### Input
 Query input devices
@@ -1530,6 +1671,7 @@ Query input devices
 - [void-constructor]Input()
 - Down(int code, opt int playerindex = 0) : bool result  -- Check whether a button is currently being held down
 - Press(int code, opt int playerindex = 0) : bool result  -- Check whether a button has just been pushed that wasn't before
+- Release(int code, opt int playerindex = 0) : bool result  -- Check whether a button has just been released that was down before
 - Hold(int code, opt int duration = 30, opt boolean continuous = false, opt int playerindex = 0) : bool result  -- Check whether a button was being held down for a specific duration (nunmber of frames). If continuous == true, than it will also return true after the duration was reached
 - GetPointer() : Vector result  -- get mouse pointer or primary touch position (x, y). Also returns mouse wheel delta movement (z), and pen pressure (w)
 - SetPointer(Vector pos)  -- set mouse poisition
@@ -1587,6 +1729,22 @@ Describes a touch contact point
 - [outer]KEYBOARD_BUTTON_BACKSPACE		 : int
 - [outer]KEYBOARD_BUTTON_PAGEDOWN		 : int
 - [outer]KEYBOARD_BUTTON_PAGEUP			 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD0		 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD1		 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD2		 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD3		 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD4		 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD5		 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD6		 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD7		 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD8		 : int
+- [outer]KEYBOARD_BUTTON_NUMPAD9		 : int
+- [outer]KEYBOARD_BUTTON_MULTIPLY		 : int
+- [outer]KEYBOARD_BUTTON_ADD			 : int
+- [outer]KEYBOARD_BUTTON_SEPARATOR		 : int
+- [outer]KEYBOARD_BUTTON_SUBTRACT		 : int
+- [outer]KEYBOARD_BUTTON_DECIMAL		 : int
+- [outer]KEYBOARD_BUTTON_DIVIDE			 : int
 - You can also generate a key code by calling string.byte(char uppercaseLetter) where the parameter represents the desired key of the keyboard
 
 #### Mouse Key Codes
@@ -1599,12 +1757,38 @@ Describes a touch contact point
 - [outer]GAMEPAD_BUTTON_LEFT : int
 - [outer]GAMEPAD_BUTTON_DOWN : int
 - [outer]GAMEPAD_BUTTON_RIGHT : int
+
+Generic button codes:
 - [outer]GAMEPAD_BUTTON_1 : int
 - [outer]GAMEPAD_BUTTON_2 : int
 - [outer]GAMEPAD_BUTTON_3 : int
 - [outer]GAMEPAD_BUTTON_4 : int
 ...
-- [outer]GAMEPAD_14 : int
+- [outer]GAMEPAD_BUTTON_14 : int
+
+Xbox button codes:
+- [outer]GAMEPAD_BUTTON_XBOX_X  : GAMEPAD_BUTTON_1
+- [outer]GAMEPAD_BUTTON_XBOX_A  : GAMEPAD_BUTTON_2
+- [outer]GAMEPAD_BUTTON_XBOX_B  : GAMEPAD_BUTTON_3
+- [outer]GAMEPAD_BUTTON_XBOX_Y  : GAMEPAD_BUTTON_4
+- [outer]GAMEPAD_BUTTON_XBOX_L1 : GAMEPAD_BUTTON_5
+- [outer]GAMEPAD_BUTTON_XBOX_R1 : GAMEPAD_BUTTON_6
+- [outer]GAMEPAD_BUTTON_XBOX_L3 : GAMEPAD_BUTTON_7
+- [outer]GAMEPAD_BUTTON_XBOX_R3 : GAMEPAD_BUTTON_8
+- [outer]GAMEPAD_BUTTON_XBOX_BACK : GAMEPAD_BUTTON_9
+- [outer]GAMEPAD_BUTTON_XBOX_START : GAMEPAD_BUTTON_10
+
+Playstation button codes:
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_SQUARE : GAMEPAD_BUTTON_1
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_CROSS : GAMEPAD_BUTTON_2
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_CIRCLE : GAMEPAD_BUTTON_3
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_TRIANGLE : GAMEPAD_BUTTON_4
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_L1 : GAMEPAD_BUTTON_5
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_R1 : GAMEPAD_BUTTON_6
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_L3 : GAMEPAD_BUTTON_7
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_R3 : GAMEPAD_BUTTON_8
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_SHARE : GAMEPAD_BUTTON_9
+- [outer]GAMEPAD_BUTTON_PLAYSTATION_OPTION : GAMEPAD_BUTTON_10
 
 #### Gamepad Analog Codes
 - [outer]GAMEPAD_ANALOG_THUMBSTICK_L : int
@@ -1623,15 +1807,28 @@ Describes a touch contact point
 - IsDebugDrawEnabled() : bool
 - SetAccuracy(int value)	-- Set the accuracy of the simulation. This value corresponds to maximum simulation step count. Higher values will be slower but more accurate.
 - GetAccuracy() : int
+- SetFrameRate(float value)	-- Set the frames per second resolution of physics simulation (default = 120 FPS)
+- GetFrameRate() : float
 - SetLinearVelocity(RigidBodyPhysicsComponent component, Vector velocity)	-- Set the linear velocity manually
 - SetAngularVelocity(RigidBodyPhysicsComponent component, Vector velocity)	-- Set the angular velocity manually
 - ApplyForce(RigidBodyPhysicsComponent component, Vector force)	-- Apply force at body center
 - ApplyForceAt(RigidBodyPhysicsComponent component, Vector force, Vector at)	-- Apply force at body local position
 - ApplyImpulse(RigidBodyPhysicsComponent component, Vector impulse)	-- Apply impulse at body center
+- ApplyImpulse(HumanoidComponent humanoid, HumanoidBone bone, Vector impulse)	-- Apply impulse at body center of ragdoll bone
 - ApplyImpulseAt(RigidBodyPhysicsComponent component, Vector impulse, Vector at)	-- Apply impulse at body local position
+- ApplyImpulseAt(HumanoidComponent humanoid, HumanoidBone bone, Vector impulse, Vector at)	-- Apply impulse at body local position of ragdoll bone
 - ApplyTorque(RigidBodyPhysicsComponent component, Vector torque)	-- Apply torque at body center
 - ApplyTorqueImpulse(RigidBodyPhysicsComponent component, Vector torque)	-- Apply torque impulse at body center
 - SetActivationState(RigidBodyPhysicsComponent component, int state)	-- Force set activation state to rigid body. Use a value ACTIVATION_STATE_ACTIVE or ACTIVATION_STATE_INACTIVE
 - SetActivationState(SoftBodyPhysicsComponent component, int state)	-- Force set activation state to soft body. Use a value ACTIVATION_STATE_ACTIVE or ACTIVATION_STATE_INACTIVE
 - [outer]ACTIVATION_STATE_ACTIVE : int
 - [outer]ACTIVATION_STATE_INACTIVE : int
+
+- Intersects(Scene scene, Ray ray) : Entity entity, Vector position,normal, Entity humanoid_ragdoll_entity, HumanoidBone humanoid_bone, Vector position_local	-- Performns physics scene intersection for closest hit with a ray
+
+- PickDrag(Scene scene, Ray, ray, PickDragOperation op) -- pick and drag physics objects such as ragdolls and rigid bodies.
+
+#### PickDragOperation
+Tracks a physics pick drag operation. Use it with `phyiscs.PickDrag()` function. When using this object first time to PickDrag, the operation will be started and the operation will end when you call Finish() or when the object is destroyed
+- [constructor]PickDragOperation() -- creates the object
+- Finish() -- finish the operation, puts down the physics object

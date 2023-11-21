@@ -73,9 +73,9 @@
 	"StaticSampler(s103, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_POINT)," \
 	"StaticSampler(s104, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_MIN_MAG_MIP_POINT)," \
 	"StaticSampler(s105, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_MIN_MAG_MIP_POINT)," \
-	"StaticSampler(s106, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_ANISOTROPIC)," \
-	"StaticSampler(s107, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_ANISOTROPIC)," \
-	"StaticSampler(s108, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_ANISOTROPIC)," \
+	"StaticSampler(s106, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
+	"StaticSampler(s107, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
+	"StaticSampler(s108, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
 	"StaticSampler(s109, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, comparisonFunc = COMPARISON_GREATER_EQUAL),"
 
 #ifndef __PSSL__
@@ -353,6 +353,7 @@ struct PrimitiveID
 #define texture_skyluminancelut bindless_textures[GetFrame().texture_skyluminancelut_index]
 #define texture_cameravolumelut bindless_textures3D[GetFrame().texture_cameravolumelut_index]
 #define texture_wind bindless_textures3D[GetFrame().texture_wind_index]
+#define texture_wind_prev bindless_textures3D[GetFrame().texture_wind_prev_index]
 #define scene_acceleration_structure bindless_accelerationstructures[GetScene().TLAS]
 
 #define texture_depth bindless_textures_float[GetCamera().texture_depth_index]
@@ -434,6 +435,12 @@ inline float3 clipspace_to_uv(in float3 clipspace)
 	return clipspace * float3(0.5, -0.5, 0.5) + 0.5;
 }
 
+template<typename T>
+T inverse_lerp(T value1, T value2, T pos)
+{
+	return all(value2 == value1) ? 0 : ((pos - value1) / (value2 - value1));
+}
+
 inline float3 GetSunColor() { return GetWeather().sun_color; } // sun color with intensity applied
 inline float3 GetSunDirection() { return GetWeather().sun_direction; }
 inline float3 GetHorizonColor() { return GetWeather().horizon.rgb; }
@@ -441,6 +448,7 @@ inline float3 GetZenithColor() { return GetWeather().zenith.rgb; }
 inline float3 GetAmbientColor() { return GetWeather().ambient.rgb; }
 inline uint2 GetInternalResolution() { return GetCamera().internal_resolution; }
 inline float GetTime() { return GetFrame().time; }
+inline float GetTimePrev() { return GetFrame().time_previous; }
 inline uint2 GetTemporalAASampleRotation() { return uint2((GetFrame().temporalaa_samplerotation >> 0u) & 0x000000FF, (GetFrame().temporalaa_samplerotation >> 8) & 0x000000FF); }
 inline bool IsStaticSky() { return GetScene().globalenvmap >= 0; }
 
@@ -598,6 +606,38 @@ float noise_gradient_3D(in float3 p)
 			dot(hash_gradient_3D(i + float3(1.0, 0.0, 1.0)), f - float3(1.0, 0.0, 1.0)), u.x),
 			lerp(dot(hash_gradient_3D(i + float3(0.0, 1.0, 1.0)), f - float3(0.0, 1.0, 1.0)),
 				dot(hash_gradient_3D(i + float3(1.0, 1.0, 1.0)), f - float3(1.0, 1.0, 1.0)), u.x), u.y), u.z);
+}
+
+
+// Based on: https://www.shadertoy.com/view/MslGD8
+float2 hash_voronoi(float2 p)
+{
+    //p = mod(p, 4.0); // tile
+	p = float2(dot(p, float2(127.1, 311.7)),
+             dot(p, float2(269.5, 183.3)));
+	return frac(sin(p) * 18.5453);
+}
+
+// return distance, and cell id
+float2 noise_voronoi(in float2 x, in float seed)
+{
+	float2 n = floor(x);
+	float2 f = frac(x);
+
+	float3 m = 8.0;
+	for (int j = -1; j <= 1; j++)
+		for (int i = -1; i <= 1; i++)
+		{
+			float2 g = float2(float(i), float(j));
+			float2 o = hash_voronoi(n + g);
+			//float2  r = g - f + o;
+			float2 r = g - f + (0.5 + 0.5 * sin(seed + 6.2831 * o));
+			float d = dot(r, r);
+			if (d < m.x)
+				m = float3(d, o);
+		}
+
+	return float2(sqrt(m.x), m.y + m.z);
 }
 
 // https://www.shadertoy.com/view/llGSzw
@@ -767,6 +807,22 @@ inline float3 reconstruct_position(in float2 uv, in float z, in float4x4 inverse
 inline float3 reconstruct_position(in float2 uv, in float z)
 {
 	return reconstruct_position(uv, z, GetCamera().inverse_view_projection);
+}
+
+inline float find_max_depth(in float2 uv, in int radius, in float lod)
+{
+	uint2 dim;
+	texture_depth.GetDimensions(dim.x, dim.y);
+	float2 dim_rcp = rcp(dim);
+	float ret = 0;
+	for (int x = -radius; x <= radius;++x)
+	{
+		for (int y = -radius; y <= radius;++y)
+		{
+			ret = max(ret, texture_depth.SampleLevel(sampler_point_clamp, uv + float2(x, y) * dim_rcp, lod));
+		}
+	}
+	return ret;
 }
 
 // Caustic pattern from: https://www.shadertoy.com/view/XtKfRG
@@ -1389,12 +1445,24 @@ RayCone pixel_ray_cone_from_image_height(float image_height)
 }
 
 
-float3 compute_wind(float3 position, float weight)
+float3 sample_wind(float3 position, float weight)
 {
 	[branch]
 	if (weight > 0)
 	{
 		return texture_wind.SampleLevel(sampler_linear_mirror, position, 0).r * GetWeather().wind.direction * weight;
+	}
+	else
+	{
+		return 0;
+	}
+}
+float3 sample_wind_prev(float3 position, float weight)
+{
+	[branch]
+	if (weight > 0)
+	{
+		return texture_wind_prev.SampleLevel(sampler_linear_mirror, position, 0).r * GetWeather().wind.direction * weight;
 	}
 	else
 	{
@@ -1519,5 +1587,80 @@ inline void ParallaxOcclusionMapping_Impl(
 		uvsets += difference.xyxy;
 	}
 }
+
+// Half-Life (1998) software-inspired water
+// Happily figured out by Admer456, provided to you under Creative Commons Zero 1.0 (CC0),
+// which means free to use anywhere, forever: https://creativecommons.org/publicdomain/zero/1.0/
+//
+// From https://www.shadertoy.com/view/ctXyW8
+
+// OpenGL-style water warping
+#define WarpStyle_GL 1
+// OpenGL-style water warping with multiple layers
+#define WarpStyle_GLEnhanced 2
+// Software-style water rippling
+#define WarpStyle_Software 3
+// Software-style water rippling + warping
+#define WarpStyle_SoftwareEnhanced 4
+
+// Preview the UV map after all transformations
+#define Debug_UV 0
+
+// These will have to be passed to the shader as a uniform
+//const float TextureWidth = 128.0;
+//const float TextureHeight = 128.0;
+//const vec2 TextureDimensions = vec2( TextureWidth, TextureHeight );
+
+// Zoom level, greater value = zooming out
+static const float Zoom = 1.0;
+// Global time multiplier
+static const float Speed = 0.5;
+// The greater this is, the larger the wave will be
+static const float TextureToWaveScale = 1.0;
+// Strength of the ripples, recommended to be around 0.8 to 1.2
+static const float RippleScale = 1.0;
+
+// 0 to 1 into -1 to +1
+float ndc( float x )
+{
+    return x * 2.0 - 1.0;
+}
+
+float2 Pixelate( float2 textureCoords, float2 TextureDimensions )
+{
+    // Here you may use ceil, floor, round... whatever, you'll offset some pixels
+    // whether you like it or not
+    return round( textureCoords * TextureDimensions ) / TextureDimensions;
+}
+
+
+// Your GLSL compiler / GPU driver will optimise this stuff away, don't worry
+float2 SingleRippleOffset( float2 textureCoords, float2 ripplePosition, float3 rippleParams, float t )
+{
+    float distanceToRipple = distance( textureCoords, ripplePosition );
+    float wave = cos( sqrt( distanceToRipple ) * rippleParams.y - t );
+    // Decay with distance
+    wave *= max( 0.0, 1.0 - distanceToRipple / rippleParams.x );
+    return (textureCoords - ripplePosition) * wave * rippleParams.z;
+}
+
+static const float2 RipplePositionPresets[] = {
+    float2( 0.2, 0.8 ),
+    float2( 0.1, 0.2 ),
+    float2( 0.7, 0.5 ),
+};
+
+static const float2 TileOffsets[] = {
+    float2( 1.0, 0.0 ),
+    float2( 1.0, 1.0 ),
+    float2( 0.0, 1.0 ),
+    float2( -1.0, 1.0 ),
+    float2( -1.0, 0.0 ),
+    float2( -1.0, -1.0 ),
+    float2( 0.0, -1.0 ),
+    float2( 1.0, -1.0 ),
+};
+
+
 
 #endif // WI_SHADER_GLOBALS_HF

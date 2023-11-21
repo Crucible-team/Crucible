@@ -34,6 +34,9 @@ math.randomseed( os.time() )
 -- should be woken up.
 local WAITING_ON_TIME = {}
 
+-- This table is for a Global Event Bus for script components to exchange data from one another.
+EVENT_BUS = {}
+
 -- Keep track of how long the game has been running.
 local CURRENT_TIME = 0
 function waitSeconds(seconds)  
@@ -244,6 +247,10 @@ end
 function math.lerp(a,b,t)
 	return (a + (b-a)*t);
 end
+-- inverse linear interpolation
+function math.inverselerp(value1,value2,pos)
+	return (pos - value1) / (value2 - value1);
+end
 -- clamp number between min,max
 function math.clamp(x,min,max)
 	if(x < min) then
@@ -261,6 +268,17 @@ end
 -- round number to nearest integer
 function math.round(x)
 	return x + 0.5 - ( x + 0.5 ) % 1;
+end
+
+-- These are fallback for when the script was not executed with attached parameters (like binary script):
+function script_file()
+	return ""
+end
+function script_dir()
+	return ""
+end
+function script_pid()
+	return 0
 end
 
 )";

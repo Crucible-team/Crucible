@@ -116,14 +116,74 @@ inline ShaderMaterial GetMaterial()
 #define OBJECTSHADER_USE_INSTANCEINDEX
 #endif // OBJECTSHADER_LAYOUT_COMMON
 
+// Classic Doom/Quake-style UV warping
+float2 Warp( float2 textureCoords, float waveSize, float waveStrength, float t )
+{
+    waveSize *=  GetMaterial().texture_to_wave_scale;
+    waveStrength *=  GetMaterial().ripple_scale;
+    
+    // If you're here to learn, the core of this warp is:
+    // x' = cos(y)
+    // y' = cos(x)
+    return float2(
+        textureCoords.x + cos( textureCoords.y * (1.0 / waveSize) + t ) * waveStrength,
+        textureCoords.y + cos( textureCoords.x * (1.0 / waveSize) + t ) * waveStrength
+    );
+}
+
+// rippleParams.x -> size
+// rippleParams.y -> frequency
+// rippleParams.z -> strength
+float2 Ripple( float2 textureCoords, float3 rippleParams, float t )
+{
+    float2 tile = floor( textureCoords );
+
+    float2 offsetAccum = float2( 0.0,0.0 );
+    for ( int i = 0; i < 3; i++ )
+    {
+        offsetAccum += SingleRippleOffset( textureCoords, tile + RipplePositionPresets[i], rippleParams, t );
+    }
+
+// 0 -> not seamless (1x3 transforms) - fine on small ripple scales
+// 1 -> half seamless (4x3 transforms) - good all-rounder
+// 2 -> fully seamless (9x3 transforms) - expensive but gets rid of seams
+	if (GetMaterial().WarpStyle_Software_Quality > 0)
+	{
+    
+        if (GetMaterial().WarpStyle_Software_Quality == 1)
+		{
+			for ( int tileIndex = 0; tileIndex < 8; tileIndex += 2 )
+			{
+            	for ( int i = 0; i < 3; i++ )
+            	{
+                	offsetAccum += SingleRippleOffset( textureCoords + TileOffsets[tileIndex], tile + RipplePositionPresets[i], rippleParams, t );
+            	}
+        	}
+		}
+        else
+		{
+			for ( int tileIndex = 0; tileIndex < 8; tileIndex ++ )
+        	{
+            	for ( int i = 0; i < 3; i++ )
+            	{
+                	offsetAccum += SingleRippleOffset( textureCoords + TileOffsets[tileIndex], tile + RipplePositionPresets[i], rippleParams, t );
+            	}
+        	}
+		}
+        
+	}
+
+    return textureCoords + offsetAccum;
+}
+
 struct VertexInput
 {
 	uint vertexID : SV_VertexID;
 	uint instanceID : SV_InstanceID;
 
-	float4 GetPositionNormalWind()
+	float4 GetPositionWind()
 	{
-		return bindless_buffers_float4[GetMesh().vb_pos_nor_wind][vertexID];
+		return bindless_buffers_float4[GetMesh().vb_pos_wind][vertexID];
 	}
 
 	float4 GetUVSets()
@@ -131,7 +191,7 @@ struct VertexInput
 		[branch]
 		if (GetMesh().vb_uvs < 0)
 			return 0;
-		return bindless_buffers_float4[GetMesh().vb_uvs][vertexID];
+		return lerp(GetMesh().uv_range_min.xyxy, GetMesh().uv_range_max.xyxy, bindless_buffers_float4[GetMesh().vb_uvs][vertexID]);
 	}
 
 	ShaderMeshInstancePointer GetInstancePointer()
@@ -144,28 +204,36 @@ struct VertexInput
 		return poi;
 	}
 
-	float2 GetAtlasUV()
+	min16float2 GetAtlasUV()
 	{
 		[branch]
 		if (GetMesh().vb_atl < 0)
 			return 0;
-		return bindless_buffers_float2[GetMesh().vb_atl][vertexID];
+		return (min16float2)bindless_buffers_float2[GetMesh().vb_atl][vertexID];
 	}
 
-	float4 GetVertexColor()
+	min16float4 GetVertexColor()
 	{
 		[branch]
 		if (GetMesh().vb_col < 0)
 			return 1;
-		return bindless_buffers_float4[GetMesh().vb_col][vertexID];
+		return (min16float4)bindless_buffers_float4[GetMesh().vb_col][vertexID];
+	}
+	
+	min16float3 GetNormal()
+	{
+		[branch]
+		if (GetMesh().vb_nor < 0)
+			return 0;
+		return (min16float3)bindless_buffers_float4[GetMesh().vb_nor][vertexID].xyz;
 	}
 
-	float4 GetTangent()
+	min16float4 GetTangent()
 	{
 		[branch]
 		if (GetMesh().vb_tan < 0)
 			return 0;
-		return bindless_buffers_float4[GetMesh().vb_tan][vertexID];
+		return (min16float4)bindless_buffers_float4[GetMesh().vb_tan][vertexID];
 	}
 
 	ShaderMeshInstance GetInstance()
@@ -184,35 +252,35 @@ struct VertexSurface
 {
 	float4 position;
 	float4 uvsets;
-	float2 atlas;
-	float4 color;
-	float3 normal;
-	float4 tangent;
-	uint emissiveColor;
+	min16float2 atlas;
+	min16float4 color;
+	min16float3 normal;
+	min16float4 tangent;
 
 	inline void create(in ShaderMaterial material, in VertexInput input)
 	{
-		float4 pos_nor_wind = input.GetPositionNormalWind();
-		uint normal_wind = asuint(pos_nor_wind.w);
-		position = float4(pos_nor_wind.xyz, 1);
-		normal = unpack_unitvector(normal_wind);
-		color = GetMaterial().baseColor * unpack_rgba(input.GetInstance().color);
-		color.a *= 1 - input.GetInstancePointer().GetDither();
-		emissiveColor = input.GetInstance().emissive;
+		float4 pos_wind = input.GetPositionWind();
+		position = float4(pos_wind.xyz, 1);
+		normal = input.GetNormal();
+		color = min16float4(GetMaterial().baseColor * unpack_rgba(input.GetInstance().color));
+		color.a *= min16float(1 - input.GetInstancePointer().GetDither());
 
 		[branch]
 		if (material.IsUsingVertexColors())
 		{
 			color *= input.GetVertexColor();
 		}
-		
-		normal = mul((float3x3)input.GetInstance().transformInverseTranspose.GetMatrix(), normal);
+
+		normal = mul((min16float3x3)input.GetInstance().transformInverseTranspose.GetMatrix(), normal);
 
 		tangent = input.GetTangent();
-		tangent.xyz = mul((float3x3)input.GetInstance().transformInverseTranspose.GetMatrix(), tangent.xyz);
+		tangent.xyz = mul((min16float3x3)input.GetInstance().transformInverseTranspose.GetMatrix(), tangent.xyz);
 
+		// Note: normalization must happen when normal is exported as half precision for interpolator!
+		normal = any(normal) ? normalize(normal) : 0;
+		tangent = any(tangent) ? normalize(tangent) : 0;
+		
 		uvsets = input.GetUVSets();
-		uvsets.xy = mad(uvsets.xy, material.texMulAdd.xy, material.texMulAdd.zw);
 
 		atlas = input.GetAtlasUV();
 
@@ -222,7 +290,7 @@ struct VertexSurface
 		[branch]
 		if (material.IsUsingWind())
 		{
-			position.xyz += compute_wind(position.xyz, ((normal_wind >> 24u) & 0xFF) / 255.0);
+			position.xyz += sample_wind(position.xyz, pos_wind.w);
 		}
 #endif // DISABLE_WIND
 	}
@@ -233,40 +301,32 @@ struct PixelInput
 	precise float4 pos : SV_POSITION;
 
 #ifdef OBJECTSHADER_USE_CLIPPLANE
-	float  clip : SV_ClipDistance0;
+	float clip : SV_ClipDistance0;
 #endif // OBJECTSHADER_USE_CLIPPLANE
 
-#ifdef OBJECTSHADER_USE_INSTANCEINDEX
-	uint instanceIndex : INSTANCEINDEX;
-#endif // OBJECTSHADER_USE_INSTANCEINDEX
-
-#ifdef OBJECTSHADER_USE_DITHERING
-	nointerpolation float dither : DITHER;
-#endif // OBJECTSHADER_USE_DITHERING
-
-#ifdef OBJECTSHADER_USE_EMISSIVE
-	uint emissiveColor : EMISSIVECOLOR;
-#endif // OBJECTSHADER_USE_EMISSIVE
-
-#ifdef OBJECTSHADER_USE_COLOR
-	float4 color : COLOR;
-#endif // OBJECTSHADER_USE_COLOR
+#if defined(OBJECTSHADER_USE_INSTANCEINDEX) || defined(OBJECTSHADER_USE_DITHERING)
+	uint instanceIndex_dither : INSTANCEINDEX_DITHER;
+#endif // OBJECTSHADER_USE_INSTANCEINDEX || OBJECTSHADER_USE_DITHERING
 
 #ifdef OBJECTSHADER_USE_UVSETS
 	float4 uvsets : UVSETS;
 #endif // OBJECTSHADER_USE_UVSETS
 
-#ifdef OBJECTSHADER_USE_ATLAS
-	float2 atl : ATLAS;
-#endif // OBJECTSHADER_USE_ATLAS
-
-#ifdef OBJECTSHADER_USE_NORMAL
-	float3 nor : NORMAL;
-#endif // OBJECTSHADER_USE_NORMAL
+#ifdef OBJECTSHADER_USE_COLOR
+	min16float4 color : COLOR;
+#endif // OBJECTSHADER_USE_COLOR
 
 #ifdef OBJECTSHADER_USE_TANGENT
-	float4 tan : TANGENT;
+	min16float4 tan : TANGENT;
 #endif // OBJECTSHADER_USE_TANGENT
+
+#ifdef OBJECTSHADER_USE_NORMAL
+	min16float3 nor : NORMAL;
+#endif // OBJECTSHADER_USE_NORMAL
+
+#ifdef OBJECTSHADER_USE_ATLAS
+	min16float2 atl : ATLAS;
+#endif // OBJECTSHADER_USE_ATLAS
 
 #ifdef OBJECTSHADER_USE_POSITION3D
 	float3 pos3D : WORLDPOSITION;
@@ -287,6 +347,29 @@ struct PixelInput
 	uint VPIndex : SV_ViewportArrayIndex;
 #endif // VPRT_EMULATION
 #endif // OBJECTSHADER_USE_VIEWPORTARRAYINDEX
+
+#ifdef OBJECTSHADER_USE_INSTANCEINDEX
+	inline uint GetInstanceIndex()
+	{
+		return instanceIndex_dither & 0xFFFFFF;
+	}
+#endif // OBJECTSHADER_USE_INSTANCEINDEX
+
+#ifdef OBJECTSHADER_USE_DITHERING
+	inline min16float GetDither()
+	{
+		return min16float((instanceIndex_dither >> 24u) / 255.0);
+	}
+#endif // OBJECTSHADER_USE_DITHERING
+	
+#ifdef OBJECTSHADER_USE_UVSETS
+	inline float4 GetUVSets()
+	{
+		float4 ret = uvsets;
+		ret.xy = mad(ret.xy, GetMaterial().texMulAdd.xy, GetMaterial().texMulAdd.zw);
+		return ret;
+	}
+#endif // OBJECTSHADER_USE_UVSETS
 };
 
 
@@ -299,10 +382,6 @@ struct PixelInput
 PixelInput main(VertexInput input)
 {
 	PixelInput Out;
-
-#ifdef OBJECTSHADER_USE_INSTANCEINDEX
-	Out.instanceIndex = input.GetInstancePointer().GetInstanceIndex();
-#endif // OBJECTSHADER_USE_INSTANCEINDEX
 
 	VertexSurface surface;
 	surface.create(GetMaterial(), input);
@@ -317,6 +396,16 @@ PixelInput main(VertexInput input)
 	Out.clip = dot(surface.position, GetCamera().clip_plane);
 #endif // OBJECTSHADER_USE_CLIPPLANE
 
+#if defined(OBJECTSHADER_USE_INSTANCEINDEX) || defined(OBJECTSHADER_USE_DITHERING)
+	Out.instanceIndex_dither = 0;
+#ifdef OBJECTSHADER_USE_INSTANCEINDEX
+	Out.instanceIndex_dither |= input.GetInstancePointer().GetInstanceIndex() & 0xFFFFFF;
+#endif // OBJECTSHADER_USE_INSTANCEINDEX
+#ifdef OBJECTSHADER_USE_DITHERING
+	Out.instanceIndex_dither |= (uint(surface.color.a * 255u) & 0xFF) << 24u;
+#endif // OBJECTSHADER_USE_DITHERING
+#endif // OBJECTSHADER_USE_INSTANCEINDEX || OBJECTSHADER_USE_DITHERING
+
 #ifdef OBJECTSHADER_USE_POSITION3D
 	Out.pos3D = surface.position.xyz;
 #endif // OBJECTSHADER_USE_POSITION3D
@@ -324,10 +413,6 @@ PixelInput main(VertexInput input)
 #ifdef OBJECTSHADER_USE_COLOR
 	Out.color = surface.color;
 #endif // OBJECTSHADER_USE_COLOR
-
-#ifdef OBJECTSHADER_USE_DITHERING
-	Out.dither = surface.color.a;
-#endif // OBJECTSHADER_USE_DITHERING
 
 #ifdef OBJECTSHADER_USE_UVSETS
 	Out.uvsets = surface.uvsets;
@@ -344,10 +429,6 @@ PixelInput main(VertexInput input)
 #ifdef OBJECTSHADER_USE_TANGENT
 	Out.tan = surface.tangent;
 #endif // OBJECTSHADER_USE_TANGENT
-
-#ifdef OBJECTSHADER_USE_EMISSIVE
-	Out.emissiveColor = surface.emissiveColor;
-#endif // OBJECTSHADER_USE_EMISSIVE
 
 #ifdef OBJECTSHADER_USE_RENDERTARGETARRAYINDEX
 	const uint frustum_index = input.GetInstancePointer().GetCameraIndex();
@@ -404,16 +485,24 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	const uint2 pixel = input.pos.xy;
 	const float2 ScreenCoord = pixel * GetCamera().internal_resolution_rcp;
 
+#ifdef OBJECTSHADER_USE_UVSETS
+	float4 uvsets = input.GetUVSets();
+#endif // OBJECTSHADER_USE_UVSETS
+
 #ifndef DISABLE_ALPHATEST
 #ifndef TRANSPARENT
 #ifndef ENVMAPRENDERING
 #ifdef OBJECTSHADER_USE_DITHERING
 	// apply dithering:
-	clip(dither(pixel + GetTemporalAASampleRotation()) - (1 - input.dither));
+	clip(dither(pixel + GetTemporalAASampleRotation()) - (1 - input.GetDither()));
 #endif // OBJECTSHADER_USE_DITHERING
 #endif // DISABLE_ALPHATEST
 #endif // TRANSPARENT
 #endif // ENVMAPRENDERING
+
+#ifdef OBJECTSHADER_USE_INSTANCEINDEX
+	ShaderMeshInstance meshinstance = load_instance(input.GetInstanceIndex());
+#endif // OBJECTSHADER_USE_INSTANCEINDEX
 
 
 	Surface surface;
@@ -437,7 +526,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 
 #ifdef OBJECTSHADER_USE_TANGENT
 #if 0
-	float3x3 TBN = compute_tangent_frame(surface.N, surface.P, input.uvsets.xy);
+	float3x3 TBN = compute_tangent_frame(surface.N, surface.P, uvsets.xy);
 #else
 	if (is_frontface == false)
 	{
@@ -454,12 +543,12 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	if (GetMaterial().textures[DISPLACEMENTMAP].IsValid())
 	{
 		Texture2D tex = bindless_textures[GetMaterial().textures[DISPLACEMENTMAP].texture_descriptor];
-		float2 uv = GetMaterial().textures[DISPLACEMENTMAP].GetUVSet() == 0 ? input.uvsets.xy : input.uvsets.zw;
+		float2 uv = GetMaterial().textures[DISPLACEMENTMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
 		float2 uv_dx = ddx_coarse(uv);
 		float2 uv_dy = ddy_coarse(uv);
 
 		ParallaxOcclusionMapping_Impl(
-			input.uvsets,
+			uvsets,
 			surface.V,
 			TBN,
 			GetMaterial(),
@@ -483,14 +572,191 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	if (GetMaterial().textures[BASECOLORMAP].IsValid() && (GetFrame().options & OPTION_BIT_DISABLE_ALBEDO_MAPS) == 0)
 #endif // PREPASS
 	{
-		surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, input.uvsets);
+		#ifdef WATER
+		float2 softwaremodeUV;
+		if (GetMaterial().water_type > 0)
+		{
+			
+			{
+			
+				float2 TD;
+
+				Texture2D texture_basecolormap = bindless_textures[GetMaterial().textures[BASECOLORMAP].texture_descriptor];
+				texture_basecolormap.GetDimensions(TD.x,TD.y);
+				float2 uv = uvsets.xy;
+		 		// VERY IMPORTANT: pixelate BEFORE the UV transformations
+
+				if (GetMaterial().pixelate)
+				{
+					uv = Pixelate( uv,TD );
+				}
+    
+    			// NOTE: faster the time, faster the """framerate""" you perceive
+    			float time = GetFrame().time *  GetMaterial().software_water_speed;
+    
+    			if( GetMaterial().water_type == WarpStyle_GLEnhanced)
+				{
+    
+        			uv = Warp( uv, 1.0 /  2.4, 0.045, time * 0.6   );
+        			uv = Warp( uv, 1.0 /  4.1, 0.034, time * 0.378 );
+        			uv = Warp( uv, 1.0 / 13.0, 0.022, time         );
+        			uv = Warp( uv, 1.0 / 32.0, 0.010, time * 2.0   );
+				}
+    			else if (GetMaterial().water_type == WarpStyle_GL)
+				{
+    
+        			uv = Warp( uv, 1.0 / 16.00, 0.020, time * 4.0  );
+				}
+    			else if (GetMaterial().water_type == WarpStyle_Software)
+				{    
+    
+        			uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
+				}
+    
+    			else if (GetMaterial().water_type == WarpStyle_SoftwareEnhanced)
+				{
+    
+        			uv = Warp( uv, 1.0 / 8.0, 0.01, time * 3.0 );
+        			uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
+        			uv = Warp( uv, 1.0 / 2.124, 0.001, time * 1.87 );
+				}
+        
+    
+				// Double pixelation gives a nice 80s/early 90s sprite game effect
+    			if (GetMaterial().pixelate >= 2)
+				{
+					uv = Pixelate( uv,TD );
+				}
+				softwaremodeUV = uv;
+			
+			}
+
+		}
+		#endif
+		float4 baseColorpainted = {1,1,1,1};
+	
+		[branch]
+		if (GetMaterial().textures[FLOWMAP].IsValid())
+		{
+			float4 flowmap1 = 0;
+			float4 flowmap2 = 0;
+			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[FLOWMAP].texture_descriptor];
+
+			float2 UV_flowMap = GetMaterial().textures[FLOWMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
+			
+			if (GetMaterial().water_type > 0)
+			{
+				#ifdef WATER
+				UV_flowMap = softwaremodeUV;
+				#endif
+				
+			}
+			float2 Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,float4(UV_flowMap,uvsets.zw)).rg - 1.0;
+			
+			
+			
+
+			
+		
+			float time_phase1 = (GetFrame().time * GetMaterial().flowmapspeed) - floor(GetFrame().time * GetMaterial().flowmapspeed);
+			float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
+		
+			float flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
+		
+		
+			flowmap1 = GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(UV_flowMap +  ((Flowmap * time_phase1 * GetMaterial().flowmapintensity)) ,uvsets.zw)).rgba;
+			flowmap2 = GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(UV_flowMap + ((Flowmap * time_phase2 *GetMaterial().flowmapintensity)),uvsets.zw)).rgba;
+			
+			
+			{
+				surface.baseColor *= lerp(flowmap1, flowmap2, flow_mix);
+			}
+			
+		
+		}
+		else
+		{
+			if (GetMaterial().textures[PAINTMAP].IsValid())
+			{
+				Texture2D texture_paintmap = bindless_textures[GetMaterial().textures[PAINTMAP].texture_descriptor];
+				float4 Pmap;
+
+				#ifdef WATER
+				if (GetMaterial().water_type > 0)
+				{
+					Pmap = texture_paintmap.Sample(sampler_objectshader,float4(softwaremodeUV,uvsets.zw)).rgba;
+				}
+				else
+				{
+					Pmap = texture_paintmap.Sample(sampler_objectshader,uvsets).rgba;
+				}
+				
+				#else
+				Pmap = texture_paintmap.Sample(sampler_objectshader,uvsets).rgba;
+				#endif
+				
+				if(Pmap.x > 0)
+				{
+					baseColorpainted.xyz *= ( (GetMaterial().baseColor1.xyz * Pmap.x) + (1 - Pmap.x) );
+				}
+				
+				if(Pmap.y > 0)
+				{
+					baseColorpainted.xyz *= ( (GetMaterial().baseColor2.xyz * Pmap.y) + (1 - Pmap.y) );
+				}
+				
+				if(Pmap.z > 0)
+				{
+					baseColorpainted.xyz *= ( (GetMaterial().baseColor3.xyz * Pmap.z) + (1 - Pmap.z) );
+				}
+				#ifdef WATER
+					if (GetMaterial().water_type > 0)
+					{
+						baseColorpainted *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw));
+					}
+					else
+					{
+						baseColorpainted *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+					}
+					
+				#else
+					baseColorpainted *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+				#endif
+				
+				
+				surface.baseColor = baseColorpainted;
+			
+			}
+			else
+			{
+				#ifdef WATER
+					//surface.baseColor = float4( frac(softwaremodeUV), 0.0, 1.0 );
+					if (GetMaterial().water_type > 0)
+					{
+						surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw));
+					}
+					else
+					{
+						surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+					}
+					
+				#else
+					surface.baseColor *= GetMaterial().textures[BASECOLORMAP].Sample(sampler_objectshader, uvsets);
+				#endif
+				
+			}
+			
+		}
 	}
+#ifndef WATER
 	else if ((GetFrame().options & OPTION_BIT_DISABLE_ALBEDO_MAPS) == 0)
 	{
 		float4 color1 = float4(0, 0.5, 0, 1);
 		float4 color2 = float4(0, 0.0, 0, 1);
 		
 		float2 _Scale = float2(8, 8); // Size of each square in the checkerboard pattern
+		
+		
 		
 		float2 uv = input.uvsets.xy * _Scale; // scale this with uvs defaults to xy which might not be always right??
 
@@ -504,6 +770,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 		
 		surface.baseColor = color;
 	}
+#endif // not water? just don't provide a color just make it white, water doesn't actually need a albedo to look good. but it is nessary if one wants to use a flowmap to affect albedo.
 #endif // OBJECTSHADER_USE_UVSETS
 
 
@@ -527,14 +794,14 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	[branch]
 	if (GetMaterial().normalMapStrength > 0 && GetMaterial().textures[NORMALMAP].IsValid())
 	{
-		surface.bumpColor = float3(GetMaterial().textures[NORMALMAP].Sample(sampler_objectshader, input.uvsets).rg, 1);
+		surface.bumpColor = float3(GetMaterial().textures[NORMALMAP].Sample(sampler_objectshader, uvsets).rg, 1);
 		surface.bumpColor = surface.bumpColor * 2 - 1;
 		surface.bumpColor.rg *= GetMaterial().normalMapStrength;
 	}
 #endif // OBJECTSHADER_USE_TANGENT
 #endif // WATER
 
-	surface.layerMask = GetMaterial().layerMask & load_instance(input.instanceIndex).layerMask;
+	surface.layerMask = GetMaterial().layerMask & meshinstance.layerMask;
 
 
 	float4 surfaceMap = 1;
@@ -542,7 +809,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	[branch]
 	if (GetMaterial().textures[SURFACEMAP].IsValid())
 	{
-		surfaceMap = GetMaterial().textures[SURFACEMAP].Sample(sampler_objectshader, input.uvsets);
+		surfaceMap = GetMaterial().textures[SURFACEMAP].Sample(sampler_objectshader, uvsets);
 	}
 #endif // OBJECTSHADER_USE_UVSETS
 
@@ -590,7 +857,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	[branch]
 	if (GetMaterial().textures[SPECULARMAP].IsValid())
 	{
-		specularMap = GetMaterial().textures[SPECULARMAP].Sample(sampler_objectshader, input.uvsets);
+		specularMap = GetMaterial().textures[SPECULARMAP].Sample(sampler_objectshader, uvsets);
 	}
 #endif // OBJECTSHADER_USE_UVSETS
 
@@ -599,6 +866,9 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	surface.create(GetMaterial(), surface.baseColor, surfaceMap, specularMap);
 
 
+
+
+#ifdef OBJECTSHADER_USE_EMISSIVE
 	// Emissive map:
 	surface.emissiveColor = GetMaterial().GetEmissive();
 
@@ -606,15 +876,12 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	[branch]
 	if (any(surface.emissiveColor) && GetMaterial().textures[EMISSIVEMAP].IsValid())
 	{
-		float4 emissiveMap = GetMaterial().textures[EMISSIVEMAP].Sample(sampler_objectshader, input.uvsets);
+		float4 emissiveMap = GetMaterial().textures[EMISSIVEMAP].Sample(sampler_objectshader, uvsets);
 		surface.emissiveColor *= emissiveMap.rgb * emissiveMap.a;
 	}
 #endif // OBJECTSHADER_USE_UVSETS
 
-
-
-#ifdef OBJECTSHADER_USE_EMISSIVE
-	surface.emissiveColor *= Unpack_R11G11B10_FLOAT(input.emissiveColor);
+	surface.emissiveColor *= Unpack_R11G11B10_FLOAT(meshinstance.emissive);
 #endif // OBJECTSHADER_USE_EMISSIVE
 
 
@@ -623,7 +890,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	[branch]
 	if (GetMaterial().IsOcclusionEnabled_Secondary() && GetMaterial().textures[OCCLUSIONMAP].IsValid())
 	{
-		surface.occlusion *= GetMaterial().textures[OCCLUSIONMAP].Sample(sampler_objectshader, input.uvsets).r;
+		surface.occlusion *= GetMaterial().textures[OCCLUSIONMAP].Sample(sampler_objectshader, uvsets).r;
 	}
 #endif // OBJECTSHADER_USE_UVSETS
 
@@ -651,7 +918,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	[branch]
 	if (GetMaterial().textures[ANISOTROPYMAP].IsValid())
 	{
-		float2 anisotropyTexture = GetMaterial().textures[ANISOTROPYMAP].Sample(sampler_objectshader, input.uvsets).rg * 2 - 1;
+		float2 anisotropyTexture = GetMaterial().textures[ANISOTROPYMAP].Sample(sampler_objectshader, uvsets).rg * 2 - 1;
 		surface.aniso.strength *= length(anisotropyTexture);
 		surface.aniso.direction = mul(float2x2(surface.aniso.direction.x, surface.aniso.direction.y, -surface.aniso.direction.y, surface.aniso.direction.x), normalize(anisotropyTexture));
 	}
@@ -670,12 +937,12 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	[branch]
 	if (GetMaterial().textures[SHEENCOLORMAP].IsValid())
 	{
-		surface.sheen.color = GetMaterial().textures[SHEENCOLORMAP].Sample(sampler_objectshader, input.uvsets).rgb;
+		surface.sheen.color = GetMaterial().textures[SHEENCOLORMAP].Sample(sampler_objectshader, uvsets).rgb;
 	}
 	[branch]
 	if (GetMaterial().textures[SHEENROUGHNESSMAP].IsValid())
 	{
-		surface.sheen.roughness = GetMaterial().textures[SHEENROUGHNESSMAP].Sample(sampler_objectshader, input.uvsets).a;
+		surface.sheen.roughness = GetMaterial().textures[SHEENROUGHNESSMAP].Sample(sampler_objectshader, uvsets).a;
 	}
 #endif // OBJECTSHADER_USE_UVSETS
 #endif // SHEEN
@@ -690,18 +957,18 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	[branch]
 	if (GetMaterial().textures[CLEARCOATMAP].IsValid())
 	{
-		surface.clearcoat.factor = GetMaterial().textures[CLEARCOATMAP].Sample(sampler_objectshader, input.uvsets).r;
+		surface.clearcoat.factor = GetMaterial().textures[CLEARCOATMAP].Sample(sampler_objectshader, uvsets).r;
 	}
 	[branch]
 	if (GetMaterial().textures[CLEARCOATROUGHNESSMAP].IsValid())
 	{
-		surface.clearcoat.roughness = GetMaterial().textures[CLEARCOATROUGHNESSMAP].Sample(sampler_objectshader, input.uvsets).g;
+		surface.clearcoat.roughness = GetMaterial().textures[CLEARCOATROUGHNESSMAP].Sample(sampler_objectshader, uvsets).g;
 	}
 #ifdef OBJECTSHADER_USE_TANGENT
 	[branch]
 	if (GetMaterial().textures[CLEARCOATNORMALMAP].IsValid())
 	{
-		float3 clearcoatNormalMap = float3(GetMaterial().textures[CLEARCOATNORMALMAP].Sample(sampler_objectshader, input.uvsets).rg, 1);
+		float3 clearcoatNormalMap = float3(GetMaterial().textures[CLEARCOATNORMALMAP].Sample(sampler_objectshader, uvsets).rg, 1);
 		clearcoatNormalMap = clearcoatNormalMap * 2 - 1;
 		surface.clearcoat.N = mul(clearcoatNormalMap, TBN);
 	}
@@ -727,39 +994,178 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 	Lighting lighting;
 	lighting.create(0, 0, ambient, 0);
 
-
+	
+	float4 color = surface.baseColor;
 
 #ifdef WATER
-
 	//NORMALMAP
 	float2 bumpColor0 = 0;
 	float2 bumpColor1 = 0;
 	float2 bumpColor2 = 0;
+	float flow_mix = 0;
+	
 	[branch]
 	if (GetMaterial().textures[NORMALMAP].IsValid())
 	{
 		Texture2D texture_normalmap = bindless_textures[GetMaterial().textures[NORMALMAP].texture_descriptor];
-		const float2 UV_normalMap = GetMaterial().textures[NORMALMAP].GetUVSet() == 0 ? input.uvsets.xy : input.uvsets.zw;
-		bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
-		bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+		const float2 UV_normalMap = GetMaterial().textures[NORMALMAP].GetUVSet() == 0 ? uvsets.xy : uvsets.zw;
+		float2 softwaremodeUV;
+		if (GetMaterial().water_type > 0)
+		{
+			
+			{
+			
+				float2 TD;
+
+				texture_normalmap.GetDimensions(TD.x,TD.y);
+				float2 uv = uvsets.xy;
+		 		// VERY IMPORTANT: pixelate BEFORE the UV transformations
+
+				if (GetMaterial().pixelate)
+				{
+					uv = Pixelate( uv,TD );
+				}
+    
+    			// NOTE: faster the time, faster the """framerate""" you perceive
+    			float time = GetFrame().time *  GetMaterial().software_water_speed;
+    
+    			if( GetMaterial().water_type == WarpStyle_GLEnhanced)
+				{
+    
+        			uv = Warp( uv, 1.0 /  2.4, 0.045, time * 0.6   );
+        			uv = Warp( uv, 1.0 /  4.1, 0.034, time * 0.378 );
+        			uv = Warp( uv, 1.0 / 13.0, 0.022, time         );
+        			uv = Warp( uv, 1.0 / 32.0, 0.010, time * 2.0   );
+				}
+    			else if (GetMaterial().water_type == WarpStyle_GL)
+				{
+    
+        			uv = Warp( uv, 1.0 / 16.00, 0.020, time * 4.0  );
+				}
+    			else if (GetMaterial().water_type == WarpStyle_Software)
+				{    
+    
+        			uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
+				}
+    
+    			else if (GetMaterial().water_type == WarpStyle_SoftwareEnhanced)
+				{
+    
+        			uv = Warp( uv, 1.0 / 8.0, 0.01, time * 3.0 );
+        			uv = Ripple( uv, float3( 0.8, 200.0, 0.02 * GetMaterial().ripple_scale ), time * 20.0 );
+        			uv = Warp( uv, 1.0 / 2.124, 0.001, time * 1.87 );
+				}
+        
+    
+				// Double pixelation gives a nice 80s/early 90s sprite game effect
+    			if (GetMaterial().pixelate >= 2)
+				{
+					uv = Pixelate( uv,TD );
+				}
+				softwaremodeUV = uv;
+			
+			}
+
+		}
+		
+		if (GetMaterial().textures[FLOWMAP].IsValid())
+		{
+			
+		
+			if (GetMaterial().flowmapintensity > 0)
+			{
+				Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[FLOWMAP].texture_descriptor];
+
+				float2 Flowmap;
+
+				if (GetMaterial().water_type > 0)
+				{
+					Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,float4(softwaremodeUV,uvsets.zw)).rg - 1.0;
+				}
+				else
+				{
+					Flowmap = 2.0 * texture_flowmap.Sample(sampler_linear_clamp,uvsets).rg - 1.0;
+				}
+		
+		
+				float time_phase1 = (GetFrame().time * GetMaterial().flowmapspeed) - floor(GetFrame().time * GetMaterial().flowmapspeed);
+				float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
+		
+				flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
+
+				bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +  (Flowmap * time_phase1 * GetMaterial().flowmapintensity)- GetMaterial().texMulAdd.ww).rg - 1;
+				bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap +(Flowmap * time_phase2 *GetMaterial().flowmapintensity) + GetMaterial().texMulAdd.zw).rg - 1;
+			}
+			else
+			{
+				
+				if (GetMaterial().water_type > 0)
+				{
+					bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw) - GetMaterial().texMulAdd.ww).rg - 1;
+					bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw) + GetMaterial().texMulAdd.zw).rg - 1;
+				}
+				else
+				{
+				
+					bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
+					bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+				}
+			}
+			
+		
+		}
+		else
+		{
+			if (GetMaterial().water_type > 0)
+			{
+				bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw) - GetMaterial().texMulAdd.ww).rg - 1;
+				bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, float4(softwaremodeUV,uvsets.zw) + GetMaterial().texMulAdd.zw).rg - 1;
+			}
+			else
+			{
+				
+				bumpColor0 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap - GetMaterial().texMulAdd.ww).rg - 1;
+				bumpColor1 = 2 * texture_normalmap.Sample(sampler_objectshader, UV_normalMap + GetMaterial().texMulAdd.zw).rg - 1;
+			}
+			
+		}
 	}
 	[branch]
 	if (GetCamera().texture_waterriples_index >= 0)
 	{
 		bumpColor2 = bindless_textures_float2[GetCamera().texture_waterriples_index].SampleLevel(sampler_linear_clamp, ScreenCoord, 0).rg;
 	}
-	surface.bumpColor = float3(bumpColor0 + bumpColor1 + bumpColor2, 1)  * GetMaterial().refraction;
+	
+	if (GetMaterial().textures[FLOWMAP].IsValid())
+	{
+		surface.bumpColor = float3(lerp(bumpColor0, bumpColor1, flow_mix) + bumpColor2, 1)  * GetMaterial().refraction;
+	}
+	else
+	{
+		surface.bumpColor = float3(bumpColor0 + bumpColor1 + bumpColor2, 1)  * GetMaterial().refraction;
+	}
+	
 	surface.N = normalize(lerp(surface.N, mul(normalize(surface.bumpColor), TBN), GetMaterial().normalMapStrength));
 	surface.bumpColor *= GetMaterial().normalMapStrength;
-
+	
 	[branch]
 	if (GetCamera().texture_reflection_index >= 0)
 	{
 		//REFLECTION
 		float4 reflectionUV = mul(GetCamera().reflection_view_projection, float4(surface.P, 1));
 		reflectionUV.xy /= reflectionUV.w;
-		reflectionUV.xy = clipspace_to_uv(reflectionUV.xy);
-		lighting.indirect.specular += bindless_textures[GetCamera().texture_reflection_index].SampleLevel(sampler_linear_mirror, reflectionUV.xy + surface.bumpColor.rg, 0).rgb * surface.F;
+		reflectionUV.xy = clipspace_to_uv(reflectionUV.xy) + surface.bumpColor.rg;
+		float3 reflectiveColor = bindless_textures[GetCamera().texture_reflection_index].SampleLevel(sampler_linear_mirror, reflectionUV.xy, 0).rgb;
+		[branch]
+		if(GetCamera().texture_reflection_depth_index >= 0)
+		{
+			float reflectiveDepth = bindless_textures[GetCamera().texture_reflection_depth_index].SampleLevel(sampler_point_clamp, reflectionUV.xy, 0).r;
+			float3 reflectivePosition = reconstruct_position(reflectionUV.xy, reflectiveDepth, GetCamera().reflection_inverse_view_projection);
+			float4 water_plane = GetCamera().reflection_plane;
+			float water_depth = -dot(float4(reflectivePosition, 1), water_plane);
+			reflectiveColor.rgb = lerp(color.rgb, reflectiveColor.rgb, saturate(exp(-water_depth * color.a)));
+		}
+		lighting.indirect.specular += reflectiveColor * surface.F;
 	}
 #endif // WATER
 
@@ -775,7 +1181,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 		[branch]
 		if (GetMaterial().textures[TRANSMISSIONMAP].IsValid())
 		{
-			float transmissionMap = GetMaterial().textures[TRANSMISSIONMAP].Sample(sampler_objectshader, input.uvsets).r;
+			float transmissionMap = GetMaterial().textures[TRANSMISSIONMAP].Sample(sampler_objectshader, uvsets).r;
 			surface.transmission *= transmissionMap;
 		}
 #endif // OBJECTSHADER_USE_UVSETS
@@ -798,7 +1204,7 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 
 
 #ifdef OBJECTSHADER_USE_ATLAS
-	LightMapping(load_instance(input.instanceIndex).lightmap, input.atl, lighting, surface);
+	LightMapping(meshinstance.lightmap, input.atl, lighting, surface);
 #endif // OBJECTSHADER_USE_ATLAS
 
 
@@ -832,26 +1238,40 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 #endif // ENVMAPRENDERING
 #endif // WATER
 
-
-	float4 color = surface.baseColor;
-
 #ifdef WATER
 	[branch]
 	if (GetCamera().texture_refraction_index >= 0)
 	{
-		// WATER REFRACTION
+		// Water refraction:
+		float4 water_plane = GetCamera().reflection_plane;
+		const float camera_above_water = dot(float4(GetCamera().position, 1), water_plane) < 0; 
 		Texture2D texture_refraction = bindless_textures[GetCamera().texture_refraction_index];
-		float sampled_lineardepth = texture_lineardepth.SampleLevel(sampler_point_clamp, ScreenCoord.xy + surface.bumpColor.rg, 0) * GetCamera().z_far;
-		float depth_difference = sampled_lineardepth - lineardepth;
-		surface.refraction.rgb = texture_refraction.SampleLevel(sampler_linear_mirror, ScreenCoord.xy + surface.bumpColor.rg * saturate(0.5 * depth_difference), 0).rgb;
-		if (depth_difference < 0)
+		// First sample using full perturbation:
+		float2 refraction_uv = ScreenCoord.xy + surface.bumpColor.rg;
+		float refraction_depth = find_max_depth(refraction_uv, 2, 2);
+		float3 refraction_position = reconstruct_position(refraction_uv, refraction_depth);
+		float water_depth = -dot(float4(refraction_position, 1), water_plane);
+		if(camera_above_water)
+			water_depth = -water_depth;
+		if(water_depth <= 0)
 		{
-			// Fix cutoff by taking unperturbed depth diff to fill the holes with fog:
-			sampled_lineardepth = texture_lineardepth.SampleLevel(sampler_point_clamp, ScreenCoord.xy, 0) * GetCamera().z_far;
-			depth_difference = sampled_lineardepth - lineardepth;
+			// Above water, fill holes by taking unperturbed sample:
+			refraction_uv = ScreenCoord.xy;
 		}
-		// WATER FOG:
-		surface.refraction.a = 1 - saturate(color.a * 0.1 * depth_difference);
+		else
+		{
+			// Below water, compute perturbation according to first sample water depth:
+			refraction_uv = ScreenCoord.xy + surface.bumpColor.rg * saturate(1 - exp(-water_depth));
+		}
+		surface.refraction.rgb = texture_refraction.SampleLevel(sampler_linear_mirror, refraction_uv, 0).rgb;
+		// Recompute depth params again with actual perturbation:
+		refraction_depth = texture_depth.SampleLevel(sampler_point_clamp, refraction_uv, 0);
+		refraction_position = reconstruct_position(refraction_uv, refraction_depth);
+		water_depth = max(water_depth, -dot(float4(refraction_position, 1), water_plane));
+		if(camera_above_water)
+			water_depth = -water_depth;
+		// Water fog computation:
+		surface.refraction.a = saturate(exp(-water_depth * color.a));
 		color.a = 1;
 	}
 #endif // WATER
@@ -885,8 +1305,8 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_Target
 
 	PrimitiveID prim;
 	prim.primitiveIndex = primitiveID;
-	prim.instanceIndex = input.instanceIndex;
-	prim.subsetIndex = push.geometryIndex - load_instance(input.instanceIndex).geometryOffset;
+	prim.instanceIndex = input.GetInstanceIndex();
+	prim.subsetIndex = push.geometryIndex - meshinstance.geometryOffset;
 	return prim.pack();
 #else
 	return color;

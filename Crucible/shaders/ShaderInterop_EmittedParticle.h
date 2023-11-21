@@ -14,7 +14,7 @@ struct Particle
 	float maxLife;
 	float2 sizeBeginEnd;
 	float life;
-	uint color_mirror;
+	uint color;
 };
 
 struct ParticleCounters
@@ -37,30 +37,33 @@ static const uint EMITTER_OPTION_BIT_FRAME_BLENDING_ENABLED = 1 << 0;
 static const uint EMITTER_OPTION_BIT_SPH_ENABLED = 1 << 1;
 static const uint EMITTER_OPTION_BIT_MESH_SHADER_ENABLED = 1 << 2;
 static const uint EMITTER_OPTION_BIT_COLLIDERS_DISABLED = 1 << 3;
+static const uint EMITTER_OPTION_BIT_USE_RAIN_BLOCKER = 1 << 4;
+static const uint EMITTER_OPTION_BIT_TAKE_COLOR_FROM_MESH = 1 << 5;
 
 CBUFFER(EmittedParticleCB, CBSLOT_OTHER_EMITTEDPARTICLE)
 {
 	ShaderTransform	xEmitterTransform;
+	ShaderTransform xEmitterBaseMeshUnormRemap;
 
 	uint		xEmitCount;
-	uint		xEmitterMeshIndexCount;
 	float		xEmitterRandomness;
 	float		xParticleRandomColorFactor;
-
 	float		xParticleSize;
+
 	float		xParticleScaling;
 	float		xParticleRotation;
 	float		xParticleRandomFactor;
-
 	float		xParticleNormalFactor;
+
 	float		xParticleLifeSpan;
 	float		xParticleLifeSpanRandomness;
 	float		xParticleMass;
-
 	float		xParticleMotionBlurAmount;
+
 	uint		xEmitterMaxParticleCount;
 	uint		xEmitterInstanceIndex;
-	uint		xEmitter_padding1;
+	uint		xEmitterMeshGeometryOffset;
+	uint		xEmitterMeshGeometryCount;
 
 	uint2		xEmitterFramesXY;
 	uint		xEmitterFrameCount;
@@ -90,6 +93,16 @@ CBUFFER(EmittedParticleCB, CBSLOT_OTHER_EMITTEDPARTICLE)
 
 	float3		xParticleVelocity;
 	float		xParticleDrag;
+
+	// Crucible changes
+	float4 colors[32];
+	uint2 padding; // padding sphereradius to uint4
+	float innersphereradius;
+	float sphereradius;
+	uint3 padding1; // padding volumetype to uint4
+	uint volumetype;
+	uint3 padding2; // padding numColors to uint4
+	uint numColors;
 };
 
 static const uint THREADCOUNT_EMIT = 256;

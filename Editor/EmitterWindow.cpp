@@ -8,7 +8,7 @@ void EmitterWindow::Create(EditorComponent* _editor)
 {
 	editor = _editor;
 	wi::gui::Window::Create(ICON_EMITTER " Emitter", wi::gui::Window::WindowControls::COLLAPSE | wi::gui::Window::WindowControls::CLOSE);
-	SetSize(XMFLOAT2(300, 960));
+	SetSize(XMFLOAT2(300, 980));
 
 	closeButton.SetTooltip("Delete EmittedParticleSystem");
 	OnClose([=](wi::gui::EventArgs args) {
@@ -82,6 +82,68 @@ void EmitterWindow::Create(EditorComponent* _editor)
 	shaderTypeComboBox.SetEnabled(false);
 	shaderTypeComboBox.SetTooltip("Choose a shader type for the particles. This is responsible of how they will be rendered.");
 	AddWidget(&shaderTypeComboBox);
+
+	VolumetypeComboBox.Create("VolumeType: ");
+	VolumetypeComboBox.SetPos(XMFLOAT2(x, y += step));
+	VolumetypeComboBox.SetSize(XMFLOAT2(wid, itemheight));
+	VolumetypeComboBox.AddItem("BOX", (uint64_t)wi::EmittedParticleSystem::VolumeType::Box);
+	VolumetypeComboBox.AddItem("SPHERE", (uint64_t)wi::EmittedParticleSystem::VolumeType::Sphere);
+	VolumetypeComboBox.OnSelect([&](wi::gui::EventArgs args) {
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			emitter->volumetype = (wi::EmittedParticleSystem::VolumeType)args.userdata;
+		}
+		});
+	VolumetypeComboBox.SetEnabled(false);
+	VolumetypeComboBox.SetTooltip("Choose a volume type for the particles. This is responsible of how they will be spawned with out a mesh.");
+	AddWidget(&VolumetypeComboBox);
+
+	sphereradius_Slider.Create(0.0f, 100.0f, 1.0f, 100000, " Outer Sphere Radius: ");
+	sphereradius_Slider.SetSize(XMFLOAT2(wid, itemheight));
+	sphereradius_Slider.SetPos(XMFLOAT2(x, y += step));
+	sphereradius_Slider.OnSlide([&](wi::gui::EventArgs args) {
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			emitter->sphere_radius = args.fValue;
+		}
+		});
+	sphereradius_Slider.SetEnabled(false);
+	sphereradius_Slider.SetTooltip("Set the sphere radius of the particles they spawn in.");
+	AddWidget(&sphereradius_Slider);
+
+	innersphereradius_Slider.Create(0.0f, 100.0f, 1.0f, 100000, "Inner Sphere Radius: ");
+	innersphereradius_Slider.SetSize(XMFLOAT2(wid, itemheight));
+	innersphereradius_Slider.SetPos(XMFLOAT2(x, y += step));
+	innersphereradius_Slider.OnSlide([&](wi::gui::EventArgs args) {
+		auto emitter = GetEmitter();
+		//Scene& scene = editor->GetCurrentScene();
+		//float dTime = scene.time + 5;
+		if (emitter != nullptr)
+		{
+			if (args.fValue > emitter->sphere_radius)
+			{
+				emitter->inner_sphere_radius = emitter->sphere_radius;
+				innersphereradius_Slider.SetValue(emitter->sphere_radius);
+				
+				//TODO: figure out how to get delta time???
+				
+				/*if (dTime < scene.time)
+				{
+					wi::backlog::post("what the hell ya doing fool you can't have the inner higher than outer!", wi::backlog::LogLevel::Error);
+				}*/
+				
+			}
+			else
+			{
+				emitter->inner_sphere_radius = args.fValue;
+			}
+		}
+		});
+	innersphereradius_Slider.SetEnabled(false);
+	innersphereradius_Slider.SetTooltip("Set the innersphere radius of the particles they wont spawn in.");
+	AddWidget(&innersphereradius_Slider);
 
 
 	sortCheckBox.Create("Sorting: ");
@@ -198,6 +260,21 @@ void EmitterWindow::Create(EditorComponent* _editor)
 	collidersDisabledCheckBox.SetCheck(false);
 	collidersDisabledCheckBox.SetTooltip("Simply disables all colliders for acting on this particle system");
 	AddWidget(&collidersDisabledCheckBox);
+
+
+	takeColorCheckBox.Create("Take color from mesh: ");
+	takeColorCheckBox.SetPos(XMFLOAT2(x, y += step));
+	takeColorCheckBox.SetSize(XMFLOAT2(itemheight, itemheight));
+	takeColorCheckBox.OnClick([&](wi::gui::EventArgs args) {
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			emitter->SetTakeColorFromMesh(args.bValue);
+		}
+		});
+	takeColorCheckBox.SetCheck(false);
+	takeColorCheckBox.SetTooltip("If it emits from a mesh, then particle color will be taken from mesh material surface.");
+	AddWidget(&takeColorCheckBox);
 
 
 
@@ -514,6 +591,82 @@ void EmitterWindow::Create(EditorComponent* _editor)
 	emitColorRandomnessSlider.SetTooltip("Set the randomness of color for the emitted particles.");
 	AddWidget(&emitColorRandomnessSlider);
 
+	AddColorButton.Create("Add Color");
+	AddColorButton.SetPos(XMFLOAT2(x, y += step));
+	AddColorButton.SetSize(XMFLOAT2(wid, itemheight));
+	AddColorButton.OnClick([&](wi::gui::EventArgs args) {
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			if (emitter->user_defined_colors.size() < 32 )
+			{
+				emitter->user_defined_colors.push_back(float4(wi::random::GetRandom(0.0f, 1.0f), wi::random::GetRandom(0.0f, 1.0f), wi::random::GetRandom(0.0f, 1.0f), 1.0f));
+				RefreshColorsList();
+			}
+			
+		}
+		});
+	AddColorButton.SetTooltip("Add a color for color randomness.");
+	AddWidget(&AddColorButton);
+
+	ColorList.Create("Colors");
+	ColorList.SetSize(XMFLOAT2(wid, 200));
+	ColorList.SetPos(XMFLOAT2(x, y += step));
+	ColorList.OnSelect([=](wi::gui::EventArgs args) {
+		wi::scene::Scene& scene = editor->GetCurrentScene();
+
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			uint32_t channelIndex = args.userdata;
+			if (emitter->user_defined_colors.size() > channelIndex)
+			{
+				colorPicker1.SetPickColor(wi::Color::fromFloat4(emitter->user_defined_colors[channelIndex]));
+			}
+			
+		}
+		});
+	ColorList.OnDelete([=](wi::gui::EventArgs args) {
+		wi::scene::Scene& scene = editor->GetCurrentScene();
+
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			uint32_t channelIndex = args.userdata;
+			emitter->user_defined_colors.erase(emitter->user_defined_colors.begin() + channelIndex);
+		}
+		RefreshColorsList();
+		});
+	AddWidget(&ColorList);
+
+	y += ColorList.GetScale().y;
+
+	colorPicker1.Create("Color", wi::gui::Window::WindowControls::NONE);
+	colorPicker1.SetPos(XMFLOAT2(10, y += step));
+	colorPicker1.SetVisible(true);
+	colorPicker1.SetEnabled(true);
+	colorPicker1.OnColorChanged([&](wi::gui::EventArgs args) {
+
+		auto emitter = GetEmitter();
+		if (emitter != nullptr)
+		{
+			int count = ColorList.GetItemCount();
+			for (int i = 0; i < count; ++i)
+			{
+				if (!ColorList.GetItem(i).selected)
+					continue;
+				if (i >= emitter->user_defined_colors.size())
+					return;
+
+				emitter->user_defined_colors[i] = args.color.toFloat4();
+			}
+			
+		}
+	});
+	AddWidget(&colorPicker1);
+
+	y += colorPicker1.GetScale().y;
+
 	emitMotionBlurSlider.Create(0.0f, 1.0f, 1.0f, 100000, "Motion blur: ");
 	emitMotionBlurSlider.SetSize(XMFLOAT2(wid, itemheight));
 	emitMotionBlurSlider.SetPos(XMFLOAT2(x, y += step));
@@ -658,6 +811,9 @@ void EmitterWindow::Create(EditorComponent* _editor)
 
 void EmitterWindow::SetEntity(Entity entity)
 {
+	if (this->entity == entity)
+		return;
+
 	this->entity = entity;
 
 	auto emitter = GetEmitter();
@@ -667,6 +823,7 @@ void EmitterWindow::SetEntity(Entity entity)
 		SetEnabled(true);
 
 		shaderTypeComboBox.SetSelectedByUserdataWithoutCallback((uint64_t)emitter->shaderType);
+		VolumetypeComboBox.SetSelectedByUserdataWithoutCallback((uint64_t)emitter->volumetype);
 
 		sortCheckBox.SetCheck(emitter->IsSorted());
 		depthCollisionsCheckBox.SetCheck(emitter->IsDepthCollisionEnabled());
@@ -675,6 +832,7 @@ void EmitterWindow::SetEntity(Entity entity)
 		volumeCheckBox.SetCheck(emitter->IsVolumeEnabled());
 		frameBlendingCheckBox.SetCheck(emitter->IsFrameBlendingEnabled());
 		collidersDisabledCheckBox.SetCheck(emitter->IsCollidersDisabled());
+		takeColorCheckBox.SetCheck(emitter->IsTakeColorFromMesh());
 		maxParticlesSlider.SetValue((float)emitter->GetMaxParticleCount());
 
 		frameRateInput.SetValue(emitter->frameRate);
@@ -690,6 +848,19 @@ void EmitterWindow::SetEntity(Entity entity)
 		emitScalingSlider.SetValue(emitter->scaleX);
 		emitLifeSlider.SetValue(emitter->life);
 		emitRandomnessSlider.SetValue(emitter->random_factor);
+
+		sphereradius_Slider.SetValue(emitter->sphere_radius);
+		innersphereradius_Slider.SetValue(emitter->inner_sphere_radius);
+
+		colorPicker1.SetEnabled(true);
+
+		RefreshColorsList();
+
+		if (ColorList.GetItemCount() > 0)
+		{
+			ColorList.Select(0);
+		}
+
 		emitLifeRandomnessSlider.SetValue(emitter->random_life);
 		emitColorRandomnessSlider.SetValue(emitter->random_color);
 		emitMotionBlurSlider.SetValue(emitter->motionBlurAmount);
@@ -775,6 +946,33 @@ void EmitterWindow::UpdateData()
 
 }
 
+void EmitterWindow::RefreshColorsList()
+{
+	auto emitter = GetEmitter();
+	if (emitter == nullptr)
+	{
+		return;
+	}
+
+	
+
+	uint32_t channelIndex = 0;
+	ColorList.ClearItems();
+	for (const float4& channel : emitter->user_defined_colors)
+	{
+		wi::gui::TreeList::Item item;
+
+		int nameNum = channelIndex + 1;
+		item.name = "color " + std::to_string(nameNum);
+
+		//item.userdata = 0ull;
+		item.userdata = channelIndex;
+		ColorList.AddItem(item);
+
+		channelIndex++;
+	}
+}
+
 void EmitterWindow::ResizeLayout()
 {
 	wi::gui::Window::ResizeLayout();
@@ -816,6 +1014,9 @@ void EmitterWindow::ResizeLayout()
 	add_fullwidth(restartButton);
 	add(meshComboBox);
 	add(shaderTypeComboBox);
+	add(VolumetypeComboBox);
+	add(sphereradius_Slider);
+	add(innersphereradius_Slider);
 	add_right(sortCheckBox);
 	add_right(depthCollisionsCheckBox);
 	add_right(sphCheckBox);
@@ -824,6 +1025,7 @@ void EmitterWindow::ResizeLayout()
 	add_right(volumeCheckBox);
 	add_right(frameBlendingCheckBox);
 	add_right(collidersDisabledCheckBox);
+	add_right(takeColorCheckBox);
 	add(maxParticlesSlider);
 	add(emitCountSlider);
 	add(emitSizeSlider);
@@ -834,6 +1036,12 @@ void EmitterWindow::ResizeLayout()
 	add(emitLifeRandomnessSlider);
 	add(emitRandomnessSlider);
 	add(emitColorRandomnessSlider);
+
+	add_fullwidth(AddColorButton);
+	add_fullwidth(ColorList);
+
+	add_fullwidth(colorPicker1);
+
 	add(emitMotionBlurSlider);
 	add(emitMassSlider);
 	add(timestepSlider);

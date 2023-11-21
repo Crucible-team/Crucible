@@ -90,6 +90,8 @@ enum TEXTURESLOT
 	CLEARCOATNORMALMAP,
 	SPECULARMAP,
 	ANISOTROPYMAP,
+	FLOWMAP,
+	PAINTMAP,
 
 	TEXTURESLOT_COUNT
 };
@@ -339,6 +341,22 @@ struct ShaderMaterial
 	float		anisotropy_rotation_sin;
 	float		anisotropy_rotation_cos;
 	float		padding0;
+	
+	//Crucible section
+	float		flowmapspeed;
+	float		flowmapintensity;
+	float 		software_water_speed;
+	float		texture_to_wave_scale;
+
+	float 		ripple_scale;
+	uint		water_type;
+	uint		pixelate;
+	uint		WarpStyle_Software_Quality;
+	
+	
+	float4		baseColor1;
+	float4		baseColor2;
+	float4		baseColor3;
 
 	int			sampler_descriptor;
 	uint		options;
@@ -379,6 +397,17 @@ struct ShaderMaterial
 		clearcoatRoughness = 0;
 		stencilRef = 0;
 		shaderType = 0;
+		
+		flowmapspeed = 0;
+		flowmapintensity = 0;
+
+		software_water_speed = 0.5;
+		texture_to_wave_scale = 1;
+
+		ripple_scale = 1;
+
+		water_type = 0;
+		pixelate = 0;
 
 		userdata = uint4(0, 0, 0, 0);
 
@@ -444,10 +473,10 @@ static const uint SHADERMESH_FLAG_EMITTEDPARTICLE = 1 << 2;
 //	But because these are always loaded toghether by shaders, they are unrolled into one to reduce individual buffer loads
 struct ShaderGeometry
 {
-	int vb_pos_nor_wind;
-	int vb_uvs;
 	int ib;
-	uint indexOffset;
+	int vb_pos_wind;
+	int vb_uvs;
+	int vb_nor;
 
 	int vb_tan;
 	int vb_col;
@@ -464,27 +493,41 @@ struct ShaderGeometry
 	float3 aabb_max;
 	float tessellation_factor;
 
+	float2 uv_range_min;
+	float2 uv_range_max;
+
+	uint indexOffset;
+	uint indexCount;
+	int padding0;
+	int padding1;
+
 	void init()
 	{
 		ib = -1;
-		indexOffset = 0;
-		vb_pos_nor_wind = -1;
+		vb_pos_wind = -1;
 		vb_uvs = -1;
 
+		vb_nor = -1;
 		vb_tan = -1;
 		vb_col = -1;
 		vb_atl = -1;
-		vb_pre = -1;
 
+		vb_pre = -1;
 		materialIndex = 0;
 		meshletOffset = 0;
 		meshletCount = 0;
-		impostorSliceOffset = -1;
 
 		aabb_min = float3(0, 0, 0);
 		flags = 0;
 		aabb_max = float3(0, 0, 0);
 		tessellation_factor = 0;
+
+		uv_range_min = float2(0, 0);
+		uv_range_max = float2(1, 1);
+
+		impostorSliceOffset = -1;
+		indexOffset = 0;
+		indexCount = 0;
 	}
 };
 
@@ -914,8 +957,8 @@ struct FrameCB
 
 	float		cloudShadowFarPlaneKm;
 	int			texture_volumetricclouds_shadow_index;
+	float		gi_boost;
 	int			padding0;
-	int			padding1;
 
 	uint		lightarray_offset;			// indexing into entity array
 	uint		lightarray_count;			// indexing into entity array
@@ -939,8 +982,16 @@ struct FrameCB
 
 	int			texture_cameravolumelut_index;
 	int			texture_wind_index;
+	int			texture_wind_prev_index;
 	int			buffer_entity_index;
-	float		gi_boost;
+
+	float4		rain_blocker_mad;
+	float4x4	rain_blocker_matrix;
+	float4x4	rain_blocker_matrix_inverse;
+
+	float4		rain_blocker_mad_prev;
+	float4x4	rain_blocker_matrix_prev;
+	float4x4	rain_blocker_matrix_inverse_prev;
 
 	ShaderScene scene;
 
@@ -955,6 +1006,7 @@ struct ShaderCamera
 	uint		output_index; // viewport or rendertarget array index
 
 	float4		clip_plane;
+	float4		reflection_plane; // not clip plane (not reversed when camera is under), but the original plane
 
 	float3		forward;
 	float		z_near;
@@ -983,6 +1035,7 @@ struct ShaderCamera
 	float4x4	previous_view_projection;
 	float4x4	previous_inverse_view_projection;
 	float4x4	reflection_view_projection;
+	float4x4	reflection_inverse_view_projection;
 	float4x4	reprojection; // view_projection_inverse_matrix * previous_view_projection_matrix
 
 	float2		aperture_shape;
@@ -1017,18 +1070,18 @@ struct ShaderCamera
 
 	int buffer_entitytiles_transparent_index;
 	int texture_reflection_index;
+	int texture_reflection_depth_index;
 	int texture_refraction_index;
-	int texture_waterriples_index;
 
+	int texture_waterriples_index;
 	int texture_ao_index;
 	int texture_ssr_index;
 	int texture_rtshadow_index;
-	int texture_surfelgi_index;
 
+	int texture_surfelgi_index;
 	int texture_depth_index_prev;
 	int texture_vxgi_diffuse_index;
 	int texture_vxgi_specular_index;
-	int padding1;
 
 #ifdef __cplusplus
 	void init()
@@ -1253,20 +1306,39 @@ CBUFFER(PaintRadiusCB, CBSLOT_RENDERER_MISC)
 
 struct SkinningPushConstants
 {
-	uint vertexCount;
-	int vb_pos_nor_wind;
+	int vb_pos_wind;
+	int vb_nor;
 	int vb_tan;
-	int so_pos_nor_wind;
+	int so_pos;
 
+	int so_nor;
 	int so_tan;
 	int vb_bon;
+	int morphvb_index;
+
 	int skinningbuffer_index;
 	uint bone_offset;
-
 	uint morph_offset;
 	uint morph_count;
-	int morphvb_index;
-	int padding;
+
+	float3 aabb_min;
+	uint vertexCount;
+
+	float3 aabb_max;
+	float padding;
+};
+
+struct DebugObjectPushConstants
+{
+	int vb_pos_wind;
+};
+
+struct LightmapPushConstants
+{
+	int vb_pos_wind;
+	int vb_nor;
+	int vb_atl;
+	uint instanceIndex;
 };
 
 struct MorphTargetGPU

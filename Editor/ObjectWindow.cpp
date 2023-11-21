@@ -257,7 +257,7 @@ void ObjectWindow::Create(EditorComponent* _editor)
 	editor = _editor;
 
 	wi::gui::Window::Create(ICON_OBJECT " Object", wi::gui::Window::WindowControls::COLLAPSE | wi::gui::Window::WindowControls::CLOSE);
-	SetSize(XMFLOAT2(670, 730));
+	SetSize(XMFLOAT2(670, 740));
 
 	closeButton.SetTooltip("Delete ObjectComponent");
 	OnClose([=](wi::gui::EventArgs args) {
@@ -365,7 +365,7 @@ void ObjectWindow::Create(EditorComponent* _editor)
 	AddWidget(&navmeshCheckBox);
 
 	foregroundCheckBox.Create("Foreground: ");
-	foregroundCheckBox.SetTooltip("Set object to be rendered in the foreground. This is useful for first person hands or weapons.");
+	foregroundCheckBox.SetTooltip("Set object to be rendered in the foreground.\nThis is useful for first person hands or weapons, so that they not clip into walls and other objects.");
 	foregroundCheckBox.SetSize(XMFLOAT2(hei, hei));
 	foregroundCheckBox.SetPos(XMFLOAT2(x, y += step));
 	foregroundCheckBox.SetCheck(true);
@@ -381,6 +381,42 @@ void ObjectWindow::Create(EditorComponent* _editor)
 		}
 		});
 	AddWidget(&foregroundCheckBox);
+
+	notVisibleInMainCameraCheckBox.Create("Not visible in main camera: ");
+	notVisibleInMainCameraCheckBox.SetTooltip("Set object to be not rendered in the main camera.\nThis is useful for first person character model, as the character will still be rendered in reflections and shadows.");
+	notVisibleInMainCameraCheckBox.SetSize(XMFLOAT2(hei, hei));
+	notVisibleInMainCameraCheckBox.SetPos(XMFLOAT2(x, y += step));
+	notVisibleInMainCameraCheckBox.SetCheck(true);
+	notVisibleInMainCameraCheckBox.OnClick([&](wi::gui::EventArgs args) {
+		wi::scene::Scene& scene = editor->GetCurrentScene();
+		for (auto& x : editor->translator.selected)
+		{
+			ObjectComponent* object = scene.objects.GetComponent(x.entity);
+			if (object != nullptr)
+			{
+				object->SetNotVisibleInMainCamera(args.bValue);
+			}
+		}
+		});
+	AddWidget(&notVisibleInMainCameraCheckBox);
+
+	notVisibleInReflectionsCheckBox.Create("Not visible in reflections: ");
+	notVisibleInReflectionsCheckBox.SetTooltip("Set object to be not rendered in the reflections.\nThis is useful for vampires.");
+	notVisibleInReflectionsCheckBox.SetSize(XMFLOAT2(hei, hei));
+	notVisibleInReflectionsCheckBox.SetPos(XMFLOAT2(x, y += step));
+	notVisibleInReflectionsCheckBox.SetCheck(true);
+	notVisibleInReflectionsCheckBox.OnClick([&](wi::gui::EventArgs args) {
+		wi::scene::Scene& scene = editor->GetCurrentScene();
+		for (auto& x : editor->translator.selected)
+		{
+			ObjectComponent* object = scene.objects.GetComponent(x.entity);
+			if (object != nullptr)
+			{
+				object->SetNotVisibleInReflections(args.bValue);
+			}
+		}
+		});
+	AddWidget(&notVisibleInReflectionsCheckBox);
 
 	ditherSlider.Create(0, 1, 0, 1000, "Transparency: ");
 	ditherSlider.SetTooltip("Adjust transparency of the object. Opaque materials will use dithered transparency in this case!");
@@ -691,6 +727,8 @@ void ObjectWindow::SetEntity(Entity entity)
 		renderableCheckBox.SetCheck(object->IsRenderable());
 		shadowCheckBox.SetCheck(object->IsCastingShadow());
 		foregroundCheckBox.SetCheck(object->IsForeground());
+		notVisibleInMainCameraCheckBox.SetCheck(object->IsNotVisibleInMainCamera());
+		notVisibleInReflectionsCheckBox.SetCheck(object->IsNotVisibleInReflections());
 		navmeshCheckBox.SetCheck(object->filterMask & wi::enums::FILTER_NAVIGATION_MESH);
 		cascadeMaskSlider.SetValue((float)object->cascadeMask);
 		ditherSlider.SetValue(object->GetTransparency());
@@ -767,6 +805,8 @@ void ObjectWindow::ResizeLayout()
 	add_right(renderableCheckBox);
 	add_right(shadowCheckBox);
 	add_right(foregroundCheckBox);
+	add_right(notVisibleInMainCameraCheckBox);
+	add_right(notVisibleInReflectionsCheckBox);
 	add_right(navmeshCheckBox);
 	add(ditherSlider);
 	add(cascadeMaskSlider);

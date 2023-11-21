@@ -23,6 +23,8 @@ namespace wi
 		wi::graphics::GPUBuffer generalBuffer;
 		wi::scene::MeshComponent::BufferView simulation_view;
 		wi::scene::MeshComponent::BufferView vb_pos[2];
+		wi::scene::MeshComponent::BufferView vb_nor;
+		wi::scene::MeshComponent::BufferView vb_pos_raytracing;
 		wi::scene::MeshComponent::BufferView vb_uvs;
 		wi::scene::MeshComponent::BufferView ib_culled;
 		wi::scene::MeshComponent::BufferView indirect_view;
@@ -57,6 +59,9 @@ namespace wi
 			wi::graphics::CommandList cmd
 		);
 
+		mutable bool gpu_initialized = false;
+		void InitializeGPUDataIfNeeded(wi::graphics::CommandList cmd);
+
 		void Draw(
 			const wi::scene::MaterialComponent& material,
 			wi::enums::RENDERPASS renderPass,
@@ -90,11 +95,11 @@ namespace wi
 
 		// Non-serialized attributes:
 		XMFLOAT4X4 world;
-		XMFLOAT4X4 worldPrev;
 		wi::primitive::AABB aabb;
 		wi::vector<uint32_t> indices; // it is dependent on vertex_lengths and contains triangles with non-zero lengths
 		uint32_t layerMask = ~0u;
 		mutable bool regenerate_frame = true;
+		wi::graphics::Format position_format = wi::graphics::Format::R16G16B16A16_UNORM;
 
 		void Serialize(wi::Archive& archive, wi::ecs::EntitySerializer& seri);
 

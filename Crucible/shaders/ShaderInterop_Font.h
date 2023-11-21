@@ -12,15 +12,24 @@ struct FontVertex
 	float2 uv;
 };
 
+namespace SDF
+{
+	static const uint padding = 5;
+	static const uint onedge_value = 127;
+	static const float onedge_value_unorm = float(onedge_value) / 255.0f;
+	static const float pixel_dist_scale = float(onedge_value) / float(padding);
+}
 struct FontConstants
 {
 	int buffer_index;
 	uint buffer_offset;
 	int texture_index;
-	uint color;
+	int padding0;
 
-	float sdf_threshold_top;
-	float sdf_threshold_bottom;
+	float4 color;
+
+	float softness;
+	float bolden;
 	uint flags;
 	float hdr_scaling;
 

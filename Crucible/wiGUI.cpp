@@ -1459,7 +1459,7 @@ namespace wi::gui
 				}
 				else if ((clicked && !intersectsPointer) || wi::input::Press(wi::input::KEYBOARD_BUTTON_ESCAPE))
 				{
-					// cancel input 
+					// cancel input
 					font_input.text.clear();
 					Deactivate();
 					typing_active = false;
@@ -1754,7 +1754,7 @@ namespace wi::gui
 		SetName(name);
 		SetText(name);
 		OnSlide([](EventArgs args) {});
-		SetSize(XMFLOAT2(200, 40));
+		SetSize(XMFLOAT2(200, 20));
 
 		valueInputField.Create(name + "_endInputField");
 		valueInputField.SetLocalizationEnabled(LocalizationEnabled::None);
@@ -1762,7 +1762,7 @@ namespace wi::gui
 		valueInputField.SetTooltip("Enter number to modify value even outside slider limits. Enter \"reset\" to reset slider to initial state.");
 		valueInputField.SetValue(end);
 		valueInputField.OnInputAccepted([this, start, end, defaultValue](EventArgs args) {
-			if (args.sValue.compare("reset") != std::string::npos)
+			if (args.sValue.compare("reset") == 0)
 			{
 				this->value = defaultValue;
 				this->start = start;
@@ -3062,7 +3062,7 @@ namespace wi::gui
 		scrollable_area.active_area.pos.y = float(scrollable_area.scissorRect.top);
 		scrollable_area.active_area.siz.x = float(scrollable_area.scissorRect.right) - float(scrollable_area.scissorRect.left);
 		scrollable_area.active_area.siz.y = float(scrollable_area.scissorRect.bottom) - float(scrollable_area.scissorRect.top);
-		
+
 
 		bool focus = false;
 		for (size_t i = 0; i < widgets.size(); ++i)
@@ -3614,7 +3614,7 @@ namespace wi::gui
 			out.s = (delta / max);                  // s
 		}
 		else {
-			// if max is 0, then r = g = b = 0              
+			// if max is 0, then r = g = b = 0
 			// s = 0, h is undefined
 			out.s = 0.0f;
 			out.h = NAN;                            // its now undefined
@@ -4419,6 +4419,14 @@ namespace wi::gui
 		scrollbar.sprites_knob[ScrollBar::SCROLLBAR_GRABBED].params.color = wi::Color::White();
 		scrollbar.SetOverScroll(0.25f);
 	}
+	bool TreeList::DoesItemHaveChildren(int index) const
+	{
+		if (items.size() <= size_t(index + 1)) // if item doesn't exist or last then no children
+			return false;
+		if (items[index].level + 1 == items[index + 1].level) // if item after index is exactly one level down, then it is its child
+			return true;
+		return false;
+	}
 	float TreeList::GetItemOffset(int index) const
 	{
 		return 2 + scrollbar.GetOffset() + index * item_height();
@@ -4730,6 +4738,7 @@ namespace wi::gui
 			}
 
 			// opened flag triangle:
+			if(DoesItemHaveChildren(i))
 			{
 				device->BindPipelineState(&gui_internal().PSO_colored, cmd);
 

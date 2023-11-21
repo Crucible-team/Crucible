@@ -4,6 +4,7 @@
 #include "wiSpinLock.h"
 #include "wiGPUBVH.h"
 #include "wiSprite.h"
+#include "wiSpriteFont.h"
 #include "wiMath.h"
 #include "wiECS.h"
 #include "wiScene_Components.h"
@@ -29,7 +30,7 @@ namespace wi::scene
 		wi::ecs::ComponentManager<LayerComponent>& layers = componentLibrary.Register<LayerComponent>("wi::scene::Scene::layers");
 		wi::ecs::ComponentManager<TransformComponent>& transforms = componentLibrary.Register<TransformComponent>("wi::scene::Scene::transforms");
 		wi::ecs::ComponentManager<HierarchyComponent>& hierarchy = componentLibrary.Register<HierarchyComponent>("wi::scene::Scene::hierarchy");
-		wi::ecs::ComponentManager<MaterialComponent>& materials = componentLibrary.Register<MaterialComponent>("wi::scene::Scene::materials", 2); // version = 2
+		wi::ecs::ComponentManager<MaterialComponent>& materials = componentLibrary.Register<MaterialComponent>("wi::scene::Scene::materials", 3); // version = 3
 		wi::ecs::ComponentManager<MeshComponent>& meshes = componentLibrary.Register<MeshComponent>("wi::scene::Scene::meshes", 2); // version = 2
 		wi::ecs::ComponentManager<ImpostorComponent>& impostors = componentLibrary.Register<ImpostorComponent>("wi::scene::Scene::impostors");
 		wi::ecs::ComponentManager<ObjectComponent>& objects = componentLibrary.Register<ObjectComponent>("wi::scene::Scene::objects", 2); // version = 2
@@ -45,8 +46,8 @@ namespace wi::scene
 		wi::ecs::ComponentManager<AnimationDataComponent>& animation_datas = componentLibrary.Register<AnimationDataComponent>("wi::scene::Scene::animation_datas");
 		wi::ecs::ComponentManager<EmittedParticleSystem>& emitters = componentLibrary.Register<EmittedParticleSystem>("wi::scene::Scene::emitters");
 		wi::ecs::ComponentManager<HairParticleSystem>& hairs = componentLibrary.Register<HairParticleSystem>("wi::scene::Scene::hairs");
-		wi::ecs::ComponentManager<WeatherComponent>& weathers = componentLibrary.Register<WeatherComponent>("wi::scene::Scene::weathers", 4); // version = 4
-		wi::ecs::ComponentManager<SoundComponent>& sounds = componentLibrary.Register<SoundComponent>("wi::scene::Scene::sounds");
+		wi::ecs::ComponentManager<WeatherComponent>& weathers = componentLibrary.Register<WeatherComponent>("wi::scene::Scene::weathers", 5); // version = 5
+		wi::ecs::ComponentManager<SoundComponent>& sounds = componentLibrary.Register<SoundComponent>("wi::scene::Scene::sounds", 1); // version = 1
 		wi::ecs::ComponentManager<VideoComponent>& videos = componentLibrary.Register<VideoComponent>("wi::scene::Scene::videos");
 		wi::ecs::ComponentManager<InverseKinematicsComponent>& inverse_kinematics = componentLibrary.Register<InverseKinematicsComponent>("wi::scene::Scene::inverse_kinematics");
 		wi::ecs::ComponentManager<SpringComponent>& springs = componentLibrary.Register<SpringComponent>("wi::scene::Scene::springs", 1); // version = 1
@@ -55,6 +56,8 @@ namespace wi::scene
 		wi::ecs::ComponentManager<ExpressionComponent>& expressions = componentLibrary.Register<ExpressionComponent>("wi::scene::Scene::expressions");
 		wi::ecs::ComponentManager<HumanoidComponent>& humanoids = componentLibrary.Register<HumanoidComponent>("wi::scene::Scene::humanoids");
 		wi::ecs::ComponentManager<wi::terrain::Terrain>& terrains = componentLibrary.Register<wi::terrain::Terrain>("wi::scene::Scene::terrains", 3); // version = 3
+		wi::ecs::ComponentManager<wi::Sprite>& sprites = componentLibrary.Register<wi::Sprite>("wi::scene::Scene::sprites");
+		wi::ecs::ComponentManager<wi::SpriteFont>& fonts = componentLibrary.Register<wi::SpriteFont>("wi::scene::Scene::fonts");
 
 
 
@@ -242,13 +245,21 @@ namespace wi::scene
 		uint32_t allocated_impostor_capacity = 0;
 		MeshComponent::BufferView impostor_ib32;
 		MeshComponent::BufferView impostor_ib16;
-		MeshComponent::BufferView impostor_vb;
+		MeshComponent::BufferView impostor_vb_pos;
+		MeshComponent::BufferView impostor_vb_nor;
 		MeshComponent::BufferView impostor_data;
 		MeshComponent::BufferView impostor_indirect;
 		wi::graphics::Format impostor_ib_format = wi::graphics::Format::R32_UINT;
 		uint32_t impostorInstanceOffset = ~0u;
 		uint32_t impostorGeometryOffset = ~0u;
 		uint32_t impostorMaterialOffset = ~0u;
+
+		wi::EmittedParticleSystem rainEmitter;
+		MaterialComponent rainMaterial;
+		uint32_t rainInstanceOffset = ~0u;
+		uint32_t rainGeometryOffset = ~0u;
+		uint32_t rainMaterialOffset = ~0u;
+		LightComponent rain_blocker_dummy_light;
 
 		std::atomic<uint32_t> lightmap_request_allocator{ 0 };
 		wi::vector<uint32_t> lightmap_requests;
@@ -271,6 +282,7 @@ namespace wi::scene
 
 		// Simple water ripple sprites:
 		mutable wi::vector<wi::Sprite> waterRipples;
+		void PutWaterRipple(const XMFLOAT3& pos);
 		void PutWaterRipple(const std::string& image, const XMFLOAT3& pos);
 
 		// Animation processing optimizer:
@@ -296,12 +308,17 @@ namespace wi::scene
 		// Finds all entities in the scene that have any components attached
 		void FindAllEntities(wi::unordered_set<wi::ecs::Entity>& entities) const;
 
+		//Crucible return a vector of entities with the same names.
+		wi::vector<wi::ecs::Entity> Entity_FindAllByName(const std::string& name, wi::ecs::Entity ancestor = wi::ecs::INVALID_ENTITY);
+
 		// Removes (deletes) a specific entity from the scene (if it exists):
 		//	recursive	: also removes children if true
-		void Entity_Remove(wi::ecs::Entity entity, bool recursive = true);
+		//	keep_sorted	: remove all components while keeping sorted order (slow)
+		void Entity_Remove(wi::ecs::Entity entity, bool recursive = true, bool keep_sorted = false);
 		// Finds the first entity by the name (if it exists, otherwise returns INVALID_ENTITY):
 		//	ancestor : you can specify an ancestor entity if you only want to find entities that are descendants of ancestor entity
 		wi::ecs::Entity Entity_FindByName(const std::string& name, wi::ecs::Entity ancestor = wi::ecs::INVALID_ENTITY);
+		//wi::ecs::Entity Entity_FindByNamefromParent(const std::string& name);
 		// Duplicates all of an entity's components and creates a new entity with them (recursively keeps hierarchy):
 		wi::ecs::Entity Entity_Duplicate(wi::ecs::Entity entity);
 		// Check whether entity is a descendant of ancestor
@@ -399,9 +416,6 @@ namespace wi::scene
 		wi::ecs::Entity Entity_CreatePipe(
 			const std::string& name
 		);
-		wi::ecs::Entity Entity_CreateSphere(
-			const std::string& name
-		);
 
 		wi::ecs::Entity Entity_CreateRussainElpisoid(
 			const std::string& name
@@ -423,6 +437,13 @@ namespace wi::scene
 		);
 		wi::ecs::Entity Entity_CreateCone(
 			const std::string& name
+		);
+
+		wi::ecs::Entity Entity_CreateSphere(
+			const std::string& name,
+			float radius = 1,
+			uint32_t latitudeBands = 64,
+			uint32_t longitudeBands = 64
 		);
 
 		// Attaches an entity to a parent:
@@ -455,6 +476,8 @@ namespace wi::scene
 		void RunSoundUpdateSystem(wi::jobsystem::context& ctx);
 		void RunVideoUpdateSystem(wi::jobsystem::context& ctx);
 		void RunScriptUpdateSystem(wi::jobsystem::context& ctx);
+		void RunSpriteUpdateSystem(wi::jobsystem::context& ctx);
+		void RunFontUpdateSystem(wi::jobsystem::context& ctx);
 
 
 		struct RayIntersectionResult
@@ -489,6 +512,8 @@ namespace wi::scene
 			XMFLOAT3 normal = XMFLOAT3(0, 0, 0);
 			XMFLOAT3 velocity = XMFLOAT3(0, 0, 0);
 			float depth = 0;
+			int subsetIndex = -1;
+			XMFLOAT4X4 orientation = wi::math::IDENTITY_MATRIX;
 		};
 		SphereIntersectionResult Intersects(const wi::primitive::Sphere& sphere, uint32_t filterMask = wi::enums::FILTER_OPAQUE, uint32_t layerMask = ~0, uint32_t lod = 0) const;
 
@@ -508,6 +533,10 @@ namespace wi::scene
 		//
 		//	returns entity ID of the new animation or INVALID_ENTITY if retargeting was not successful
 		wi::ecs::Entity RetargetAnimation(wi::ecs::Entity dst, wi::ecs::Entity src, bool bake_data, const Scene* src_scene = nullptr);
+
+		// If you don't know which armature the bone is contained int, this function can be used to find the first such armature and return the bone's rest matrix
+		//	If not found, return identity matrix
+		XMMATRIX FindBoneRestPose(wi::ecs::Entity bone) const;
 	};
 
 	// Returns skinned vertex position in armature local space

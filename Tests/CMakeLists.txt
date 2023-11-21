@@ -16,8 +16,8 @@ if (WIN32)
 
 	add_executable(Tests WIN32 ${SOURCE_FILES})
 
-	target_link_libraries(Tests PUBLIC 
-		WickedEngine_Windows
+	target_link_libraries(Tests PUBLIC
+		Crucible_Windows
 	)
 
 	set(LIB_DXCOMPILER "dxcompiler.dll")
@@ -28,8 +28,8 @@ else()
 
 	add_executable(Tests ${SOURCE_FILES})
 
-	target_link_libraries(Tests PUBLIC 
-		WickedEngine
+	target_link_libraries(Tests PUBLIC
+		Crucible
 	)
 
 	set(LIB_DXCOMPILER "libdxcompiler.so")
@@ -44,7 +44,7 @@ endif ()
 add_custom_command(
 	TARGET Tests POST_BUILD
 	# Copy the shader library next to the executable
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/WickedEngine/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
 	# Copy the resources
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/images ${CMAKE_CURRENT_BINARY_DIR}/images
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_script.lua ${CMAKE_CURRENT_BINARY_DIR}/test_script.lua

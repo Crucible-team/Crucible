@@ -32,6 +32,8 @@
 #include "HealthWindow.h"
 #include "ArmorWindow.h"
 #include "SplineWindow.h"
+#include "SpriteWindow.h"
+#include "FontWindow.h"
 
 class EditorComponent;
 
@@ -78,4 +80,6 @@ public:
 	HealthWindow healthWnd;
 	ArmorWindow armorWnd;
 	SplineWindow splineWnd;
+	SpriteWindow spriteWnd;
+	FontWindow fontWnd;
 };

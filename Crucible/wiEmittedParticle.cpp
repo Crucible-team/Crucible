@@ -104,12 +104,14 @@ namespace wi
 			}
 			const uint64_t alignment = device->GetMinOffsetAlignment(&bd);
 
-			vb_pos.size = sizeof(MeshComponent::Vertex_POS) * 4 * MAX_PARTICLES;
+			vb_pos.size = sizeof(MeshComponent::Vertex_POS32) * 4 * MAX_PARTICLES;
+			vb_nor.size = sizeof(MeshComponent::Vertex_NOR) * 4 * MAX_PARTICLES;
 			vb_uvs.size = sizeof(MeshComponent::Vertex_UVS) * 4 * MAX_PARTICLES;
 			vb_col.size = sizeof(MeshComponent::Vertex_COL) * 4 * MAX_PARTICLES;
 
 			bd.size =
 				AlignTo(vb_pos.size, alignment) +
+				AlignTo(vb_nor.size, alignment) +
 				AlignTo(vb_uvs.size, alignment) +
 				AlignTo(vb_col.size, alignment)
 			;
@@ -119,26 +121,37 @@ namespace wi
 
 			uint64_t buffer_offset = 0ull;
 
+			buffer_offset = AlignTo(buffer_offset, alignment);
 			vb_pos.offset = buffer_offset;
-			buffer_offset += AlignTo(vb_pos.size, alignment);
-			vb_pos.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_pos.offset, vb_pos.size, &MeshComponent::Vertex_POS::FORMAT);
-			vb_pos.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_pos.offset, vb_pos.size, &MeshComponent::Vertex_POS::FORMAT);
+			vb_pos.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_pos.offset, vb_pos.size, &MeshComponent::Vertex_POS32::FORMAT);
+			vb_pos.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_pos.offset, vb_pos.size); // UAV can't have RGB32_F format!
 			vb_pos.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_pos.subresource_srv);
 			vb_pos.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_pos.subresource_uav);
+			buffer_offset += vb_pos.size;
 
+			buffer_offset = AlignTo(buffer_offset, alignment);
+			vb_nor.offset = buffer_offset;
+			vb_nor.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_nor.offset, vb_nor.size, &MeshComponent::Vertex_NOR::FORMAT);
+			vb_nor.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_nor.offset, vb_nor.size, &MeshComponent::Vertex_NOR::FORMAT);
+			vb_nor.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_nor.subresource_srv);
+			vb_nor.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_nor.subresource_uav);
+			buffer_offset += vb_nor.size;
+
+			buffer_offset = AlignTo(buffer_offset, alignment);
 			vb_uvs.offset = buffer_offset;
-			buffer_offset += AlignTo(vb_uvs.size, alignment);
 			vb_uvs.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_uvs.offset, vb_uvs.size, &MeshComponent::Vertex_UVS::FORMAT);
 			vb_uvs.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_uvs.offset, vb_uvs.size, &MeshComponent::Vertex_UVS::FORMAT);
 			vb_uvs.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_uvs.subresource_srv);
 			vb_uvs.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_uvs.subresource_uav);
+			buffer_offset += vb_uvs.size;
 
+			buffer_offset = AlignTo(buffer_offset, alignment);
 			vb_col.offset = buffer_offset;
-			buffer_offset += AlignTo(vb_col.size, alignment);
 			vb_col.subresource_srv = device->CreateSubresource(&generalBuffer, SubresourceType::SRV, vb_col.offset, vb_col.size, &MeshComponent::Vertex_COL::FORMAT);
 			vb_col.subresource_uav = device->CreateSubresource(&generalBuffer, SubresourceType::UAV, vb_col.offset, vb_col.size, &MeshComponent::Vertex_COL::FORMAT);
 			vb_col.descriptor_srv = device->GetDescriptorIndex(&generalBuffer, SubresourceType::SRV, vb_col.subresource_srv);
 			vb_col.descriptor_uav = device->GetDescriptorIndex(&generalBuffer, SubresourceType::UAV, vb_col.subresource_uav);
+			buffer_offset += vb_col.size;
 
 			primitiveBuffer = wi::renderer::GetIndexBufferForQuads(MAX_PARTICLES);
 		}
@@ -278,9 +291,9 @@ namespace wi
 			geometry.triangles.index_format = GetIndexBufferFormat(primitiveBuffer.desc.format);
 			geometry.triangles.index_count = MAX_PARTICLES * 6;
 			geometry.triangles.index_offset = 0;
-			geometry.triangles.vertex_count = (uint32_t)(vb_pos.size / sizeof(MeshComponent::Vertex_POS));
-			geometry.triangles.vertex_format = Format::R32G32B32_FLOAT;
-			geometry.triangles.vertex_stride = sizeof(MeshComponent::Vertex_POS);
+			geometry.triangles.vertex_count = (uint32_t)(vb_pos.size / sizeof(MeshComponent::Vertex_POS32));
+			geometry.triangles.vertex_format = MeshComponent::Vertex_POS32::FORMAT;
+			geometry.triangles.vertex_stride = sizeof(MeshComponent::Vertex_POS32);
 
 			bool success = device->CreateRaytracingAccelerationStructure(&desc, &BLAS);
 			assert(success);
@@ -315,9 +328,10 @@ namespace wi
 
 	void EmittedParticleSystem::UpdateCPU(const TransformComponent& transform, float dt)
 	{
+		this->dt = dt;
 		CreateSelfBuffers();
 
-		if (IsPaused())
+		if (IsPaused() || dt == 0)
 			return;
 
 		emit = std::max(0.0f, emit - std::floor(emit));
@@ -328,6 +342,8 @@ namespace wi
 
 		emit += burst;
 		burst = 0;
+
+		worldMatrix = transform.world;
 
 		// Swap CURRENT alivelist with NEW alivelist
 		std::swap(aliveList[0], aliveList[1]);
@@ -349,7 +365,7 @@ namespace wi
 		counterBuffer = {}; // will be recreated
 	}
 
-	void EmittedParticleSystem::UpdateGPU(uint32_t instanceIndex, const TransformComponent& transform, const MeshComponent* mesh, CommandList cmd) const
+	void EmittedParticleSystem::UpdateGPU(uint32_t instanceIndex, const MeshComponent* mesh, CommandList cmd) const
 	{
 		if (!particleBuffer.IsValid())
 		{
@@ -359,12 +375,34 @@ namespace wi
 		GraphicsDevice* device = wi::graphics::GetDevice();
 		device->EventBegin("UpdateEmittedParticles", cmd);
 
-		if (!IsPaused())
+		if (!IsPaused() && dt > 0)
 		{
 			EmittedParticleCB cb;
-			cb.xEmitterTransform.Create(transform.world);
+			cb.xEmitterTransform.Create(worldMatrix);
+			if (mesh == nullptr || !IsFormatUnorm(mesh->position_format) || mesh->so_pos.IsValid())
+			{
+				cb.xEmitterBaseMeshUnormRemap.init();
+			}
+			else
+			{
+				XMFLOAT4X4 unormRemap;
+				XMStoreFloat4x4(&unormRemap, mesh->aabb.getUnormRemapMatrix());
+				cb.xEmitterBaseMeshUnormRemap.Create(unormRemap);
+			}
 			cb.xEmitCount = (uint32_t)emit;
-			cb.xEmitterMeshIndexCount = mesh == nullptr ? 0 : (uint32_t)mesh->indices.size();
+			if (mesh == nullptr)
+			{
+				cb.xEmitterMeshGeometryOffset = 0;
+				cb.xEmitterMeshGeometryCount = 0;
+			}
+			else
+			{
+				uint32_t first_subset = 0;
+				uint32_t last_subset = 0;
+				mesh->GetLODSubsetRange(0, first_subset, last_subset);
+				cb.xEmitterMeshGeometryOffset = mesh->geometryOffset + first_subset;
+				cb.xEmitterMeshGeometryCount = last_subset - first_subset;
+			}
 			cb.xEmitterRandomness = wi::random::GetRandom(0.0f, 1.0f);
 			cb.xParticleLifeSpan = life;
 			cb.xParticleLifeSpanRandomness = random_life;
@@ -385,10 +423,30 @@ namespace wi
 			cb.xEmitterFrameRate = frameRate;
 			cb.xParticleGravity = gravity;
 			cb.xParticleDrag = drag;
-			XMStoreFloat3(&cb.xParticleVelocity, XMVector3TransformNormal(XMLoadFloat3(&velocity), XMLoadFloat4x4(&transform.world)));
+			XMStoreFloat3(&cb.xParticleVelocity, XMVector3TransformNormal(XMLoadFloat3(&velocity), XMLoadFloat4x4(&worldMatrix)));
 			cb.xParticleRandomColorFactor = random_color;
 			cb.xEmitterLayerMask = layerMask;
 			cb.xEmitterInstanceIndex = instanceIndex;
+
+			if (!user_defined_colors.empty())
+			{
+				for (size_t i = 0; i < user_defined_colors.size(); ++i)
+				{
+					if (i <= 31)
+					{
+						cb.colors[i] = user_defined_colors[i];
+					}
+				}
+				cb.numColors = user_defined_colors.size();
+			}
+			else
+			{
+				cb.numColors = 0;
+			}
+
+			cb.volumetype = (uint32_t)volumetype;
+			cb.sphereradius = sphere_radius;
+			cb.innersphereradius = inner_sphere_radius;
 
 			cb.xEmitterOptions = 0;
 			if (IsSPHEnabled())
@@ -406,6 +464,14 @@ namespace wi
 			if (IsCollidersDisabled())
 			{
 				cb.xEmitterOptions |= EMITTER_OPTION_BIT_COLLIDERS_DISABLED;
+			}
+			if (_flags & FLAG_USE_RAIN_BLOCKER)
+			{
+				cb.xEmitterOptions |= EMITTER_OPTION_BIT_USE_RAIN_BLOCKER;
+			}
+			if (IsTakeColorFromMesh())
+			{
+				cb.xEmitterOptions |= EMITTER_OPTION_BIT_TAKE_COLOR_FROM_MESH;
 			}
 
 			// SPH:
@@ -440,23 +506,11 @@ namespace wi
 			device->BindUAV(&indirectBuffers, 5, cmd);
 			device->BindUAV(&distanceBuffer, 6, cmd);
 			device->BindUAV(&generalBuffer, 7, cmd, vb_pos.subresource_uav);
-			device->BindUAV(&generalBuffer, 8, cmd, vb_uvs.subresource_uav);
-			device->BindUAV(&generalBuffer, 9, cmd, vb_col.subresource_uav);
-			device->BindUAV(&culledIndirectionBuffer, 10, cmd);
-			device->BindUAV(&culledIndirectionBuffer2, 11, cmd);
-
-			if (mesh != nullptr)
-			{
-				device->BindResource(&mesh->generalBuffer, 0, cmd, mesh->ib.subresource_srv);
-				if (mesh->streamoutBuffer.IsValid())
-				{
-					device->BindResource(&mesh->streamoutBuffer, 1, cmd, mesh->so_pos_nor_wind.subresource_srv);
-				}
-				else
-				{
-					device->BindResource(&mesh->generalBuffer, 1, cmd, mesh->vb_pos_nor_wind.subresource_srv);
-				}
-			}
+			device->BindUAV(&generalBuffer, 8, cmd, vb_nor.subresource_uav);
+			device->BindUAV(&generalBuffer, 9, cmd, vb_uvs.subresource_uav);
+			device->BindUAV(&generalBuffer, 10, cmd, vb_col.subresource_uav);
+			device->BindUAV(&culledIndirectionBuffer, 11, cmd);
+			device->BindUAV(&culledIndirectionBuffer2, 12, cmd);
 
 			GPUBarrier barrier_indirect_uav = GPUBarrier::Buffer(&indirectBuffers, ResourceState::INDIRECT_ARGUMENT, ResourceState::UNORDERED_ACCESS);
 			GPUBarrier barrier_uav_indirect = GPUBarrier::Buffer(&indirectBuffers, ResourceState::UNORDERED_ACCESS, ResourceState::INDIRECT_ARGUMENT);
@@ -618,10 +672,11 @@ namespace wi
 			device->BindUAV(&indirectBuffers, 5, cmd);
 			device->BindUAV(&distanceBuffer, 6, cmd);
 			device->BindUAV(&generalBuffer, 7, cmd, vb_pos.subresource_uav);
-			device->BindUAV(&generalBuffer, 8, cmd, vb_uvs.subresource_uav);
-			device->BindUAV(&generalBuffer, 9, cmd, vb_col.subresource_uav);
-			device->BindUAV(&culledIndirectionBuffer, 10, cmd);
-			device->BindUAV(&culledIndirectionBuffer2, 11, cmd);
+			device->BindUAV(&generalBuffer, 8, cmd, vb_nor.subresource_uav);
+			device->BindUAV(&generalBuffer, 9, cmd, vb_uvs.subresource_uav);
+			device->BindUAV(&generalBuffer, 10, cmd, vb_col.subresource_uav);
+			device->BindUAV(&culledIndirectionBuffer, 11, cmd);
+			device->BindUAV(&culledIndirectionBuffer2, 12, cmd);
 
 			// update CURRENT alive list, write NEW alive list
 			if (IsSorted())
@@ -664,7 +719,7 @@ namespace wi
 			wi::gpusortlib::Sort(MAX_PARTICLES, distanceBuffer, counterBuffer, PARTICLECOUNTER_OFFSET_CULLEDCOUNT, culledIndirectionBuffer, cmd);
 		}
 
-		if (!IsPaused())
+		if (!IsPaused() && dt > 0)
 		{
 			// finish updating, update draw argument buffer:
 			device->EventBegin("FinishUpdate", cmd);
@@ -984,6 +1039,27 @@ namespace wi
 				archive >> restitution;
 			}
 
+			if (archive.GetVersion() >= 151)
+			{
+				size_t color_size_count = 0;
+				archive >> color_size_count;
+				user_defined_colors.resize(color_size_count);
+				for (size_t i = 0; i < color_size_count; ++i)
+				{
+					float4 Usercolor;
+					archive >> Usercolor;
+					user_defined_colors[i] = Usercolor;
+				}
+			}
+
+			if (archive.GetVersion() >= 155)
+			{
+				archive >> (uint32_t&)volumetype;
+				archive >> sphere_radius;
+			}
+
+			
+
 		}
 		else
 		{
@@ -1028,6 +1104,21 @@ namespace wi
 			if (archive.GetVersion() >= 74)
 			{
 				archive << restitution;
+			}
+
+			if (archive.GetVersion() >= 151)
+			{
+				archive << user_defined_colors.size();
+				for (size_t i = 0; i < user_defined_colors.size(); ++i)
+				{
+					archive << user_defined_colors[i];
+				}
+			}
+
+			if (archive.GetVersion() >= 155)
+			{
+				archive << (uint32_t)volumetype;
+				archive << sphere_radius;
 			}
 		}
 	}

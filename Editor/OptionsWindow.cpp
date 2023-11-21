@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "OptionsWindow.h"
 
-using namespace wi::graphics;
 using namespace wi::ecs;
 using namespace wi::scene;
+using namespace wi::graphics;
 
 void OptionsWindow::Create(EditorComponent* _editor)
 {
@@ -12,41 +12,78 @@ void OptionsWindow::Create(EditorComponent* _editor)
 	wi::gui::Window::Create("Options", wi::gui::Window::WindowControls::RESIZE_TOPRIGHT);
 	SetShadowRadius(2);
 
+	enum NEW_THING
+	{
+		NEW_TRANSFORM,
+		NEW_MATERIAL,
+		NEW_POINTLIGHT,
+		NEW_SPOTLIGHT,
+		NEW_DIRECTIONALLIGHT,
+		NEW_ENVIRONMENTPROBE,
+		NEW_FORCE,
+		NEW_DECAL,
+		NEW_SOUND,
+		NEW_VIDEO,
+		NEW_WEATHER,
+		NEW_EMITTER,
+		NEW_HAIR,
+		NEW_CAMERA,
+		NEW_CUBE,
+		NEW_PLANE,
+		NEW_SPHERE,
+		NEW_ANIMATION,
+		NEW_SCRIPT,
+		NEW_COLLIDER,
+		NEW_TERRAIN,
+		NEW_CYLINDER,
+		NEW_TORUS,
+		NEW_TETRAHEDRON,
+		NEW_OCTAHEDRON,
+		NEW_DODECAHEDRON,
+		NEW_ICOSAHEDRON,
+		NEW_PIPE,
+		NEW_CIRCLE,
+		NEW_SPRITE,
+		NEW_FONT,
+	};
+
 	newCombo.Create("New: ");
 	newCombo.selected_font.anim.typewriter.looped = true;
 	newCombo.selected_font.anim.typewriter.time = 2;
 	newCombo.selected_font.anim.typewriter.character_start = 1;
 	newCombo.SetInvalidSelectionText("...");
-	newCombo.AddItem("Transform " ICON_TRANSFORM, 0);
-	newCombo.AddItem("Material " ICON_MATERIAL, 1);
-	newCombo.AddItem("Point Light " ICON_POINTLIGHT, 2);
-	newCombo.AddItem("Spot Light " ICON_SPOTLIGHT, 3);
-	newCombo.AddItem("Directional Light " ICON_DIRECTIONALLIGHT, 4);
-	newCombo.AddItem("Environment Probe " ICON_ENVIRONMENTPROBE, 5);
-	newCombo.AddItem("Force " ICON_FORCE, 6);
-	newCombo.AddItem("Decal " ICON_DECAL, 7);
-	newCombo.AddItem("Sound " ICON_SOUND, 8);
-	newCombo.AddItem("Video " ICON_VIDEO, 19);
-	newCombo.AddItem("Weather " ICON_WEATHER, 9);
-	newCombo.AddItem("Emitter " ICON_EMITTER, 10);
-	newCombo.AddItem("HairParticle " ICON_HAIR, 11);
-	newCombo.AddItem("Camera " ICON_CAMERA, 12);
-	newCombo.AddItem("Cube " ICON_CUBE, 13);
-	newCombo.AddItem("Cylinder " ICON_FA_CIRCLE, 20);
-	newCombo.AddItem("Sphere " ICON_FA_CIRCLE, 21);
-	newCombo.AddItem("Torus " ICON_FA_CIRCLE, 22);
-	newCombo.AddItem("Tetrahedron " ICON_FA_CIRCLE, 23);
+	newCombo.AddItem("Transform " ICON_TRANSFORM, NEW_TRANSFORM);
+	newCombo.AddItem("Material " ICON_MATERIAL, NEW_MATERIAL);
+	newCombo.AddItem("Point Light " ICON_POINTLIGHT, NEW_POINTLIGHT);
+	newCombo.AddItem("Spot Light " ICON_SPOTLIGHT, NEW_SPOTLIGHT);
+	newCombo.AddItem("Directional Light " ICON_DIRECTIONALLIGHT, NEW_DIRECTIONALLIGHT);
+	newCombo.AddItem("Environment Probe " ICON_ENVIRONMENTPROBE, NEW_ENVIRONMENTPROBE);
+	newCombo.AddItem("Force " ICON_FORCE, NEW_FORCE);
+	newCombo.AddItem("Decal " ICON_DECAL, NEW_DECAL);
+	newCombo.AddItem("Sound " ICON_SOUND, NEW_SOUND);
+	newCombo.AddItem("Video " ICON_VIDEO, NEW_VIDEO);
+	newCombo.AddItem("Weather " ICON_WEATHER, NEW_WEATHER);
+	newCombo.AddItem("Emitter " ICON_EMITTER, NEW_EMITTER);
+	newCombo.AddItem("HairParticle " ICON_HAIR, NEW_HAIR);
+	newCombo.AddItem("Camera " ICON_CAMERA, NEW_CAMERA);
+	newCombo.AddItem("Cube " ICON_CUBE, NEW_CUBE);
+	newCombo.AddItem("Cylinder " ICON_FA_CIRCLE, NEW_CYLINDER);
+	newCombo.AddItem("Torus " ICON_FA_CIRCLE, NEW_TORUS);
+	newCombo.AddItem("Tetrahedron " ICON_FA_CIRCLE, NEW_TETRAHEDRON);
 	//newCombo.AddItem("Cone " ICON_FA_CIRCLE, 24);
-	newCombo.AddItem("Octahedron " ICON_FA_CIRCLE, 25);
-	newCombo.AddItem("Dodecahedro " ICON_FA_CIRCLE, 26);
-	newCombo.AddItem("Icosahedron " ICON_FA_CIRCLE, 27);
-	newCombo.AddItem("Plane " ICON_SQUARE, 14);
-	newCombo.AddItem("Circle " ICON_FA_CIRCLE, 28);
-	newCombo.AddItem("Pipe " ICON_FA_CIRCLE, 29);
-	newCombo.AddItem("Animation " ICON_ANIMATION, 15);
-	newCombo.AddItem("Script " ICON_SCRIPT, 16);
-	newCombo.AddItem("Collider " ICON_COLLIDER, 17);
-	newCombo.AddItem("Terrain " ICON_TERRAIN, 18);
+	newCombo.AddItem("Octahedron " ICON_FA_CIRCLE, NEW_OCTAHEDRON);
+	newCombo.AddItem("Dodecahedron " ICON_FA_CIRCLE, NEW_DODECAHEDRON);
+	newCombo.AddItem("Icosahedron " ICON_FA_CIRCLE, NEW_ICOSAHEDRON);
+	newCombo.AddItem("Plane " ICON_SQUARE, NEW_PLANE);
+	newCombo.AddItem("Circle " ICON_FA_CIRCLE, NEW_CIRCLE);
+	newCombo.AddItem("Pipe " ICON_FA_CIRCLE, NEW_PIPE);
+	newCombo.AddItem("Sphere " ICON_CIRCLE, NEW_SPHERE);
+	newCombo.AddItem("Animation " ICON_ANIMATION, NEW_ANIMATION);
+	newCombo.AddItem("Script " ICON_SCRIPT, NEW_SCRIPT);
+	newCombo.AddItem("Collider " ICON_COLLIDER, NEW_COLLIDER);
+	newCombo.AddItem("Terrain " ICON_TERRAIN, NEW_TERRAIN);
+	newCombo.AddItem("Sprite " ICON_SPRITE, NEW_SPRITE);
+	newCombo.AddItem("Font " ICON_FONT, NEW_FONT);
 	newCombo.OnSelect([&](wi::gui::EventArgs args) {
 		newCombo.SetSelectedWithoutCallback(-1);
 		const EditorComponent::EditorScene& editorscene = editor->GetCurrentEditorScene();
@@ -59,34 +96,34 @@ void OptionsWindow::Create(EditorComponent* _editor)
 
 		switch (args.userdata)
 		{
-		case 0:
+		case NEW_TRANSFORM:
 			pick.entity = scene.Entity_CreateTransform("transform");
 			break;
-		case 1:
+		case NEW_MATERIAL:
 			pick.entity = scene.Entity_CreateMaterial("material");
 			break;
-		case 2:
+		case NEW_POINTLIGHT:
 			pick.entity = scene.Entity_CreateLight("pointlight", in_front_of_camera, XMFLOAT3(1, 1, 1), 2, 60);
 			scene.lights.GetComponent(pick.entity)->type = LightComponent::POINT;
 			scene.lights.GetComponent(pick.entity)->intensity = 20;
 			break;
-		case 3:
+		case NEW_SPOTLIGHT:
 			pick.entity = scene.Entity_CreateLight("spotlight", in_front_of_camera, XMFLOAT3(1, 1, 1), 2, 60);
 			scene.lights.GetComponent(pick.entity)->type = LightComponent::SPOT;
 			scene.lights.GetComponent(pick.entity)->intensity = 100;
 			break;
-		case 4:
+		case NEW_DIRECTIONALLIGHT:
 			pick.entity = scene.Entity_CreateLight("dirlight", XMFLOAT3(0, 3, 0), XMFLOAT3(1, 1, 1), 2, 60);
 			scene.lights.GetComponent(pick.entity)->type = LightComponent::DIRECTIONAL;
 			scene.lights.GetComponent(pick.entity)->intensity = 10;
 			break;
-		case 5:
+		case NEW_ENVIRONMENTPROBE:
 			pick.entity = scene.Entity_CreateEnvironmentProbe("envprobe", in_front_of_camera);
 			break;
-		case 6:
+		case NEW_FORCE:
 			pick.entity = scene.Entity_CreateForce("force");
 			break;
-		case 7:
+		case NEW_DECAL:
 			pick.entity = scene.Entity_CreateDecal("decal", "");
 			if (scene.materials.Contains(pick.entity))
 			{
@@ -95,7 +132,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			}
 			scene.transforms.GetComponent(pick.entity)->RotateRollPitchYaw(XMFLOAT3(XM_PIDIV2, 0, 0));
 			break;
-		case 8:
+		case NEW_SOUND:
 		{
 			wi::helper::FileDialogParams params;
 			params.type = wi::helper::FileDialogParams::OPEN;
@@ -122,7 +159,7 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			return;
 		}
 		break;
-		case 19:
+		case NEW_VIDEO:
 		{
 			wi::helper::FileDialogParams params;
 			params.type = wi::helper::FileDialogParams::OPEN;
@@ -149,40 +186,61 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			return;
 		}
 		break;
-		case 9:
+		case NEW_WEATHER:
 			pick.entity = CreateEntity();
 			scene.weathers.Create(pick.entity);
 			scene.names.Create(pick.entity) = "weather";
 			break;
-		case 10:
+		case NEW_EMITTER:
 			pick.entity = scene.Entity_CreateEmitter("emitter");
 			break;
-		case 11:
+		case NEW_HAIR:
 			pick.entity = scene.Entity_CreateHair("hair");
 			break;
-		case 12:
+		case NEW_CAMERA:
 			pick.entity = scene.Entity_CreateCamera("camera", camera.width, camera.height);
 			*scene.cameras.GetComponent(pick.entity) = camera;
 			*scene.transforms.GetComponent(pick.entity) = editorscene.camera_transform;
 			break;
-		case 13:
+		case NEW_CUBE:
 			pick.entity = scene.Entity_CreateCube("cube");
 			pick.subsetIndex = 0;
 			break;
-		case 20:
-			pick.entity = scene.Entity_CreateCylinder("cylinder");
-			pick.subsetIndex = 0;
-			break;
-
-		case 21:
+		case NEW_SPHERE:
 			pick.entity = scene.Entity_CreateSphere("sphere");
 			pick.subsetIndex = 0;
 			break;
-		case 22:
+		case NEW_ANIMATION:
+			pick.entity = CreateEntity();
+			scene.animations.Create(pick.entity);
+			scene.names.Create(pick.entity) = "animation";
+			break;
+		case NEW_SCRIPT:
+			pick.entity = CreateEntity();
+			scene.scripts.Create(pick.entity);
+			scene.names.Create(pick.entity) = "script";
+			break;
+		case NEW_COLLIDER:
+			pick.entity = CreateEntity();
+			scene.colliders.Create(pick.entity);
+			scene.transforms.Create(pick.entity);
+			scene.names.Create(pick.entity) = "collider";
+			break;
+		case NEW_TERRAIN:
+			editor->componentsWnd.terrainWnd.SetupAssets();
+			pick.entity = CreateEntity();
+			scene.terrains.Create(pick.entity) = editor->componentsWnd.terrainWnd.terrain_preset;
+			scene.names.Create(pick.entity) = "terrain";
+			break;
+		case NEW_CYLINDER:
+			pick.entity = scene.Entity_CreateCylinder("cylinder");
+			pick.subsetIndex = 0;
+			break;
+		case NEW_TORUS:
 			pick.entity = scene.Entity_CreateTorus("torus");
 			pick.subsetIndex = 0;
 			break;
-		case 23:
+		case NEW_TETRAHEDRON:
 			pick.entity = scene.Entity_CreateTetrahedron("tetrahedron");
 			pick.subsetIndex = 0;
 			break;
@@ -190,53 +248,55 @@ void OptionsWindow::Create(EditorComponent* _editor)
 			pick.entity = scene.Entity_CreateCone("cone");
 			pick.subsetIndex = 0;
 			break;*/
-		case 25:
+		case NEW_OCTAHEDRON:
 			pick.entity = scene.Entity_CreateOctahedron("octahedron");
 			pick.subsetIndex = 0;
 			break;
-		case 26:
+		case NEW_DODECAHEDRON:
 			pick.entity = scene.Entity_CreateDodecahedron("dodecahedron");
 			pick.subsetIndex = 0;
 			break;
-		case 27:
+		case NEW_ICOSAHEDRON:
 			pick.entity = scene.Entity_CreateIcosahedron("icosahedron");
 			pick.subsetIndex = 0;
 			break;
-		case 28:
+		case NEW_CIRCLE:
 			pick.entity = scene.Entity_CreateCircle("circle");
 			pick.subsetIndex = 0;
 			break;
-		case 29:
+		case NEW_PIPE:
 			pick.entity = scene.Entity_CreatePipe("pipe");
 			pick.subsetIndex = 0;
 			break;
-		case 14:
+		case NEW_PLANE:
 			pick.entity = scene.Entity_CreatePlane("plane");
 			pick.subsetIndex = 0;
 			break;
-		case 15:
-			pick.entity = CreateEntity();
-			scene.animations.Create(pick.entity);
-			scene.names.Create(pick.entity) = "animation";
-			break;
-		case 16:
-			pick.entity = CreateEntity();
-			scene.scripts.Create(pick.entity);
-			scene.names.Create(pick.entity) = "script";
-			break;
-		case 17:
-			pick.entity = CreateEntity();
-			scene.colliders.Create(pick.entity);
-			scene.transforms.Create(pick.entity);
-			scene.names.Create(pick.entity) = "collider";
-			break;
-		case 18:
-			editor->componentsWnd.terrainWnd.SetupAssets();
-			pick.entity = CreateEntity();
-			scene.terrains.Create(pick.entity) = editor->componentsWnd.terrainWnd.terrain_preset;
-			scene.names.Create(pick.entity) = "terrain";
-			break;
 		
+		case NEW_SPRITE:
+		{
+			pick.entity = CreateEntity();
+			wi::Sprite& sprite = scene.sprites.Create(pick.entity);
+			sprite.params.pivot = XMFLOAT2(0.5f, 0.5f);
+			sprite.anim.repeatable = true;
+			scene.transforms.Create(pick.entity).Translate(XMFLOAT3(0, 2, 0));
+			scene.names.Create(pick.entity) = "sprite";
+		}
+		break;
+		case NEW_FONT:
+		{
+			pick.entity = CreateEntity();
+			wi::SpriteFont& font = scene.fonts.Create(pick.entity);
+			font.SetText("Text");
+			font.params.h_align = wi::font::Alignment::WIFALIGN_CENTER;
+			font.params.v_align = wi::font::Alignment::WIFALIGN_CENTER;
+			font.params.scaling = 0.1f;
+			font.params.size = 26;
+			font.anim.typewriter.looped = true;
+			scene.transforms.Create(pick.entity).Translate(XMFLOAT3(0, 2, 0));
+			scene.names.Create(pick.entity) = "font";
+		}
+		break;
 		default:
 			break;
 		}
@@ -287,6 +347,8 @@ void OptionsWindow::Create(EditorComponent* _editor)
 	filterCombo.AddItem(ICON_EXPRESSION, (uint64_t)Filter::Expression);
 	filterCombo.AddItem(ICON_HUMANOID, (uint64_t)Filter::Humanoid);
 	filterCombo.AddItem(ICON_TERRAIN, (uint64_t)Filter::Terrain);
+	filterCombo.AddItem(ICON_SPRITE, (uint64_t)Filter::Sprite);
+	filterCombo.AddItem(ICON_FONT, (uint64_t)Filter::Font);
 	filterCombo.SetTooltip("Apply filtering to the Entities by components");
 	filterCombo.OnSelect([&](wi::gui::EventArgs args) {
 		filter = (Filter)args.userdata;
@@ -453,7 +515,7 @@ void OptionsWindow::ResizeLayout()
 
 
 	entityTree.SetPos(pos);
-	entityTree.SetSize(XMFLOAT2(width, std::max(editor->GetLogicalHeight() * 0.75f, editor->GetLogicalHeight() - pos.y)));
+	entityTree.SetSize(XMFLOAT2(width, editor->GetLogicalHeight() - pos.y - this->translation_local.y - this->control_size - padding));
 	pos.y += entityTree.GetSize().y;
 	pos.y += padding;
 }
@@ -579,6 +641,14 @@ void OptionsWindow::PushToEntityTree(wi::ecs::Entity entity, int level)
 	{
 		item.name += ICON_HUMANOID " ";
 	}
+	if (scene.sprites.Contains(entity))
+	{
+		item.name += ICON_SPRITE " ";
+	}
+	if (scene.fonts.Contains(entity))
+	{
+		item.name += ICON_FONT " ";
+	}
 	if (scene.lights.Contains(entity))
 	{
 		const LightComponent* light = scene.lights.GetComponent(entity);
@@ -668,238 +738,16 @@ void OptionsWindow::RefreshEntityTree()
 
 	entityTree.ClearItems();
 
-	if (has_flag(filter, Filter::All))
-	{
-		// Add hierarchy:
-		for (size_t i = 0; i < scene.hierarchy.GetCount(); ++i)
-		{
-			if (scene.hierarchy[i].parentID == INVALID_ENTITY)
-				continue;
-			PushToEntityTree(scene.hierarchy[i].parentID, 0);
-		}
-	}
+	entitytree_temp_items.clear();
+	scene.FindAllEntities(entitytree_temp_items);
 
-	// Add any left over entities that might not have had a hierarchy:
-
-	if (has_flag(filter, Filter::Terrain))
+	// Add items to level 0 that are not in hierarchy (not in hierarchy can also mean top level parent):
+	//	Note that PushToEntityTree will add children recursively, so this is all we need
+	for (auto& x : entitytree_temp_items)
 	{
-		// Any transform left that is not part of a hierarchy:
-		for (size_t i = 0; i < scene.terrains.GetCount(); ++i)
+		if (!scene.hierarchy.Contains(x))
 		{
-			PushToEntityTree(scene.terrains.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Transform))
-	{
-		// Any transform left that is not part of a hierarchy:
-		for (size_t i = 0; i < scene.transforms.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.transforms.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Light))
-	{
-		for (size_t i = 0; i < scene.lights.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.lights.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Decal))
-	{
-		for (size_t i = 0; i < scene.decals.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.decals.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Camera))
-	{
-		for (size_t i = 0; i < scene.cameras.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.cameras.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Material))
-	{
-		for (size_t i = 0; i < scene.materials.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.materials.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Mesh))
-	{
-		for (size_t i = 0; i < scene.meshes.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.meshes.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Armature))
-	{
-		for (size_t i = 0; i < scene.armatures.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.armatures.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Object))
-	{
-		for (size_t i = 0; i < scene.objects.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.objects.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Weather))
-	{
-		for (size_t i = 0; i < scene.weathers.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.weathers.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Sound))
-	{
-		for (size_t i = 0; i < scene.sounds.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.sounds.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Video))
-	{
-		for (size_t i = 0; i < scene.videos.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.videos.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Hairparticle))
-	{
-		for (size_t i = 0; i < scene.hairs.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.hairs.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Emitter))
-	{
-		for (size_t i = 0; i < scene.emitters.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.emitters.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Animation))
-	{
-		for (size_t i = 0; i < scene.animations.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.animations.GetEntity(i), 0);
-		}
-		for (size_t i = 0; i < scene.animation_datas.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.animation_datas.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::EnvironmentProbe))
-	{
-		for (size_t i = 0; i < scene.probes.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.probes.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Force))
-	{
-		for (size_t i = 0; i < scene.forces.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.forces.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::All))
-	{
-		for (size_t i = 0; i < scene.rigidbodies.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.rigidbodies.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::All))
-	{
-		for (size_t i = 0; i < scene.softbodies.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.softbodies.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Spring))
-	{
-		for (size_t i = 0; i < scene.springs.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.springs.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Collider))
-	{
-		for (size_t i = 0; i < scene.colliders.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.colliders.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::IK))
-	{
-		for (size_t i = 0; i < scene.inverse_kinematics.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.inverse_kinematics.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::All))
-	{
-		for (size_t i = 0; i < scene.names.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.names.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Script))
-	{
-		for (size_t i = 0; i < scene.scripts.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.scripts.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Humanoid))
-	{
-		for (size_t i = 0; i < scene.humanoids.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.humanoids.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Expression))
-	{
-		for (size_t i = 0; i < scene.expressions.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.expressions.GetEntity(i), 0);
-		}
-	}
-
-	if (has_flag(filter, Filter::Terrain))
-	{
-		for (size_t i = 0; i < scene.terrains.GetCount(); ++i)
-		{
-			PushToEntityTree(scene.terrains.GetEntity(i), 0);
+			PushToEntityTree(x, 0);
 		}
 	}
 

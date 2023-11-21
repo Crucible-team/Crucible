@@ -15,20 +15,6 @@ void GeneralWindow::Create(EditorComponent* _editor)
 
 	SetSize(XMFLOAT2(580, 680));
 
-	physicsEnabledCheckBox.Create("Physics: ");
-	physicsEnabledCheckBox.SetTooltip("Toggle Physics Simulation On/Off");
-	if (editor->main->config.GetSection("options").Has("physics"))
-	{
-		wi::physics::SetSimulationEnabled(editor->main->config.GetSection("options").GetBool("physics"));
-	}
-	physicsEnabledCheckBox.OnClick([&](wi::gui::EventArgs args) {
-		wi::physics::SetSimulationEnabled(args.bValue);
-		editor->main->config.GetSection("options").Set("physics", args.bValue);
-		editor->main->config.Commit();
-		});
-	physicsEnabledCheckBox.SetCheck(wi::physics::IsSimulationEnabled());
-	AddWidget(&physicsEnabledCheckBox);
-
 	physicsDebugCheckBox.Create("Physics visualizer: ");
 	physicsDebugCheckBox.SetTooltip("Visualize the physics world");
 	physicsDebugCheckBox.OnClick([](wi::gui::EventArgs args) {
@@ -439,6 +425,7 @@ void GeneralWindow::Create(EditorComponent* _editor)
 
 		// customize individual elements:
 		editor->componentsWnd.materialWnd.textureSlotButton.SetColor(wi::Color::White(), wi::gui::IDLE);
+		editor->componentsWnd.spriteWnd.textureButton.SetColor(wi::Color::White(), wi::gui::IDLE);
 		editor->optionsWnd.paintToolWnd.brushTextureButton.SetColor(wi::Color::White(), wi::gui::IDLE);
 		editor->optionsWnd.paintToolWnd.revealTextureButton.SetColor(wi::Color::White(), wi::gui::IDLE);
 		editor->aboutLabel.sprites[wi::gui::FOCUS] = editor->aboutLabel.sprites[wi::gui::IDLE];
@@ -542,10 +529,13 @@ void GeneralWindow::Create(EditorComponent* _editor)
 			editor->scaleButton.sprites[i].params.enableCornerRounding();
 			editor->scaleButton.sprites[i].params.corners_rounding[3].radius = 40;
 
-
 			editor->dummyButton.sprites[i].params.enableCornerRounding();
 			editor->dummyButton.sprites[i].params.corners_rounding[2].radius = 40;
 			editor->dummyButton.sprites[i].params.corners_rounding[3].radius = 40;
+
+			editor->physicsButton.sprites[i].params.enableCornerRounding();
+			editor->physicsButton.sprites[i].params.corners_rounding[2].radius = 40;
+			editor->physicsButton.sprites[i].params.corners_rounding[3].radius = 40;
 		}
 		editor->componentsWnd.weatherWnd.default_sky_horizon = dark_point;
 		editor->componentsWnd.weatherWnd.default_sky_zenith = theme_color_idle;
@@ -560,6 +550,30 @@ void GeneralWindow::Create(EditorComponent* _editor)
 				sprite.params.corners_rounding[0].radius = 10;
 				sprite.params.corners_rounding[2].radius = 10;
 			}
+		}
+
+		editor->componentsWnd.transformWnd.resetTranslationButton.SetColor(wi::Color::Error(), wi::gui::WIDGETSTATE::FOCUS);
+		for (auto& sprite : editor->componentsWnd.transformWnd.resetTranslationButton.sprites)
+		{
+			sprite.params.enableCornerRounding();
+			sprite.params.corners_rounding[1].radius = 10;
+			sprite.params.corners_rounding[3].radius = 10;
+		}
+
+		editor->componentsWnd.transformWnd.resetScaleButton.SetColor(wi::Color::Error(), wi::gui::WIDGETSTATE::FOCUS);
+		for (auto& sprite : editor->componentsWnd.transformWnd.resetScaleButton.sprites)
+		{
+			sprite.params.enableCornerRounding();
+			sprite.params.corners_rounding[1].radius = 10;
+			sprite.params.corners_rounding[3].radius = 10;
+		}
+
+		editor->componentsWnd.transformWnd.resetRotationButton.SetColor(wi::Color::Error(), wi::gui::WIDGETSTATE::FOCUS);
+		for (auto& sprite : editor->componentsWnd.transformWnd.resetRotationButton.sprites)
+		{
+			sprite.params.enableCornerRounding();
+			sprite.params.corners_rounding[1].radius = 10;
+			sprite.params.corners_rounding[3].radius = 10;
 		}
 
 		if ((Theme)args.userdata == Theme::Bright)
@@ -731,9 +745,8 @@ void GeneralWindow::ResizeLayout()
 
 	add_fullwidth(localizationButton);
 
-	physicsEnabledCheckBox.SetPos(XMFLOAT2(width - physicsEnabledCheckBox.GetSize().x, y));
-	physicsDebugCheckBox.SetPos(XMFLOAT2(physicsEnabledCheckBox.GetPos().x - physicsDebugCheckBox.GetSize().x - 70, y));
-	y += physicsEnabledCheckBox.GetSize().y;
+	physicsDebugCheckBox.SetPos(XMFLOAT2(width - physicsDebugCheckBox.GetSize().x, y));
+	y += physicsDebugCheckBox.GetSize().y;
 	y += padding;
 
 	nameDebugCheckBox.SetPos(XMFLOAT2(width - nameDebugCheckBox.GetSize().x, y));

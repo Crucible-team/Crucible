@@ -20,12 +20,10 @@ VertextoPixel main(uint vid : SV_VertexID, uint instanceID : SV_InstanceID)
 	uint particleIndex = culledIndirectionBuffer2[culledIndirectionBuffer[instanceID]];
 	uint vertexID = particleIndex * 4 + vid;
 
-	float4 pos_nor_wind = bindless_buffers_float4[geometry.vb_pos_nor_wind][vertexID];
-	float3 position = pos_nor_wind.xyz;
-	float3 normal = normalize(unpack_unitvector(asuint(pos_nor_wind.w)));
+	float3 position = bindless_buffers_float4[geometry.vb_pos_wind][vertexID].xyz;
+	float3 normal = normalize(bindless_buffers_float4[geometry.vb_nor][vertexID].xyz);
 	float4 uvsets = bindless_buffers_float4[geometry.vb_uvs][vertexID];
 	float4 color = bindless_buffers_float4[geometry.vb_col][vertexID];
-
 
 	// load particle data:
 	Particle particle = particleBuffer[particleIndex];
@@ -42,11 +40,13 @@ VertextoPixel main(uint vid : SV_VertexID, uint instanceID : SV_InstanceID)
 
 	VertextoPixel Out;
 	Out.P = position;
-	Out.pos = mul(GetCamera().view_projection, float4(position, 1));
-	Out.tex = uvsets;
-	Out.size = size;
+	Out.pos = float4(position, 1);
+	Out.clip = dot(Out.pos, GetCamera().clip_plane);
+	Out.pos = mul(GetCamera().view_projection, Out.pos);
+	Out.tex = min16float4(uvsets);
+	Out.size = min16float(size);
 	Out.color = pack_rgba(color);
-	Out.unrotated_uv = BILLBOARD[vertexID % 4].xy * float2(1, -1) * 0.5f + 0.5f;
-	Out.frameBlend = frameBlend;
+	Out.unrotated_uv = min16float2(BILLBOARD[vertexID % 4].xy * float2(1, -1) * 0.5f + 0.5f);
+	Out.frameBlend = min16float(frameBlend);
 	return Out;
 }

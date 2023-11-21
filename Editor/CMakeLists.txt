@@ -43,6 +43,8 @@ set (SOURCE_FILES
 	HumanoidWindow.cpp
 	GeneralWindow.cpp
 	ProfilerWindow.cpp
+	SpriteWindow.cpp
+	FontWindow.cpp
 	xatlas.cpp
 	EmbeddedResources.cpp
 	ResponseWindow.cpp
@@ -63,7 +65,7 @@ if (WIN32)
 	add_executable(JOE WIN32 ${SOURCE_FILES})
 
 	target_link_libraries(JOE PUBLIC
-		WickedEngine_Windows
+		Crucible_Windows
 		meshoptimizer
 	)
 
@@ -73,7 +75,7 @@ else ()
 	add_executable(JOE ${SOURCE_FILES})
 
 	target_link_libraries(JOE PUBLIC
-		WickedEngine
+		Crucible
 		meshoptimizer
 	)
 	set(LIB_DXCOMPILER "libdxcompiler.so")
@@ -84,15 +86,15 @@ endif ()
 add_custom_command(
 	TARGET JOE POST_BUILD
 	# Copy shader compiler library in the source folder
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/WickedEngine/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/WickedEngine/shaders ${CMAKE_CURRENT_BINARY_DIR}/Data/shadersrc
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/Crucible/${LIB_DXCOMPILER} ${CMAKE_CURRENT_BINARY_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Crucible/shaders ${CMAKE_CURRENT_BINARY_DIR}/Data/shadersrc
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/terrain ${CMAKE_CURRENT_BINARY_DIR}/Data/terrain
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/languages ${CMAKE_CURRENT_BINARY_DIR}/Data/languages
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/fonts ${CMAKE_CURRENT_BINARY_DIR}/Data/fonts
 )
 
 include(GNUInstallDirs)
-set(EDITOR_INSTALL_FOLDER "${CMAKE_INSTALL_LIBDIR}/WickedEngine/Editor")
+set(EDITOR_INSTALL_FOLDER "${CMAKE_INSTALL_LIBDIR}/Crucible/Editor")
 
 # wicked-engine.sh (cd install folder then execs editor)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Linux/Installer/Distribution/wicked-engine.template.sh"

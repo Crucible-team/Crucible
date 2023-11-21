@@ -369,7 +369,12 @@ namespace wi
 			visibility_reflection.layerMask = getLayerMask();
 			visibility_reflection.scene = scene;
 			visibility_reflection.camera = &camera_reflection;
-			visibility_reflection.flags = wi::renderer::Visibility::ALLOW_OBJECTS;
+			visibility_reflection.flags =
+				wi::renderer::Visibility::ALLOW_OBJECTS |
+				wi::renderer::Visibility::ALLOW_EMITTERS |
+				wi::renderer::Visibility::ALLOW_HAIRS |
+				wi::renderer::Visibility::ALLOW_LIGHTS
+			;
 			wi::renderer::UpdateVisibility(visibility_reflection);
 		}
 
@@ -629,6 +634,7 @@ namespace wi
 		camera->buffer_entitytiles_opaque_index = device->GetDescriptorIndex(&tiledLightResources.entityTiles_Opaque, SubresourceType::SRV);
 		camera->buffer_entitytiles_transparent_index = device->GetDescriptorIndex(&tiledLightResources.entityTiles_Transparent, SubresourceType::SRV);
 		camera->texture_reflection_index = device->GetDescriptorIndex(&rtReflection, SubresourceType::SRV);
+		camera->texture_reflection_depth_index = device->GetDescriptorIndex(&depthBuffer_Reflection, SubresourceType::SRV);
 		camera->texture_refraction_index = device->GetDescriptorIndex(&rtSceneCopy, SubresourceType::SRV);
 		camera->texture_waterriples_index = device->GetDescriptorIndex(&rtWaterRipple, SubresourceType::SRV);
 		camera->texture_ao_index = device->GetDescriptorIndex(&rtAO, SubresourceType::SRV);
@@ -663,6 +669,7 @@ namespace wi
 		camera_reflection.buffer_entitytiles_opaque_index = device->GetDescriptorIndex(&tiledLightResources_planarReflection.entityTiles_Opaque, SubresourceType::SRV);
 		camera_reflection.buffer_entitytiles_transparent_index = device->GetDescriptorIndex(&tiledLightResources_planarReflection.entityTiles_Transparent, SubresourceType::SRV);
 		camera_reflection.texture_reflection_index = -1;
+		camera_reflection.texture_reflection_depth_index = -1;
 		camera_reflection.texture_refraction_index = -1;
 		camera_reflection.texture_waterriples_index = -1;
 		camera_reflection.texture_ao_index = -1;
@@ -771,8 +778,7 @@ namespace wi
 				wi::renderer::SurfelGI(
 					surfelGIResources,
 					*scene,
-					cmd,
-					instanceInclusionMask_SurfelGI
+					cmd
 				);
 			}
 
@@ -780,8 +786,7 @@ namespace wi
 			{
 				wi::renderer::DDGI(
 					*scene,
-					cmd,
-					instanceInclusionMask_DDGI
+					cmd
 				);
 			}
 
@@ -792,8 +797,9 @@ namespace wi
 			wi::renderer::DRAWSCENE_IMPOSTOR |
 			wi::renderer::DRAWSCENE_HAIRPARTICLE |
 			wi::renderer::DRAWSCENE_TESSELLATION |
-			wi::renderer::DRAWSCENE_OCCLUSIONCULLING
-			;
+			wi::renderer::DRAWSCENE_OCCLUSIONCULLING |
+			wi::renderer::DRAWSCENE_MAINCAMERA
+		;
 
 		// Main camera depth prepass + occlusion culling:
 		cmd = device->BeginCommandList();
@@ -849,7 +855,8 @@ namespace wi
 				RENDERPASS_PREPASS,
 				cmd,
 				wi::renderer::DRAWSCENE_OPAQUE |
-				wi::renderer::DRAWSCENE_FOREGROUND_ONLY
+				wi::renderer::DRAWSCENE_FOREGROUND_ONLY |
+				wi::renderer::DRAWSCENE_MAINCAMERA
 			);
 
 			// Regular:
@@ -993,8 +1000,7 @@ namespace wi
 					tiledLightResources.entityTiles_Opaque,
 					rtLinearDepth,
 					rtShadow,
-					cmd,
-					instanceInclusionMask_RTShadow
+					cmd
 				);
 			}
 
@@ -1028,7 +1034,7 @@ namespace wi
 				camera_reflection,
 				cmd
 			);
-			wi::renderer::RefreshLightmaps(*scene, cmd, instanceInclusionMask_Lightmap);
+			wi::renderer::RefreshLightmaps(*scene, cmd);
 			wi::renderer::RefreshEnvProbes(visibility_main, cmd);
 			wi::renderer::RefreshImpostors(*scene, cmd);
 		});
@@ -1077,29 +1083,17 @@ namespace wi
 				Viewport vp;
 				vp.width = (float)depthBuffer_Reflection.GetDesc().width;
 				vp.height = (float)depthBuffer_Reflection.GetDesc().height;
-
-				// Foreground:
-				vp.min_depth = 1 - foreground_depth_range;
-				vp.max_depth = 1;
-				device->BindViewports(1, &vp, cmd);
-				wi::renderer::DrawScene(
-					visibility_reflection,
-					RENDERPASS_PREPASS,
-					cmd,
-					wi::renderer::DRAWSCENE_OPAQUE |
-					wi::renderer::DRAWSCENE_FOREGROUND_ONLY
-				);
-
-				// Regular:
 				vp.min_depth = 0;
 				vp.max_depth = 1;
 				device->BindViewports(1, &vp, cmd);
+
 				wi::renderer::DrawScene(
 					visibility_reflection,
 					RENDERPASS_PREPASS,
 					cmd,
 					wi::renderer::DRAWSCENE_OPAQUE |
 					wi::renderer::DRAWSCENE_IMPOSTOR |
+					wi::renderer::DRAWSCENE_HAIRPARTICLE |
 					wi::renderer::DRAWSCENE_SKIP_PLANAR_REFLECTION_OBJECTS
 				);
 
@@ -1165,7 +1159,7 @@ namespace wi
 					RenderPassImage::DepthStencil(
 						&depthBuffer_Reflection,
 						RenderPassImage::LoadOp::LOAD,
-						RenderPassImage::StoreOp::DONTCARE,
+						RenderPassImage::StoreOp::STORE,
 						ResourceState::SHADER_RESOURCE
 					),
 				};
@@ -1174,29 +1168,17 @@ namespace wi
 				Viewport vp;
 				vp.width = (float)depthBuffer_Reflection.GetDesc().width;
 				vp.height = (float)depthBuffer_Reflection.GetDesc().height;
-
-				// Foreground:
-				vp.min_depth = 1 - foreground_depth_range;
-				vp.max_depth = 1;
-				device->BindViewports(1, &vp, cmd);
-				wi::renderer::DrawScene(
-					visibility_reflection,
-					RENDERPASS_MAIN,
-					cmd,
-					wi::renderer::DRAWSCENE_OPAQUE |
-					wi::renderer::DRAWSCENE_FOREGROUND_ONLY
-				);
-
-				// Regular:
 				vp.min_depth = 0;
 				vp.max_depth = 1;
 				device->BindViewports(1, &vp, cmd);
+
 				wi::renderer::DrawScene(
 					visibility_reflection,
 					RENDERPASS_MAIN,
 					cmd,
 					wi::renderer::DRAWSCENE_OPAQUE |
 					wi::renderer::DRAWSCENE_IMPOSTOR |
+					wi::renderer::DRAWSCENE_HAIRPARTICLE |
 					wi::renderer::DRAWSCENE_SKIP_PLANAR_REFLECTION_OBJECTS
 				);
 				wi::renderer::DrawScene(
@@ -1230,6 +1212,9 @@ namespace wi
 					wi::image::Draw(&volumetriccloudResources_reflection.texture_reproject[volumetriccloudResources_reflection.frame % 2], fx, cmd);
 					device->EventEnd(cmd);
 				}
+
+				wi::renderer::DrawSoftParticles(visibility_reflection, false, cmd);
+				wi::renderer::DrawSpritesAndFonts(*scene, camera_reflection, false, cmd);
 
 				device->RenderPassEnd(cmd);
 
@@ -1272,8 +1257,7 @@ namespace wi
 					rtSSR,
 					cmd,
 					getRaytracedReflectionsRange(),
-					getReflectionRoughnessCutoff(),
-					instanceInclusionMask_RTReflection
+					getReflectionRoughnessCutoff()
 				);
 			}
 			if (getRaytracedDiffuseEnabled())
@@ -1283,8 +1267,7 @@ namespace wi
 					*scene,
 					rtRaytracedDiffuse,
 					cmd,
-					getRaytracedDiffuseRange(),
-					instanceInclusionMask_RTDiffuse
+					getRaytracedDiffuseRange()
 				);
 			}
 			if (wi::renderer::GetVXGIEnabled())
@@ -1419,7 +1402,8 @@ namespace wi
 					RENDERPASS_MAIN,
 					cmd,
 					wi::renderer::DRAWSCENE_OPAQUE |
-					wi::renderer::DRAWSCENE_FOREGROUND_ONLY
+					wi::renderer::DRAWSCENE_FOREGROUND_ONLY |
+					wi::renderer::DRAWSCENE_MAINCAMERA
 				);
 
 				// Regular:
@@ -1622,8 +1606,7 @@ namespace wi
 					rtAO,
 					cmd,
 					getAORange(),
-					getAOPower(),
-					instanceInclusionMask_RTAO
+					getAOPower()
 				);
 				break;
 			case AO_DISABLED:
@@ -1869,7 +1852,8 @@ namespace wi
 				RENDERPASS_MAIN,
 				cmd,
 				wi::renderer::DRAWSCENE_TRANSPARENT |
-				wi::renderer::DRAWSCENE_FOREGROUND_ONLY
+				wi::renderer::DRAWSCENE_FOREGROUND_ONLY |
+				wi::renderer::DRAWSCENE_MAINCAMERA
 			);
 
 			// Regular:
@@ -1884,16 +1868,20 @@ namespace wi
 				wi::renderer::DRAWSCENE_OCCLUSIONCULLING |
 				wi::renderer::DRAWSCENE_HAIRPARTICLE |
 				wi::renderer::DRAWSCENE_TESSELLATION |
-				wi::renderer::DRAWSCENE_OCEAN
+				wi::renderer::DRAWSCENE_OCEAN |
+				wi::renderer::DRAWSCENE_MAINCAMERA
 			);
 
 			device->EventEnd(cmd);
 			wi::profiler::EndRange(range); // Transparent Scene
 		}
 
+		wi::renderer::DrawDebugWorld(*scene, *camera, *this, cmd);
+
 		wi::renderer::DrawLightVisualizers(visibility_main, cmd);
 
-		wi::renderer::DrawSoftParticles(visibility_main, rtLinearDepth, false, cmd);
+		wi::renderer::DrawSoftParticles(visibility_main, false, cmd);
+		wi::renderer::DrawSpritesAndFonts(*scene, *camera, false, cmd);
 
 		if (getVolumeLightsEnabled() && visibility_main.IsRequestedVolumetricLights())
 		{
@@ -1928,8 +1916,6 @@ namespace wi
 				scene->weather.IsVolumetricClouds() ? &volumetriccloudResources.texture_cloudMask : nullptr
 			);
 		}
-
-		wi::renderer::DrawDebugWorld(*scene, *camera, *this, cmd);
 
 		device->RenderPassEnd(cmd);
 
@@ -1972,7 +1958,8 @@ namespace wi
 			vp.height = (float)rtParticleDistortion.GetDesc().height;
 			device->BindViewports(1, &vp, cmd);
 
-			wi::renderer::DrawSoftParticles(visibility_main, rtLinearDepth, true, cmd);
+			wi::renderer::DrawSoftParticles(visibility_main, true, cmd);
+			wi::renderer::DrawSpritesAndFonts(*scene, *camera, true, cmd);
 
 			device->RenderPassEnd(cmd);
 		}
@@ -2489,8 +2476,6 @@ namespace wi
 
 			desc.bind_flags = BindFlag::DEPTH_STENCIL | BindFlag::SHADER_RESOURCE;
 			desc.format = wi::renderer::format_depthbuffer_main;
-			desc.width = internalResolution.x / 2;
-			desc.height = internalResolution.y / 2;
 			desc.layout = ResourceState::DEPTHSTENCIL;
 			device->CreateTexture(&desc, nullptr, &depthBuffer_Reflection);
 			device->SetName(&depthBuffer_Reflection, "depthBuffer_Reflection");

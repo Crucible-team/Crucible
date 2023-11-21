@@ -68,7 +68,7 @@ namespace wi::input
 			}
 		};
 	};
-	std::map<Input, uint32_t, Input::LessComparer> inputs;
+	std::map<Input, int, Input::LessComparer> inputs; // Input -> down frames (-1 = released)
 	wi::vector<Touch> touches;
 
 	struct Controller
@@ -410,9 +410,13 @@ namespace wi::input
 			{
 				iter->second++;
 			}
-			else
+			else if (iter->second == -1)
 			{
 				todelete = true;
+			}
+			else
+			{
+				iter->second = -1;
 			}
 
 			if (todelete)
@@ -572,6 +576,54 @@ namespace wi::input
 			case wi::input::KEYBOARD_BUTTON_PAGEUP:
 				keycode = VK_PRIOR;
 				break;
+			case KEYBOARD_BUTTON_NUMPAD0:
+				keycode = VK_NUMPAD0;
+				break;
+			case KEYBOARD_BUTTON_NUMPAD1:
+				keycode = VK_NUMPAD1;
+				break;
+			case KEYBOARD_BUTTON_NUMPAD2:
+				keycode = VK_NUMPAD2;
+				break;
+			case KEYBOARD_BUTTON_NUMPAD3:
+				keycode = VK_NUMPAD3;
+				break;
+			case KEYBOARD_BUTTON_NUMPAD4:
+				keycode = VK_NUMPAD4;
+				break;
+			case KEYBOARD_BUTTON_NUMPAD5:
+				keycode = VK_NUMPAD5;
+				break;
+			case KEYBOARD_BUTTON_NUMPAD6:
+				keycode = VK_NUMPAD6;
+				break;
+			case KEYBOARD_BUTTON_NUMPAD7:
+				keycode = VK_NUMPAD7;
+				break;
+			case KEYBOARD_BUTTON_NUMPAD8:
+				keycode = VK_NUMPAD8;
+				break;
+			case KEYBOARD_BUTTON_NUMPAD9:
+				keycode = VK_NUMPAD9;
+				break;
+			case KEYBOARD_BUTTON_MULTIPLY:
+				keycode = VK_MULTIPLY;
+				break;
+			case KEYBOARD_BUTTON_ADD:
+				keycode = VK_ADD;
+				break;
+			case KEYBOARD_BUTTON_SEPARATOR:
+				keycode = VK_SEPARATOR;
+				break;
+			case KEYBOARD_BUTTON_SUBTRACT:
+				keycode = VK_SUBTRACT;
+				break;
+			case KEYBOARD_BUTTON_DECIMAL:
+				keycode = VK_DECIMAL;
+				break;
+			case KEYBOARD_BUTTON_DIVIDE:
+				keycode = VK_DIVIDE;
+				break;
 #endif // _WIN32
 				default: break;
 			}
@@ -604,6 +656,24 @@ namespace wi::input
 		}
 		return false;
 	}
+	bool Release(BUTTON button, int playerindex)
+	{
+		Input input;
+		input.button = button;
+		input.playerIndex = playerindex;
+		auto iter = inputs.find(input);
+		if (iter == inputs.end())
+		{
+			if (Down(button, playerindex))
+				inputs.insert(std::make_pair(input, 0));
+			return false;
+		}
+		if (iter->second == -1)
+		{
+			return true;
+		}
+		return false;
+	}
 	bool Hold(BUTTON button, uint32_t frames, bool continuous, int playerIndex)
 	{
 		if (!Down(button, playerIndex))
@@ -618,7 +688,7 @@ namespace wi::input
 			inputs.insert(std::make_pair(input, 0));
 			return false;
 		}
-		else if ((!continuous && iter->second == frames) || (continuous && iter->second >= frames))
+		else if ((!continuous && iter->second == (int)frames) || (continuous && iter->second >= (int)frames))
 		{
 			return true;
 		}

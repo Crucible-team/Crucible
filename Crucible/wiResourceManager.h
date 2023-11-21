@@ -6,8 +6,10 @@
 #include "wiJobSystem.h"
 #include "wiVector.h"
 #include "wiVideo.h"
+#include "wiUnorderedSet.h"
 
 #include <memory>
+#include <string>
 
 namespace wi
 {
@@ -24,6 +26,7 @@ namespace wi
 		const std::string& GetScript() const;
 		const wi::video::Video& GetVideo() const;
 		int GetTextureSRGBSubresource() const;
+		int GetFontStyle() const;
 
 		void SetFileData(const wi::vector<uint8_t>& data);
 		void SetFileData(wi::vector<uint8_t>&& data);
@@ -53,6 +56,7 @@ namespace wi
 		wi::vector<std::string> GetSupportedSoundExtensions();
 		wi::vector<std::string> GetSupportedVideoExtensions();
 		wi::vector<std::string> GetSupportedScriptExtensions();
+		wi::vector<std::string> GetSupportedFontStyleExtensions();
 
 		// Order of these must not change as the flags can be serialized!
 		enum class Flags
@@ -85,9 +89,11 @@ namespace wi
 		{
 			wi::vector<Resource> resources;
 		};
+
 		// Serializes all resources that are compatible
 		//	Compatible resources are those whose file data is kept around using the IMPORT_RETAIN_FILEDATA flag when loading.
-		void Serialize(wi::Archive& archive, ResourceSerializer& seri);
+		void Serialize_READ(wi::Archive& archive, ResourceSerializer& resources);
+		void Serialize_WRITE(wi::Archive& archive, const wi::unordered_set<std::string>& resource_names);
 	}
 
 }

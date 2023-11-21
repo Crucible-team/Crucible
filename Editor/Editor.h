@@ -29,6 +29,8 @@ public:
 	wi::gui::Button rotateButton;
 	wi::gui::Button scaleButton;
 
+	wi::gui::Button physicsButton;
+
 	wi::gui::Button dummyButton;
 	bool dummy_enabled = false;
 	bool dummy_male = false;
@@ -52,6 +54,8 @@ public:
 	OptionsWindow optionsWnd;
 	ComponentsWindow componentsWnd;
 	ProfilerWindow profilerWnd;
+
+	wi::physics::PickDragOperation physicsDragOp;
 
 	std::unique_ptr<wi::RenderPath3D> renderPath;
 	const wi::graphics::Texture* GetGUIBlurredBackground() const override { return renderPath->GetGUIBlurredBackground(); }

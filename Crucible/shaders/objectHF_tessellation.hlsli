@@ -118,24 +118,24 @@ PixelInput main(ConstantOutput input, float3 uvw : SV_DomainLocation, const Outp
 		input.b102 * w * vv3 + input.b012 * u * vv3 + input.b111 * 6.0 * w * u * v;
 #endif // OBJECTSHADER_USE_POSITIONPREV
 
-#ifdef OBJECTSHADER_USE_COLOR
-	output.color = w * patch[0].color + u * patch[1].color + v * patch[2].color;
-#endif // OBJECTSHADER_USE_COLOR
-
 #ifdef OBJECTSHADER_USE_UVSETS
 	output.uvsets = w * patch[0].uvsets + u * patch[1].uvsets + v * patch[2].uvsets;
 #endif // OBJECTSHADER_USE_UVSETS
 
+#ifdef OBJECTSHADER_USE_COLOR
+	output.color = min16float4(w * patch[0].color + u * patch[1].color + v * patch[2].color);
+#endif // OBJECTSHADER_USE_COLOR
+
 #ifdef OBJECTSHADER_USE_ATLAS
-	output.atl = w * patch[0].atl + u * patch[1].atl + v * patch[2].atl;
+	output.atl = min16float2(w * patch[0].atl + u * patch[1].atl + v * patch[2].atl);
 #endif // OBJECTSHADER_USE_ATLAS
 
 #ifdef OBJECTSHADER_USE_NORMAL
-	output.nor = w * patch[0].nor + u * patch[1].nor + v * patch[2].nor;
+	output.nor = min16float3(normalize(w * patch[0].nor + u * patch[1].nor + v * patch[2].nor));
 #endif // OBJECTSHADER_USE_NORMAL
 
 #ifdef OBJECTSHADER_USE_TANGENT
-	output.tan = w * patch[0].tan + u * patch[1].tan + v * patch[2].tan;
+	output.tan = min16float4(normalize(w * patch[0].tan + u * patch[1].tan + v * patch[2].tan));
 #endif // OBJECTSHADER_USE_TANGENT
 
 #ifdef OBJECTSHADER_USE_POSITION3D
@@ -149,9 +149,34 @@ PixelInput main(ConstantOutput input, float3 uvw : SV_DomainLocation, const Outp
 	[branch]
 	if (GetMaterial().displacementMapping > 0 && GetMaterial().textures[DISPLACEMENTMAP].IsValid())
 	{
-		float displacement = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, output.uvsets, 0).r;
-		displacement *= GetMaterial().displacementMapping;
-		output.pos.xyz += normalize(output.nor) * displacement;
+		float displacement = 0;
+		float displacement2 = 0;
+		float final_displacement = 0;
+		float flow_mix = 0;
+		if (GetMaterial().textures[FLOWMAP].IsValid())
+		{
+			Texture2D texture_flowmap = bindless_textures[GetMaterial().textures[FLOWMAP].texture_descriptor];
+		
+			float2 Flowmap = 2.0 * texture_flowmap.SampleLevel(sampler_linear_clamp,output.uvsets,0).rg - 1.0;
+		
+			float time_phase1 = (GetFrame().time * GetMaterial().flowmapspeed) - floor(GetFrame().time * GetMaterial().flowmapspeed);
+			float time_phase2 = (time_phase1 + 0.5) - floor(time_phase1 + 0.5);
+		
+			flow_mix = abs( (time_phase1 - 0.5 ) *2.0 );
+			
+			displacement = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, float4(output.uvsets.xy +  (Flowmap * time_phase1 * GetMaterial().flowmapintensity), output.uvsets.zw), 0).r;
+			displacement2 = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, float4(output.uvsets.xy +  (Flowmap * time_phase2 * GetMaterial().flowmapintensity), output.uvsets.zw), 0).r;
+		
+			final_displacement = lerp(displacement, displacement2, flow_mix);
+		
+		}
+		else
+		{
+			final_displacement = GetMaterial().textures[DISPLACEMENTMAP].SampleLevel(sampler_objectshader, output.uvsets, 0).r;
+		}
+		
+		final_displacement *= GetMaterial().displacementMapping;
+		output.pos.xyz += normalize(float3(output.nor)) * final_displacement;
 	}
 #endif // OBJECTSHADER_USE_UVSETS
 #endif // OBJECTSHADER_USE_NORMAL

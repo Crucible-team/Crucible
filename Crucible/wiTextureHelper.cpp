@@ -5,8 +5,12 @@
 #include "wiSpinLock.h"
 #include "wiTimer.h"
 #include "wiUnorderedMap.h"
-#include "logo.h"
 #include "missing.h"
+#include "wiNoise.h"
+
+// embedded image datas:
+#include "logo.h"
+#include "waterripple.h"
 
 using namespace wi::graphics;
 
@@ -26,6 +30,7 @@ namespace wi::texturehelper
 		HELPERTEXTURE_UINT4,
 		HELPERTEXTURE_BLUENOISE,
 		HELPERTEXTURE_MISSING,
+		HELPERTEXTURE_WATERRIPPLE,
 		HELPERTEXTURE_COUNT
 	};
 	wi::graphics::Texture helperTextures[HELPERTEXTURE_COUNT];
@@ -165,6 +170,32 @@ namespace wi::texturehelper
 			device->SetName(&helperTextures[HELPERTEXTURE_BLUENOISE], "HELPERTEXTURE_BLUENOISE");
 		}
 
+		// Water ripple:
+		{
+			TextureDesc desc;
+			desc.width = 64;
+			desc.height = 64;
+			desc.mip_levels = 7;
+			desc.format = Format::BC5_UNORM;
+			desc.swizzle = { ComponentSwizzle::R,ComponentSwizzle::G,ComponentSwizzle::ONE,ComponentSwizzle::ONE };
+			desc.bind_flags = BindFlag::SHADER_RESOURCE;
+
+			const uint32_t data_stride = GetFormatStride(desc.format);
+			const uint32_t block_size = GetFormatBlockSize(desc.format);
+			const uint8_t* src = waterriple;
+			wi::vector<SubresourceData> initdata(desc.mip_levels);
+			for (uint32_t mip = 0; mip < desc.mip_levels; ++mip)
+			{
+				const uint32_t num_blocks_x = std::max(1u, desc.width >> mip) / block_size;
+				const uint32_t num_blocks_y = std::max(1u, desc.height >> mip) / block_size;
+				initdata[mip].data_ptr = src;
+				initdata[mip].row_pitch = num_blocks_x * data_stride;
+				src += num_blocks_x * num_blocks_y * data_stride;
+			}
+			device->CreateTexture(&desc, initdata.data(), &helperTextures[HELPERTEXTURE_WATERRIPPLE]);
+			device->SetName(&helperTextures[HELPERTEXTURE_WATERRIPPLE], "HELPERTEXTURE_WATERRIPPLE");
+		}
+
 		wi::backlog::post("wi::texturehelper Initialized (" + std::to_string((int)std::round(timer.elapsed())) + " ms)");
 	}
 
@@ -200,6 +231,10 @@ namespace wi::texturehelper
 	const Texture* getBlueNoise()
 	{
 		return &helperTextures[HELPERTEXTURE_BLUENOISE];
+	}
+	const Texture* getWaterRipple()
+	{
+		return &helperTextures[HELPERTEXTURE_WATERRIPPLE];
 	}
 	const Texture* getWhite()
 	{
@@ -292,10 +327,30 @@ namespace wi::texturehelper
 		const XMFLOAT2& uv_start,
 		const XMFLOAT2& uv_end,
 		GradientFlags flags,
-		Swizzle swizzle
+		Swizzle swizzle,
+		float perlin_scale,
+		uint32_t perlin_seed,
+		int perlin_octaves,
+		float perlin_persistence
 	)
 	{
-		wi::vector<uint8_t> data(width * height);
+		wi::vector<uint8_t> data;
+		wi::vector<uint16_t> data16;
+		if (has_flag(flags, GradientFlags::R16Unorm))
+		{
+			data16.resize(width * height);
+		}
+		else
+		{
+			data.resize(width * height);
+		}
+		wi::noise::Perlin perlin;
+		if (has_flag(flags, GradientFlags::PerlinNoise))
+		{
+			perlin.init(perlin_seed);
+		}
+		float aspect = float(height) / float(width);
+		XMFLOAT2 perlin_scale2 = XMFLOAT2(perlin_scale, perlin_scale * aspect);
 
 		switch (type)
 		{
@@ -321,7 +376,19 @@ namespace wi::texturehelper
 					{
 						gradient = wi::math::SmoothStep(0, 1, gradient);
 					}
-					data[x + y * width] = uint8_t(gradient * 255);
+					if (has_flag(flags, GradientFlags::PerlinNoise))
+					{
+						gradient *= perlin.compute(uv.x * perlin_scale2.x, uv.y * perlin_scale2.y, 0, perlin_octaves, perlin_persistence) * 0.5f + 0.5f;
+					}
+					gradient = wi::math::saturate(gradient);
+					if (has_flag(flags, GradientFlags::R16Unorm))
+					{
+						data16[x + y * width] = uint16_t(gradient * 65535);
+					}
+					else
+					{
+						data[x + y * width] = uint8_t(gradient * 255);
+					}
 				}
 			}
 		}
@@ -347,7 +414,19 @@ namespace wi::texturehelper
 					{
 						gradient = wi::math::SmoothStep(0, 1, gradient);
 					}
-					data[x + y * width] = uint8_t(gradient * 255);
+					if (has_flag(flags, GradientFlags::PerlinNoise))
+					{
+						gradient *= perlin.compute(uv.x * perlin_scale2.x, uv.y * perlin_scale2.y, 0, perlin_octaves, perlin_persistence) * 0.5f + 0.5f;
+					}
+					gradient = wi::math::saturate(gradient);
+					if (has_flag(flags, GradientFlags::R16Unorm))
+					{
+						data16[x + y * width] = uint16_t(gradient * 65535);
+					}
+					else
+					{
+						data[x + y * width] = uint8_t(gradient * 255);
+					}
 				}
 			}
 		}
@@ -372,7 +451,19 @@ namespace wi::texturehelper
 					{
 						gradient = wi::math::SmoothStep(0, 1, gradient);
 					}
-					data[x + y * width] = uint8_t(gradient * 255);
+					if (has_flag(flags, GradientFlags::PerlinNoise))
+					{
+						gradient *= perlin.compute(uv.x * perlin_scale2.x, uv.y * perlin_scale2.y, 0, perlin_octaves, perlin_persistence) * 0.5f + 0.5f;
+					}
+					gradient = wi::math::saturate(gradient);
+					if (has_flag(flags, GradientFlags::R16Unorm))
+					{
+						data16[x + y * width] = uint16_t(gradient * 65535);
+					}
+					else
+					{
+						data[x + y * width] = uint8_t(gradient * 255);
+					}
 				}
 			}
 		}
@@ -381,7 +472,14 @@ namespace wi::texturehelper
 		}
 
 		Texture texture;
-		CreateTexture(texture, data.data(), width, height, Format::R8_UNORM, swizzle);
+		if (has_flag(flags, GradientFlags::R16Unorm))
+		{
+			CreateTexture(texture, (const uint8_t*)data16.data(), width, height, Format::R16_UNORM, swizzle);
+		}
+		else
+		{
+			CreateTexture(texture, data.data(), width, height, Format::R8_UNORM, swizzle);
+		}
 		return texture;
 	}
 

@@ -118,7 +118,7 @@ void PaintToolWindow::Create(EditorComponent* _editor)
 	rotationSlider.SetPos(XMFLOAT2(x, y += step));
 	AddWidget(&rotationSlider);
 
-	stabilizerSlider.Create(1, 15, 8, 14, "Stabilizer: ");
+	stabilizerSlider.Create(1, 15, 2, 14, "Stabilizer: ");
 	stabilizerSlider.SetTooltip("The stabilizer generates a small delay between user input and painting, which will be used to compute a smoother paint stroke..");
 	stabilizerSlider.SetSize(XMFLOAT2(wid, hei));
 	stabilizerSlider.SetPos(XMFLOAT2(x, y += step));
@@ -927,7 +927,7 @@ void PaintToolWindow::Update(float dt)
 					break;
 
 				SoftBodyPhysicsComponent* softbody = scene.softbodies.GetComponent(object->meshID);
-				if (softbody == nullptr || softbody->vertex_positions_simulation.empty())
+				if (softbody == nullptr || !softbody->HasVertices())
 					break;
 
 				// Painting:
@@ -971,17 +971,17 @@ void PaintToolWindow::Update(float dt)
 						const float weight1 = softbody->weights[physicsIndex1];
 						const float weight2 = softbody->weights[physicsIndex2];
 						wi::renderer::RenderableTriangle tri;
-						if (softbody->vertex_positions_simulation.empty())
+						if (softbody->HasVertices())
+						{
+							tri.positionA = softbody->vertex_positions_simulation[graphicsIndex0].GetPOS();
+							tri.positionB = softbody->vertex_positions_simulation[graphicsIndex1].GetPOS();
+							tri.positionC = softbody->vertex_positions_simulation[graphicsIndex2].GetPOS();
+						}
+						else
 						{
 							XMStoreFloat3(&tri.positionA, XMVector3Transform(XMLoadFloat3(&mesh->vertex_positions[graphicsIndex0]), W));
 							XMStoreFloat3(&tri.positionB, XMVector3Transform(XMLoadFloat3(&mesh->vertex_positions[graphicsIndex1]), W));
 							XMStoreFloat3(&tri.positionC, XMVector3Transform(XMLoadFloat3(&mesh->vertex_positions[graphicsIndex2]), W));
-						}
-						else
-						{
-							tri.positionA = softbody->vertex_positions_simulation[graphicsIndex0].pos;
-							tri.positionB = softbody->vertex_positions_simulation[graphicsIndex1].pos;
-							tri.positionC = softbody->vertex_positions_simulation[graphicsIndex2].pos;
 						}
 						if (weight0 == 0)
 							tri.colorA = XMFLOAT4(1, 1, 0, 1);

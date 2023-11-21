@@ -12,7 +12,7 @@ void MeshWindow::Create(EditorComponent* _editor)
 {
 	editor = _editor;
 	wi::gui::Window::Create(ICON_MESH " Mesh", wi::gui::Window::WindowControls::COLLAPSE | wi::gui::Window::WindowControls::CLOSE);
-	SetSize(XMFLOAT2(580, 780));
+	SetSize(XMFLOAT2(580, 800));
 
 	closeButton.SetTooltip("Delete MeshComponent");
 	OnClose([=](wi::gui::EventArgs args) {
@@ -156,6 +156,24 @@ void MeshWindow::Create(EditorComponent* _editor)
 		}
 	});
 	AddWidget(&bvhCheckBox);
+
+	quantizeCheckBox.Create("Quantization Disabled: ");
+	quantizeCheckBox.SetTooltip("Disable quantization of vertex positions if you notice inaccuracy errors with UNORM position formats.");
+	quantizeCheckBox.SetSize(XMFLOAT2(hei, hei));
+	quantizeCheckBox.SetPos(XMFLOAT2(x, y += step));
+	quantizeCheckBox.OnClick([&](wi::gui::EventArgs args) {
+		MeshComponent* mesh = editor->GetCurrentScene().meshes.GetComponent(entity);
+		if (mesh != nullptr)
+		{
+			mesh->SetQuantizedPositionsDisabled(args.bValue);
+			mesh->CreateRenderData();
+			if (!mesh->BLASes.empty())
+			{
+				mesh->CreateRaytracingRenderData();
+			}
+		}
+		});
+	AddWidget(&quantizeCheckBox);
 
 	impostorCreateButton.Create("Create Impostor");
 	impostorCreateButton.SetTooltip("Create an impostor image of the mesh. The mesh will be replaced by this image when far away, to render faster.");
@@ -529,102 +547,103 @@ void MeshWindow::Create(EditorComponent* _editor)
 		params.extensions.push_back("h");
 		params.type = wi::helper::FileDialogParams::TYPE::SAVE;
 		wi::helper::FileDialog(params, [=](std::string filename) {
-
-			// Bake transformed and skinned positions:
-			wi::vector<XMFLOAT3> vertices(mesh->vertex_positions.size());
-			const Scene& scene = editor->GetCurrentScene();
-			XMMATRIX M = XMMatrixIdentity();
-			if (editor->componentsWnd.objectWnd.entity != INVALID_ENTITY)
-			{
-				// if first selection is an object then transformation will be also applied
-				Entity object_entity = editor->componentsWnd.objectWnd.entity;
-				const ObjectComponent* object = scene.objects.GetComponent(object_entity);
-				if (object != nullptr)
+			wi::eventhandler::Subscribe_Once(wi::eventhandler::EVENT_THREAD_SAFE_POINT, [=](uint64_t userdata) {
+				// Bake transformed and skinned positions:
+				wi::vector<XMFLOAT3> vertices(mesh->vertex_positions.size());
+				const Scene& scene = editor->GetCurrentScene();
+				XMMATRIX M = XMMatrixIdentity();
+				if (editor->componentsWnd.objectWnd.entity != INVALID_ENTITY)
 				{
-					size_t index = scene.objects.GetIndex(object_entity);
-					M = XMLoadFloat4x4(&scene.matrix_objects[index]);
+					// if first selection is an object then transformation will be also applied
+					Entity object_entity = editor->componentsWnd.objectWnd.entity;
+					const ObjectComponent* object = scene.objects.GetComponent(object_entity);
+					if (object != nullptr)
+					{
+						size_t index = scene.objects.GetIndex(object_entity);
+						M = XMLoadFloat4x4(&scene.matrix_objects[index]);
+					}
 				}
-			}
-			const ArmatureComponent* armature = scene.armatures.GetComponent(mesh->armatureID);
-			for (size_t i = 0; i < mesh->vertex_positions.size(); ++i)
-			{
-				XMVECTOR P;
-				if (armature == nullptr)
+				const ArmatureComponent* armature = scene.armatures.GetComponent(mesh->armatureID);
+				for (size_t i = 0; i < mesh->vertex_positions.size(); ++i)
 				{
-					P = XMLoadFloat3(&mesh->vertex_positions[i]);
+					XMVECTOR P;
+					if (armature == nullptr)
+					{
+						P = XMLoadFloat3(&mesh->vertex_positions[i]);
+					}
+					else
+					{
+						P = wi::scene::SkinVertex(*mesh, *armature, (uint32_t)i);
+					}
+					P = XMVector3Transform(P, M);
+					XMStoreFloat3(&vertices[i], P);
+				}
+
+				// Gather all indices for all subsets in LOD0:
+				wi::vector<uint32_t> indices;
+				uint32_t first_subset = 0;
+				uint32_t last_subset = 0;
+				mesh->GetLODSubsetRange(0, first_subset, last_subset);
+				for (uint32_t subsetIndex = first_subset; subsetIndex < last_subset; ++subsetIndex)
+				{
+					const MeshComponent::MeshSubset& subset = mesh->subsets[subsetIndex];
+					if (subset.indexCount == 0)
+						continue;
+					for (uint32_t i = 0; i < subset.indexCount; ++i)
+					{
+						indices.push_back(mesh->indices[subset.indexOffset + i]);
+					}
+				}
+
+				// Generate shadow indices for position-only stream:
+				wi::vector<uint32_t> shadow_indices(indices.size() * 2); // *2 fixes some weird memory oob write issue with a specific model
+				meshopt_generateShadowIndexBuffer(
+					shadow_indices.data(), indices.data(), indices.size(),
+					vertices.data(), vertices.size(), sizeof(XMFLOAT3), sizeof(XMFLOAT3)
+				);
+
+				// De-duplicate vertices based on shadow index buffer:
+				wi::vector<unsigned int> remap(shadow_indices.size());
+				const size_t vertex_count = meshopt_generateVertexRemap(
+					remap.data(),
+					shadow_indices.data(), shadow_indices.size(),
+					vertices.data(), vertices.size(), sizeof(XMFLOAT3)
+				);
+				wi::vector<XMFLOAT3> remapped_vertices(vertex_count);
+				wi::vector<uint32_t> remapped_indices(shadow_indices.size());
+				meshopt_remapIndexBuffer(remapped_indices.data(), shadow_indices.data(), shadow_indices.size(), remap.data());
+				meshopt_remapVertexBuffer(remapped_vertices.data(), vertices.data(), vertices.size() /*initial vertex count, not the one returned from meshopt_generateVertexRemap*/, sizeof(XMFLOAT3), remap.data());
+
+				// Optimizations:
+				meshopt_optimizeVertexCache(remapped_indices.data(), remapped_indices.data(), remapped_indices.size(), vertex_count);
+				meshopt_optimizeVertexFetch(remapped_vertices.data(), remapped_indices.data(), remapped_indices.size(), remapped_vertices.data(), vertex_count, sizeof(XMFLOAT3));
+
+				// Generate C++ header syntax:
+				std::string str;
+				str += "static const float3 vertices[" + std::to_string(remapped_vertices.size()) + "] = {\n";
+				for (auto& pos : remapped_vertices)
+				{
+					str += "\tfloat3(" + std::to_string(pos.x) + "f," + std::to_string(pos.y) + "f," + std::to_string(pos.z) + "f),\n";
+				}
+				str += "};\n";
+				str += "static const unsigned int indices[" + std::to_string(remapped_indices.size()) + "] = {\n";
+				for (size_t i = 0; i < remapped_indices.size(); i += 3)
+				{
+					str += "\t" + std::to_string(remapped_indices[i + 0]) + "," + std::to_string(remapped_indices[i + 1]) + "," + std::to_string(remapped_indices[i + 2]) + ",\n";
+				}
+				str += "};\n";
+
+				// Write to file:
+				std::string filename_dest = wi::helper::ForceExtension(filename, "h");
+				if (wi::helper::FileWrite(filename_dest, (uint8_t*)str.c_str(), str.length()))
+				{
+					editor->PostSaveText("Mesh exported to header file: ", filename_dest);
 				}
 				else
 				{
-					P = wi::scene::SkinVertex(*mesh, *armature, (uint32_t)i);
+					editor->PostSaveText("Failed to write file: ", filename_dest);
 				}
-				P = XMVector3Transform(P, M);
-				XMStoreFloat3(&vertices[i], P);
-			}
-
-			// Gather all indices for all subsets in LOD0:
-			wi::vector<uint32_t> indices;
-			uint32_t first_subset = 0;
-			uint32_t last_subset = 0;
-			mesh->GetLODSubsetRange(0, first_subset, last_subset);
-			for (uint32_t subsetIndex = first_subset; subsetIndex < last_subset; ++subsetIndex)
-			{
-				const MeshComponent::MeshSubset& subset = mesh->subsets[subsetIndex];
-				if (subset.indexCount == 0)
-					continue;
-				for (uint32_t i = 0; i < subset.indexCount; ++i)
-				{
-					indices.push_back(mesh->indices[subset.indexOffset + i]);
-				}
-			}
-
-			// Generate shadow indices for position-only stream:
-			wi::vector<uint32_t> shadow_indices(indices.size());
-			meshopt_generateShadowIndexBuffer(
-				shadow_indices.data(), indices.data(), indices.size(),
-				vertices.data(), vertices.size(), sizeof(XMFLOAT3), sizeof(XMFLOAT3)
-			);
-
-			// De-duplicate vertices based on shadow index buffer:
-			wi::vector<unsigned int> remap(shadow_indices.size());
-			const size_t vertex_count = meshopt_generateVertexRemap(
-				remap.data(),
-				shadow_indices.data(), shadow_indices.size(),
-				vertices.data(), vertices.size(), sizeof(XMFLOAT3)
-			);
-			wi::vector<XMFLOAT3> remapped_vertices(vertex_count);
-			wi::vector<uint32_t> remapped_indices(shadow_indices.size());
-			meshopt_remapIndexBuffer(remapped_indices.data(), shadow_indices.data(), shadow_indices.size(), remap.data());
-			meshopt_remapVertexBuffer(remapped_vertices.data(), vertices.data(), vertices.size() /*initial vertex count, not the one returned from meshopt_generateVertexRemap*/, sizeof(XMFLOAT3), remap.data());
-
-			// Optimizations:
-			meshopt_optimizeVertexCache(remapped_indices.data(), remapped_indices.data(), remapped_indices.size(), vertex_count);
-			meshopt_optimizeVertexFetch(remapped_vertices.data(), remapped_indices.data(), remapped_indices.size(), remapped_vertices.data(), vertex_count, sizeof(XMFLOAT3));
-
-			// Generate C++ header syntax:
-			std::string str;
-			str += "static const float3 vertices[" + std::to_string(remapped_vertices.size()) + "] = {\n";
-			for (auto& pos : remapped_vertices)
-			{
-				str += "\tfloat3(" + std::to_string(pos.x) + "f," + std::to_string(pos.y) + "f," + std::to_string(pos.z) + "f),\n";
-			}
-			str += "};\n";
-			str += "static const unsigned int indices[" + std::to_string(remapped_indices.size()) + "] = {\n";
-			for (size_t i = 0; i < remapped_indices.size(); i += 3)
-			{
-				str += "\t" + std::to_string(remapped_indices[i + 0]) + "," + std::to_string(remapped_indices[i + 1]) + "," + std::to_string(remapped_indices[i + 2]) + ",\n";
-			}
-			str += "};\n";
-
-			// Write to file:
-			filename = wi::helper::ForceExtension(filename, "h");
-			if (wi::helper::FileWrite(filename, (uint8_t*)str.c_str(), str.length()))
-			{
-				editor->PostSaveText("Mesh exported to header file: ", filename);
-			}
-			else
-			{
-				editor->PostSaveText("Failed to write file: ", filename);
-			}
+			});
 		});
 	});
 	AddWidget(&exportHeaderButton);
@@ -847,6 +866,7 @@ void MeshWindow::SetEntity(Entity entity, int subset)
 		ss += "Vertex count: " + std::to_string(mesh->vertex_positions.size()) + "\n";
 		ss += "Index count: " + std::to_string(mesh->indices.size()) + "\n";
 		ss += "Index format: " + std::string(wi::graphics::GetIndexBufferFormatString(mesh->GetIndexFormat())) + "\n";
+		ss += "Position format: " + std::string(wi::graphics::GetFormatString(mesh->position_format)) + "\n";
 		ss += "Subset count: " + std::to_string(mesh->subsets.size()) + " (" + std::to_string(mesh->GetLODCount()) + " LODs)\n";
 		if (!mesh->morph_targets.empty())
 		{
@@ -877,7 +897,8 @@ void MeshWindow::SetEntity(Entity entity, int subset)
 		if (mesh->so_pre.IsValid()) ss += "\tprevious_position;\n";
 		if (mesh->vb_bon.IsValid()) ss += "\tbone;\n";
 		if (mesh->vb_tan.IsValid()) ss += "\ttangent;\n";
-		if (mesh->so_pos_nor_wind.IsValid()) ss += "\tstreamout_position_normal_wind;\n";
+		if (mesh->so_pos.IsValid()) ss += "\tstreamout_position;\n";
+		if (mesh->so_nor.IsValid()) ss += "\tstreamout_normals;\n";
 		if (mesh->so_tan.IsValid()) ss += "\tstreamout_tangents;\n";
 		meshInfoLabel.SetText(ss);
 
@@ -922,6 +943,7 @@ void MeshWindow::SetEntity(Entity entity, int subset)
 		doubleSidedCheckBox.SetCheck(mesh->IsDoubleSided());
 		doubleSidedShadowCheckBox.SetCheck(mesh->IsDoubleSidedShadow());
 		bvhCheckBox.SetCheck(mesh->bvh.IsValid());
+		quantizeCheckBox.SetCheck(mesh->IsQuantizedPositionsDisabled());
 
 		const ImpostorComponent* impostor = scene.impostors.GetComponent(entity);
 		if (impostor != nullptr)
@@ -1012,6 +1034,7 @@ void MeshWindow::ResizeLayout()
 	add_right(doubleSidedCheckBox);
 	add_right(doubleSidedShadowCheckBox);
 	add_right(bvhCheckBox);
+	add_right(quantizeCheckBox);
 	add_fullwidth(impostorCreateButton);
 	add(impostorDistanceSlider);
 	add(tessellationFactorSlider);

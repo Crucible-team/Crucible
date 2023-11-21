@@ -335,6 +335,7 @@ local function Character(model_name, start_position, face, controllable, anim_sc
 		foot_placed_right = false,
 		mood = Mood.Neutral,
 		mood_amount = 1,
+		expression = INVALID_ENTITY,
 
 		patrol_waypoints = {},
 		patrol_next = 0,
@@ -374,24 +375,6 @@ local function Character(model_name, start_position, face, controllable, anim_sc
 					self.right_foot = humanoid.GetBoneEntity(HumanoidBone.RightFoot)
 					self.left_toes = humanoid.GetBoneEntity(HumanoidBone.LeftToes)
 					self.right_toes = humanoid.GetBoneEntity(HumanoidBone.RightToes)
-
-					-- Create a base capsule collider if it's not yet configured for character:
-					--	It will be used for movement logic and GPU collision effects
-					if scene.Component_GetCollider(entity) == nil then
-						local collider = scene.Component_CreateCollider(entity)
-						collider.SetCPUEnabled(false)
-						collider.SetGPUEnabled(true)
-						collider.Shape = ColliderShape.Capsule
-						collider.Radius = 0.3
-						collider.Offset = Vector(0, collider.Radius, 0)
-						collider.Tail = Vector(0, 1.4, 0)
-						local head_transform = scene.Component_GetTransform(self.head)
-						if head_transform ~= nil then
-							collider.Tail = head_transform.GetPosition()
-						end
-					end
-					self.collider = entity
-
 					break
 				end
 			end
@@ -405,6 +388,25 @@ local function Character(model_name, start_position, face, controllable, anim_sc
 					expression.SetPresetOverrideMouth(ExpressionPreset.Happy, ExpressionOverride.Blend)
 					expression.SetPresetOverrideBlink(ExpressionPreset.Surprised, ExpressionOverride.Block)
 				end
+			end
+
+			-- Create a base capsule collider if it's not yet configured for character:
+			--	It will be used for movement logic and GPU collision effects
+			if scene.Component_GetCollider(self.humanoid) == nil then
+				local collider = scene.Component_CreateCollider(self.model)
+				self.collider = self.model
+				collider.SetCPUEnabled(false)
+				collider.SetGPUEnabled(true)
+				collider.Shape = ColliderShape.Capsule
+				collider.Radius = 0.3
+				collider.Offset = Vector(0, collider.Radius, 0)
+				collider.Tail = Vector(0, 1.4, 0)
+				local head_transform = scene.Component_GetTransform(self.head)
+				if head_transform ~= nil then
+					collider.Tail = head_transform.GetPosition()
+				end
+			else
+				self.collider = self.humanoid
 			end
 
 			self.root = scene.Entity_FindByName("Root", self.model)
@@ -500,14 +502,16 @@ local function Character(model_name, start_position, face, controllable, anim_sc
 
 			-- Blend to current mood, blend out other moods:
 			local expression = scene.Component_GetExpression(self.expression)
-			for i,preset in pairs(Mood) do
-				local weight = expression.GetPresetWeight(preset)
-				if preset == self.mood then
-					weight = math.lerp(weight, self.mood_amount, 0.1)
-				else
-					weight = math.lerp(weight, 0, 0.1)
+			if expression ~= nil then
+				for i,preset in pairs(Mood) do
+					local weight = expression.GetPresetWeight(preset)
+					if preset == self.mood then
+						weight = math.lerp(weight, self.mood_amount, 0.1)
+					else
+						weight = math.lerp(weight, 0, 0.1)
+					end
+					expression.SetPresetWeight(preset, weight)
 				end
-				expression.SetPresetWeight(preset, weight)
 			end
 			
 			-- state and animation update
@@ -781,7 +785,7 @@ local function Character(model_name, start_position, face, controllable, anim_sc
 			if self.velocity.Length() > 0.01 and self.state ~= States.SWIM_IDLE then
 				local w,wp = scene.Intersects(capsule, FILTER_WATER)
 				if w ~= INVALID_ENTITY then
-					PutWaterRipple(script_dir() .. "assets/ripple.png", wp)
+					PutWaterRipple(wp)
 				end
 			end
 
@@ -867,11 +871,13 @@ local function Character(model_name, start_position, face, controllable, anim_sc
 
 			-- Offset root transform to lower foot pos:
 			local root_bone_transform = scene.Component_GetTransform(self.root)
-			root_bone_transform.ClearTransform()
-			local root_pos = root_bone_transform.GetPosition()
-			root_bone_transform.Translate(Vector(0, self.root_bone_offset))
-			--DrawDebugText(self.root_bone_offset, self.position, Vector(1,1,1,1), 0.1, DEBUG_TEXT_CAMERA_FACING)
-			--DrawPoint(vector.Add(root_pos, Vector(0, self.root_bone_offset)), 0.1, Vector(1,0,0,1))
+			if root_bone_transform ~= nil then
+				root_bone_transform.ClearTransform()
+				local root_pos = root_bone_transform.GetPosition()
+				root_bone_transform.Translate(Vector(0, self.root_bone_offset))
+				--DrawDebugText(self.root_bone_offset, self.position, Vector(1,1,1,1), 0.1, DEBUG_TEXT_CAMERA_FACING)
+				--DrawPoint(vector.Add(root_pos, Vector(0, self.root_bone_offset)), 0.1, Vector(1,0,0,1))
+			end
 
 			-- Remove IK effectors by default:
 			if scene.Component_GetInverseKinematics(self.left_foot) ~= nil then

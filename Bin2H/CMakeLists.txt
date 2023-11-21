@@ -11,8 +11,8 @@ if (WIN32)
 
 	add_executable(Bin2H WIN32 ${SOURCE_FILES})
 
-	target_link_libraries(Bin2H PUBLIC 
-		WickedEngine_Windows
+	target_link_libraries(Bin2H PUBLIC
+		Crucible_Windows
 	)
 else()
 	list (APPEND SOURCE_FILES
@@ -21,8 +21,8 @@ else()
 
 	add_executable(Bin2H ${SOURCE_FILES})
 
-	target_link_libraries(Bin2H PUBLIC 
-		WickedEngine
+	target_link_libraries(Bin2H PUBLIC
+		Crucible
 	)
 
 endif ()

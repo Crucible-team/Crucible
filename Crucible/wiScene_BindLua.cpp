@@ -4,11 +4,14 @@
 #include "wiEmittedParticle.h"
 #include "wiTexture_BindLua.h"
 #include "wiPrimitive_BindLua.h"
+#include "wiSprite_BindLua.h"
+#include "wiSpriteFont_BindLua.h"
+#include "wiBacklog.h"
+#include "wiECS.h"
+#include "wiLua.h"
+#include "wiUnorderedMap.h"
+
 #include <string>
-#include <wiBacklog.h>
-#include <wiECS.h>
-#include <wiLua.h>
-#include <wiUnorderedMap.h>
 
 using namespace wi::ecs;
 using namespace wi::scene;
@@ -338,7 +341,20 @@ TextureSlot = {
 	CLEARCOATNORMALMAP = 11,
 	SPECULARMAP = 12,
 	ANISOTROPYMAP = 13,
+	FLOWMAP = 14,
+	PAINTMAP = 15,
 }
+
+SHADERTYPE_PBR = 0
+SHADERTYPE_PBR_PLANARREFLECTION = 1
+SHADERTYPE_PBR_PARALLAXOCCLUSIONMAPPING = 2
+SHADERTYPE_PBR_ANISOTROPIC = 3
+SHADERTYPE_WATER = 4
+SHADERTYPE_CARTOON = 5
+SHADERTYPE_UNLIT = 6
+SHADERTYPE_PBR_CLOTH = 7
+SHADERTYPE_PBR_CLEARCOAT = 8
+SHADERTYPE_PBR_CLOTH_CLEARCOAT = 9
 
 ExpressionPreset = {
 	Happy = 0,
@@ -500,6 +516,7 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Merge),
 	lunamethod(Scene_BindLua, UpdateHierarchy),
 	lunamethod(Scene_BindLua, Intersects),
+	lunamethod(Scene_BindLua, FindAllEntities),
 	lunamethod(Scene_BindLua, Entity_FindByName),
 	lunamethod(Scene_BindLua, Entity_Remove),
 	lunamethod(Scene_BindLua, Entity_Duplicate),
@@ -524,11 +541,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_CreateExpression),
 	lunamethod(Scene_BindLua, Component_CreateHumanoid),
 	lunamethod(Scene_BindLua, Component_CreateDecal),
-
-	lunamethod(Scene_BindLua, Component_CreateRelationship),
-	lunamethod(Scene_BindLua, Component_CreateHealth),
-	lunamethod(Scene_BindLua, Component_CreateArmor),
-
+	lunamethod(Scene_BindLua, Component_CreateSprite),
+	lunamethod(Scene_BindLua, Component_CreateFont),
 	lunamethod(Scene_BindLua, Component_GetName),
 	lunamethod(Scene_BindLua, Component_GetLayer),
 	lunamethod(Scene_BindLua, Component_GetTransform),
@@ -552,12 +566,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_GetExpression),
 	lunamethod(Scene_BindLua, Component_GetHumanoid),
 	lunamethod(Scene_BindLua, Component_GetDecal),
-
-	//Crucible
-	lunamethod(Scene_BindLua, Component_GetRelationship),
-	lunamethod(Scene_BindLua, Component_GetHealth),
-	lunamethod(Scene_BindLua, Component_GetArmor),
-
+	lunamethod(Scene_BindLua, Component_GetSprite),
+	lunamethod(Scene_BindLua, Component_GetFont),
 	lunamethod(Scene_BindLua, Component_GetNameArray),
 	lunamethod(Scene_BindLua, Component_GetLayerArray),
 	lunamethod(Scene_BindLua, Component_GetTransformArray),
@@ -581,12 +591,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_GetExpressionArray),
 	lunamethod(Scene_BindLua, Component_GetHumanoidArray),
 	lunamethod(Scene_BindLua, Component_GetDecalArray),
-
-	//Crucible
-	lunamethod(Scene_BindLua, Component_GetRelationshipArray),
-	lunamethod(Scene_BindLua, Component_GetHealthArray),
-	lunamethod(Scene_BindLua, Component_GetArmorArray),
-
+	lunamethod(Scene_BindLua, Component_GetSpriteArray),
+	lunamethod(Scene_BindLua, Component_GetFontArray),
 	lunamethod(Scene_BindLua, Entity_GetNameArray),
 	lunamethod(Scene_BindLua, Entity_GetLayerArray),
 	lunamethod(Scene_BindLua, Entity_GetTransformArray),
@@ -611,12 +617,8 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Entity_GetExpressionArray),
 	lunamethod(Scene_BindLua, Entity_GetHumanoidArray),
 	lunamethod(Scene_BindLua, Entity_GetDecalArray),
-
-	//Crucible
-	lunamethod(Scene_BindLua, Entity_GetRelationshipArray),
-	lunamethod(Scene_BindLua, Entity_GetHealthArray),
-	lunamethod(Scene_BindLua, Entity_GetArmorArray),
-
+	lunamethod(Scene_BindLua, Entity_GetSpriteArray),
+	lunamethod(Scene_BindLua, Entity_GetFontArray),
 	lunamethod(Scene_BindLua, Component_RemoveName),
 	lunamethod(Scene_BindLua, Component_RemoveLayer),
 	lunamethod(Scene_BindLua, Component_RemoveTransform),
@@ -641,20 +643,43 @@ Luna<Scene_BindLua>::FunctionType Scene_BindLua::methods[] = {
 	lunamethod(Scene_BindLua, Component_RemoveExpression),
 	lunamethod(Scene_BindLua, Component_RemoveHumanoid),
 	lunamethod(Scene_BindLua, Component_RemoveDecal),
-
-	//Crucible
-	lunamethod(Scene_BindLua, Component_RemoveRelationship),
-	lunamethod(Scene_BindLua, Component_RemoveHealth),
-	lunamethod(Scene_BindLua, Component_RemoveArmor),
-
+	lunamethod(Scene_BindLua, Component_RemoveSprite),
+	lunamethod(Scene_BindLua, Component_RemoveFont),
 	lunamethod(Scene_BindLua, Component_Attach),
 	lunamethod(Scene_BindLua, Component_Detach),
 	lunamethod(Scene_BindLua, Component_DetachChildren),
-
 	lunamethod(Scene_BindLua, GetBounds),
 	lunamethod(Scene_BindLua, GetWeather),
 	lunamethod(Scene_BindLua, SetWeather),
 	lunamethod(Scene_BindLua, RetargetAnimation),
+
+
+
+
+	//Crucible
+
+	lunamethod(Scene_BindLua, Entity_FindAllByName),
+
+
+
+	lunamethod(Scene_BindLua, Component_CreateRelationship),
+	lunamethod(Scene_BindLua, Component_CreateHealth),
+	lunamethod(Scene_BindLua, Component_CreateArmor),
+
+	lunamethod(Scene_BindLua, Component_GetRelationship),
+	lunamethod(Scene_BindLua, Component_GetHealth),
+	lunamethod(Scene_BindLua, Component_GetArmor),
+
+	lunamethod(Scene_BindLua, Entity_GetRelationshipArray),
+	lunamethod(Scene_BindLua, Entity_GetHealthArray),
+	lunamethod(Scene_BindLua, Entity_GetArmorArray),
+	lunamethod(Scene_BindLua, Component_GetRelationshipArray),
+	lunamethod(Scene_BindLua, Component_GetHealthArray),
+	lunamethod(Scene_BindLua, Component_GetArmorArray),
+
+	lunamethod(Scene_BindLua, Component_RemoveRelationship),
+	lunamethod(Scene_BindLua, Component_RemoveHealth),
+	lunamethod(Scene_BindLua, Component_RemoveArmor),
 	{ NULL, NULL }
 };
 Luna<Scene_BindLua>::PropertyType Scene_BindLua::properties[] = {
@@ -703,6 +728,26 @@ int Scene_BindLua::Merge(lua_State* L)
 	return 0;
 }
 
+int Scene_BindLua::FindAllEntities(lua_State* L)
+{
+	wi::unordered_set<wi::ecs::Entity> listOfAllEntities;
+	scene->FindAllEntities(listOfAllEntities);
+		
+	int idx = 1; // lua indexes start at 1
+
+	lua_createtable(L, (int)listOfAllEntities.size(), 0); // fixed size table
+	int entt_table = lua_gettop(L);
+	for (wi::ecs::Entity entity : listOfAllEntities)
+	{
+		wi::lua::SSetLongLong(L, entity);
+		lua_rawseti(L, entt_table, lua_Integer(idx));
+		++idx;
+	}
+	// our table should be already on the stack
+	return 1;
+}
+
+
 int Scene_BindLua::Entity_FindByName(lua_State* L)
 {
 	int argc = wi::lua::SGetArgCount(L);
@@ -733,8 +778,19 @@ int Scene_BindLua::Entity_Remove(lua_State* L)
 	if (argc > 0)
 	{
 		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+		bool recursive = true;
+		bool keep_sorted = false;
 
-		scene->Entity_Remove(entity);
+		if (argc > 1)
+		{
+			recursive = wi::lua::SGetBool(L, 2);
+			if (argc > 2)
+			{
+				keep_sorted = wi::lua::SGetBool(L, 3);
+			}
+		}
+
+		scene->Entity_Remove(entity, recursive, keep_sorted);
 	}
 	else
 	{
@@ -816,7 +872,9 @@ int Scene_BindLua::Intersects(lua_State* L)
 			Luna<Vector_BindLua>::push(L, result.normal);
 			wi::lua::SSetFloat(L, result.distance);
 			Luna<Vector_BindLua>::push(L, result.velocity);
-			return 5;
+			wi::lua::SSetInt(L, result.subsetIndex);
+			Luna<Matrix_BindLua>::push(L, result.orientation);
+			return 7;
 		}
 
 		Sphere_BindLua* sphere = Luna<Sphere_BindLua>::lightcheck(L, 1);
@@ -828,7 +886,9 @@ int Scene_BindLua::Intersects(lua_State* L)
 			Luna<Vector_BindLua>::push(L, result.normal);
 			wi::lua::SSetFloat(L, result.depth);
 			Luna<Vector_BindLua>::push(L, result.velocity);
-			return 5;
+			wi::lua::SSetInt(L, result.subsetIndex);
+			Luna<Matrix_BindLua>::push(L, result.orientation);
+			return 7;
 		}
 
 		Capsule_BindLua* capsule = Luna<Capsule_BindLua>::lightcheck(L, 1);
@@ -840,7 +900,9 @@ int Scene_BindLua::Intersects(lua_State* L)
 			Luna<Vector_BindLua>::push(L, result.normal);
 			wi::lua::SSetFloat(L, result.depth);
 			Luna<Vector_BindLua>::push(L, result.velocity);
-			return 5;
+			wi::lua::SSetInt(L, result.subsetIndex);
+			Luna<Matrix_BindLua>::push(L, result.orientation);
+			return 7;
 		}
 
 		wi::lua::SError(L, "Scene::Intersects(Ray|Sphere|Capsule primitive, opt uint filterMask = ~0u, opt uint layerMask = ~0u, opt uint lod = 0) first argument is not an accepted primitive type!");
@@ -1189,6 +1251,40 @@ int Scene_BindLua::Component_CreateDecal(lua_State* L)
 	else
 	{
 		wi::lua::SError(L, "Scene::Component_CreateDecal(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+int Scene_BindLua::Component_CreateSprite(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		wi::Sprite& component = scene->sprites.Create(entity);
+		Luna<Sprite_BindLua>::push(L, component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_CreateSprite(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+int Scene_BindLua::Component_CreateFont(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		wi::SpriteFont& component = scene->fonts.Create(entity);
+		Luna<SpriteFont_BindLua>::push(L, component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_CreateFont(Entity entity) not enough arguments!");
 	}
 	return 0;
 }
@@ -1699,6 +1795,50 @@ int Scene_BindLua::Component_GetDecal(lua_State* L)
 	}
 	return 0;
 }
+int Scene_BindLua::Component_GetSprite(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		wi::Sprite* component = scene->sprites.GetComponent(entity);
+		if (component == nullptr)
+		{
+			return 0;
+		}
+
+		Luna<Sprite_BindLua>::push(L, *component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_GetSprite(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+int Scene_BindLua::Component_GetFont(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+
+		wi::SpriteFont* component = scene->fonts.GetComponent(entity);
+		if (component == nullptr)
+		{
+			return 0;
+		}
+
+		Luna<SpriteFont_BindLua>::push(L, *component);
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_GetFont(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
 
 int Scene_BindLua::Component_GetNameArray(lua_State* L)
 {
@@ -1949,6 +2089,28 @@ int Scene_BindLua::Component_GetDecalArray(lua_State* L)
 	for (size_t i = 0; i < scene->decals.GetCount(); ++i)
 	{
 		Luna<DecalComponent_BindLua>::push(L, &scene->decals[i]);
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+int Scene_BindLua::Component_GetSpriteArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->sprites.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->sprites.GetCount(); ++i)
+	{
+		Luna<Sprite_BindLua>::push(L, scene->sprites[i]);
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+int Scene_BindLua::Component_GetFontArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->fonts.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->fonts.GetCount(); ++i)
+	{
+		Luna<SpriteFont_BindLua>::push(L, scene->fonts[i]);
 		lua_rawseti(L, newTable, lua_Integer(i + 1));
 	}
 	return 1;
@@ -2214,6 +2376,28 @@ int Scene_BindLua::Entity_GetDecalArray(lua_State* L)
 	for (size_t i = 0; i < scene->decals.GetCount(); ++i)
 	{
 		wi::lua::SSetLongLong(L, scene->decals.GetEntity(i));
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+int Scene_BindLua::Entity_GetSpriteArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->sprites.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->sprites.GetCount(); ++i)
+	{
+		wi::lua::SSetLongLong(L, scene->sprites.GetEntity(i));
+		lua_rawseti(L, newTable, lua_Integer(i + 1));
+	}
+	return 1;
+}
+int Scene_BindLua::Entity_GetFontArray(lua_State* L)
+{
+	lua_createtable(L, (int)scene->fonts.GetCount(), 0);
+	int newTable = lua_gettop(L);
+	for (size_t i = 0; i < scene->fonts.GetCount(); ++i)
+	{
+		wi::lua::SSetLongLong(L, scene->fonts.GetEntity(i));
 		lua_rawseti(L, newTable, lua_Integer(i + 1));
 	}
 	return 1;
@@ -2627,6 +2811,40 @@ int Scene_BindLua::Component_RemoveDecal(lua_State* L)
 	}
 	return 0;
 }
+int Scene_BindLua::Component_RemoveSprite(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+		if (scene->sprites.Contains(entity))
+		{
+			scene->sprites.Remove(entity);
+		}
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_RemoveSprite(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
+int Scene_BindLua::Component_RemoveFont(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Entity entity = (Entity)wi::lua::SGetLongLong(L, 1);
+		if (scene->fonts.Contains(entity))
+		{
+			scene->fonts.Remove(entity);
+		}
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Component_RemoveFont(Entity entity) not enough arguments!");
+	}
+	return 0;
+}
 
 int Scene_BindLua::Component_Attach(lua_State* L)
 {
@@ -2836,6 +3054,9 @@ Luna<TransformComponent_BindLua>::FunctionType TransformComponent_BindLua::metho
 	lunamethod(TransformComponent_BindLua, GetScale),
 	lunamethod(TransformComponent_BindLua, IsDirty),
 	lunamethod(TransformComponent_BindLua, SetDirty),
+	lunamethod(TransformComponent_BindLua, SetScale),
+	lunamethod(TransformComponent_BindLua, SetRotation),
+	lunamethod(TransformComponent_BindLua, SetPosition),
 	{ NULL, NULL }
 };
 Luna<TransformComponent_BindLua>::PropertyType TransformComponent_BindLua::properties[] = {
@@ -3094,6 +3315,76 @@ int TransformComponent_BindLua::SetDirty(lua_State *L)
 	component->SetDirty(value);
 	return 0;
 }
+int TransformComponent_BindLua::SetScale(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Vector_BindLua* vec = Luna<Vector_BindLua>::lightcheck(L, 1);
+		if (vec != nullptr)
+		{
+			component->scale_local.x = vec->data.x;
+			component->scale_local.y = vec->data.y;
+			component->scale_local.z = vec->data.z;
+			component->SetDirty(true);
+		}
+		else
+		{
+			wi::lua::SError(L, "SetScale(Vector value) argument is not a vector!");
+		}
+	}
+	else
+	{
+		wi::lua::SError(L, "SetScale(Vector value) not enough arguments!");
+	}
+	return 0;
+}
+int TransformComponent_BindLua::SetRotation(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Vector_BindLua* vec = Luna<Vector_BindLua>::lightcheck(L, 1);
+		if (vec != nullptr)
+		{
+			component->rotation_local = vec->data;
+			component->SetDirty(true);
+		}
+		else
+		{
+			wi::lua::SError(L, "SetRotation(Vector quaternion) argument is not a vector!");
+		}
+	}
+	else
+	{
+		wi::lua::SError(L, "SetRotation(Vector quaternion) not enough arguments!");
+	}
+	return 0;
+}
+int TransformComponent_BindLua::SetPosition(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		Vector_BindLua* vec = Luna<Vector_BindLua>::lightcheck(L, 1);
+		if (vec != nullptr)
+		{
+			component->translation_local.x = vec->data.x;
+			component->translation_local.y = vec->data.y;
+			component->translation_local.z = vec->data.z;
+			component->SetDirty(true);
+		}
+		else
+		{
+			wi::lua::SError(L, "SetPosition(Vector value) argument is not a vector!");
+		}
+	}
+	else
+	{
+		wi::lua::SError(L, "SetPosition(Vector value) not enough arguments!");
+	}
+	return 0;
+}
 
 
 
@@ -3128,6 +3419,7 @@ Luna<CameraComponent_BindLua>::FunctionType CameraComponent_BindLua::methods[] =
 	lunamethod(CameraComponent_BindLua, GetPosition),
 	lunamethod(CameraComponent_BindLua, GetLookDirection),
 	lunamethod(CameraComponent_BindLua, GetUpDirection),
+	lunamethod(CameraComponent_BindLua, GetRightDirection),
 	lunamethod(CameraComponent_BindLua, SetPosition),
 	lunamethod(CameraComponent_BindLua, SetLookDirection),
 	lunamethod(CameraComponent_BindLua, SetUpDirection),
@@ -3329,6 +3621,11 @@ int CameraComponent_BindLua::GetLookDirection(lua_State* L)
 int CameraComponent_BindLua::GetUpDirection(lua_State* L)
 {
 	Luna<Vector_BindLua>::push(L, component->GetUp());
+	return 1;
+}
+int CameraComponent_BindLua::GetRightDirection(lua_State* L)
+{
+	Luna<Vector_BindLua>::push(L, component->GetRight());
 	return 1;
 }
 int CameraComponent_BindLua::SetPosition(lua_State* L)
@@ -4488,6 +4785,8 @@ Luna<ObjectComponent_BindLua>::FunctionType ObjectComponent_BindLua::methods[] =
 	lunamethod(ObjectComponent_BindLua, GetUserStencilRef),
 	lunamethod(ObjectComponent_BindLua, GetDrawDistance),
 	lunamethod(ObjectComponent_BindLua, IsForeground),
+	lunamethod(ObjectComponent_BindLua, IsNotVisibleInMainCamera),
+	lunamethod(ObjectComponent_BindLua, IsNotVisibleInReflections),
 
 	lunamethod(ObjectComponent_BindLua, SetMeshID),
 	lunamethod(ObjectComponent_BindLua, SetCascadeMask),
@@ -4497,6 +4796,9 @@ Luna<ObjectComponent_BindLua>::FunctionType ObjectComponent_BindLua::methods[] =
 	lunamethod(ObjectComponent_BindLua, SetUserStencilRef),
 	lunamethod(ObjectComponent_BindLua, SetDrawDistance),
 	lunamethod(ObjectComponent_BindLua, SetForeground),
+	lunamethod(ObjectComponent_BindLua, SetNotVisibleInMainCamera),
+	lunamethod(ObjectComponent_BindLua, SetNotVisibleInReflections),
+	lunamethod(ObjectComponent_BindLua, SetRenderable),
 	{ NULL, NULL }
 };
 Luna<ObjectComponent_BindLua>::PropertyType ObjectComponent_BindLua::properties[] = {
@@ -4552,6 +4854,16 @@ int ObjectComponent_BindLua::GetDrawDistance(lua_State* L)
 int ObjectComponent_BindLua::IsForeground(lua_State* L)
 {
 	wi::lua::SSetBool(L, component->IsForeground());
+	return 1;
+}
+int ObjectComponent_BindLua::IsNotVisibleInMainCamera(lua_State* L)
+{
+	wi::lua::SSetBool(L, component->IsNotVisibleInMainCamera());
+	return 1;
+}
+int ObjectComponent_BindLua::IsNotVisibleInReflections(lua_State* L)
+{
+	wi::lua::SSetBool(L, component->IsNotVisibleInReflections());
 	return 1;
 }
 
@@ -4697,6 +5009,52 @@ int ObjectComponent_BindLua::SetForeground(lua_State* L)
 	else
 	{
 		wi::lua::SError(L, "SetForeground(bool value) not enough arguments!");
+	}
+
+	return 0;
+}
+int ObjectComponent_BindLua::SetNotVisibleInMainCamera(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		float value = wi::lua::SGetBool(L, 1);
+		component->SetNotVisibleInMainCamera(value);
+	}
+	else
+	{
+		wi::lua::SError(L, "SetNotVisibleInMainCamera(bool value) not enough arguments!");
+	}
+
+	return 0;
+}
+
+int ObjectComponent_BindLua::SetRenderable(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		float value = wi::lua::SGetBool(L, 1);
+		component->SetRenderable(value);
+	}
+	else
+	{
+		wi::lua::SError(L, "SetRenderable(bool value) not enough arguments!");
+	}
+
+	return 0;
+}
+int ObjectComponent_BindLua::SetNotVisibleInReflections(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		float value = wi::lua::SGetBool(L, 1);
+		component->SetNotVisibleInReflections(value);
+	}
+	else
+	{
+		wi::lua::SError(L, "SetNotVisibleInReflections(bool value) not enough arguments!");
 	}
 
 	return 0;
@@ -5292,6 +5650,11 @@ Luna<WeatherComponent_BindLua>::PropertyType WeatherComponent_BindLua::propertie
 	lunaproperty(WeatherComponent_BindLua, windWaveSize),
 	lunaproperty(WeatherComponent_BindLua, windSpeed),
 	lunaproperty(WeatherComponent_BindLua, stars),
+	lunaproperty(WeatherComponent_BindLua, rainAmount),
+	lunaproperty(WeatherComponent_BindLua, rainLength),
+	lunaproperty(WeatherComponent_BindLua, rainSpeed),
+	lunaproperty(WeatherComponent_BindLua, rainScale),
+	lunaproperty(WeatherComponent_BindLua, rainColor),
 
 	lunaproperty(WeatherComponent_BindLua, OceanParameters),
 	lunaproperty(WeatherComponent_BindLua, AtmosphereParameters),
@@ -6002,6 +6365,8 @@ Luna<HumanoidComponent_BindLua>::FunctionType HumanoidComponent_BindLua::methods
 	lunamethod(HumanoidComponent_BindLua, GetBoneEntity),
 	lunamethod(HumanoidComponent_BindLua, SetLookAtEnabled),
 	lunamethod(HumanoidComponent_BindLua, SetLookAt),
+	lunamethod(HumanoidComponent_BindLua, SetRagdollPhysicsEnabled),
+	lunamethod(HumanoidComponent_BindLua, IsRagdollPhysicsEnabled),
 	{ NULL, NULL }
 };
 Luna<HumanoidComponent_BindLua>::PropertyType HumanoidComponent_BindLua::properties[] = {
@@ -6066,6 +6431,24 @@ int HumanoidComponent_BindLua::SetLookAt(lua_State* L)
 		wi::lua::SError(L, "SetLookAt(Vector value) not enough arguments!");
 	}
 	return 0;
+}
+int HumanoidComponent_BindLua::SetRagdollPhysicsEnabled(lua_State* L)
+{
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		component->SetRagdollPhysicsEnabled(wi::lua::SGetBool(L, 1));
+	}
+	else
+	{
+		wi::lua::SError(L, "SetRagdollPhysicsEnabled(bool value) not enough arguments!");
+	}
+	return 0;
+}
+int HumanoidComponent_BindLua::IsRagdollPhysicsEnabled(lua_State* L)
+{
+	wi::lua::SSetBool(L, component->IsRagdollPhysicsEnabled());
+	return 1;
 }
 
 
@@ -6735,6 +7118,40 @@ int ArmorComponent_BindLua::SetMaxArmor(lua_State* L)
 		wi::lua::SError(L, "SetMaxArmor (int value) not enough arguments!");
 	}
 	return 0;
+}
+
+int Scene_BindLua::Entity_FindAllByName(lua_State* L)
+{
+
+	int argc = wi::lua::SGetArgCount(L);
+	if (argc > 0)
+	{
+		std::string name = wi::lua::SGetString(L, 1);
+
+		Entity ancestor = INVALID_ENTITY;
+		if (argc > 1)
+		{
+			ancestor = (Entity)wi::lua::SGetLongLong(L, 2);
+		}
+
+		wi::vector<wi::ecs::Entity> entities = scene->Entity_FindAllByName(name, ancestor);
+
+		lua_createtable(L, (int)entities.size(), 0);
+		int newTable = lua_gettop(L);
+		for (size_t i = 0; i < entities.size(); ++i)
+		{
+			wi::lua::SSetLongLong(L, entities[i] );
+			lua_rawseti(L, newTable, lua_Integer(i + 1));
+		}
+		return 1;
+	}
+	else
+	{
+		wi::lua::SError(L, "Scene::Entity_FindAllByName(string name, opt Entity ancestor) not enough arguments!");
+	}
+	return 0;
+
+	
 }
 
 }

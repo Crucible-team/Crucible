@@ -750,6 +750,7 @@ namespace wi::terrain
 					material.SetReflectance(1);
 
 					MeshComponent& mesh = generator->scene.meshes.Create(chunk_data.entity);
+					mesh.SetQuantizedPositionsDisabled(true); // connecting meshes quantization is not correct because mismatching AABBs
 					object.meshID = chunk_data.entity;
 					mesh.indices = chunk_indices().indices;
 					for (auto& lod : chunk_indices().lods)
@@ -848,7 +849,7 @@ namespace wi::terrain
 						});
 					wi::jobsystem::Wait(ctx); // wait until chunk's vertex buffer is fully generated
 
-					material.SetCastShadow(slope_cast_shadow.load());
+					object.SetCastShadow(slope_cast_shadow.load());
 					mesh.SetDoubleSidedShadow(slope_cast_shadow.load());
 
 					wi::jobsystem::Execute(ctx, [&](wi::jobsystem::JobArgs args) {
