@@ -40,6 +40,23 @@ namespace wi
 						wi::helper::messageBox("The archive version (" + std::to_string(version) + ") is higher than the program's (" + std::to_string(__archiveVersion) + ")!", "Error!");
 						Close();
 					}
+					if (version >= 156 )
+					{
+						(*this) >> CrucibleVersion;
+
+						if (CrucibleVersion > __archiveCrucibleVersion)
+						{
+							wi::helper::messageBox("The Crusible archive version (" + std::to_string(version) + ") is higher than the program's (" + std::to_string(__archiveVersion) + ")!", "Error!");
+							Close();
+						}
+						
+					}
+					else
+					{
+						CrucibleVersion = 0;
+					}
+
+					
 				}
 			}
 			else
@@ -72,16 +89,27 @@ namespace wi
 		if (readMode)
 		{
 			(*this) >> version;
-			/*if (version > 90 || version != 90 || version != 150 || version != 151 || version != 152 || version != 153)
+
+			if (version >= 156)
 			{
 				(*this) >> CrucibleVersion;
-			}*/
+			}
+			else
+			{
+				CrucibleVersion = 0;
+			}
+			
 			
 		}
 		else
 		{
 			(*this) << version;
-			//(*this) << CrucibleVersion;
+
+			if (version >= 156)
+			{
+				(*this) << CrucibleVersion;
+			}
+			
 		}
 	}
 

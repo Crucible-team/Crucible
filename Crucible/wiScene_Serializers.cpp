@@ -2321,7 +2321,7 @@ namespace wi::scene
 		size_t jump_before = 0;
 		size_t jump_after = 0;
 		size_t original_pos = 0;
-		if ((archive.GetVersion() >= 90 && archive.GetVersion() != 150 && archive.GetVersion() != 151 && archive.GetVersion() != 152 && archive.GetVersion() != 153) /* || archive.GetCrucibleVersion() >= 1*/)
+		if ((archive.GetVersion() >= 90 && archive.GetCrucibleVersion() >= 1) || (archive.GetVersion() == 90 && archive.GetCrucibleVersion() == 0))
 		{
 			if (archive.IsReadMode())
 			{
@@ -2342,7 +2342,7 @@ namespace wi::scene
 		if (archive.IsReadMode() && archive.GetVersion() >= 63)
 		{
 			wi::resourcemanager::Serialize_READ(archive, resource_seri);
-			if ( (archive.GetVersion() >= 90 && archive.GetVersion() != 150 && archive.GetVersion() != 151 && archive.GetVersion() != 152 && archive.GetVersion() != 153) /* || archive.GetCrucibleVersion() >= 1 */ )
+			if ((archive.GetVersion() >= 90 && archive.GetCrucibleVersion() >= 1) || (archive.GetVersion() == 90 && archive.GetCrucibleVersion() == 0))
 			{
 				// After resource serialization, jump back to entity serialization area:
 				archive.Jump(original_pos);
@@ -2455,7 +2455,7 @@ namespace wi::scene
 			}
 		}
 
-		if (archive.GetVersion() >= 90)
+		if ((archive.GetVersion() >= 90 && archive.GetCrucibleVersion() >= 1) || (archive.GetVersion() == 90 && archive.GetCrucibleVersion() == 0))
 		{
 			if (archive.IsReadMode())
 			{
@@ -3351,7 +3351,7 @@ namespace wi::scene
 		size_t jump_before = 0;
 		size_t jump_after = 0;
 		size_t original_pos = 0;
-		if ((archive.GetVersion() >= 90 && archive.GetVersion() != 150 && archive.GetVersion() != 151 && archive.GetVersion() != 152 && archive.GetVersion() != 153) /* || archive.GetCrucibleVersion() >= 1*/)
+		if ((archive.GetVersion() >= 90 && archive.GetCrucibleVersion() >= 1) || (archive.GetVersion() == 90 && archive.GetCrucibleVersion() == 0))
 		{
 			if (archive.IsReadMode())
 			{
@@ -3369,7 +3369,7 @@ namespace wi::scene
 
 		// Keeping this alive to keep serialized resources alive until entity serialization ends:
 		wi::resourcemanager::ResourceSerializer resource_seri;
-		if (archive.IsReadMode() && (archive.GetVersion() >= 90 && archive.GetVersion() != 150 && archive.GetVersion() != 151 && archive.GetVersion() != 152 && archive.GetVersion() != 153) /* || archive.GetCrucibleVersion() >= 1 */ )
+		if (archive.IsReadMode() && (archive.GetVersion() >= 90 && archive.GetCrucibleVersion() >= 1) || (archive.GetVersion() == 90 && archive.GetCrucibleVersion() == 0))
 		{
 			wi::resourcemanager::Serialize_READ(archive, resource_seri);
 			// After resource serialization, jump back to entity serialization area:
@@ -3384,7 +3384,7 @@ namespace wi::scene
 			flags
 		);
 
-		if (archive.GetVersion() >= 90)
+		if ( (archive.GetVersion() >= 90 && archive.GetCrucibleVersion() >= 1 ) || (archive.GetVersion() == 90 && archive.GetCrucibleVersion() == 0) )
 		{
 			if (archive.IsReadMode())
 			{

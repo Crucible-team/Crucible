@@ -342,7 +342,8 @@ void EditorComponent::Load()
 	openButton.OnClick([&](wi::gui::EventArgs args) {
 		wi::helper::FileDialogParams params;
 		params.type = wi::helper::FileDialogParams::OPEN;
-		params.description = ".wiscene, .obj, .gltf, .glb, .vrm, .lua";
+		params.description = ".crs, .wiscene, .obj, .gltf, .glb, .vrm, .lua";
+		params.extensions.push_back("crs");
 		params.extensions.push_back("wiscene");
 		params.extensions.push_back("obj");
 		params.extensions.push_back("gltf");
@@ -3800,6 +3801,7 @@ enum class FileType
 	GLTF,
 	GLB,
 	VRM,
+	CESCENE,
 };
 static const wi::unordered_map<std::string, FileType> filetypes = {
 	{"LUA", FileType::LUA},
@@ -3808,6 +3810,7 @@ static const wi::unordered_map<std::string, FileType> filetypes = {
 	{"GLTF", FileType::GLTF},
 	{"GLB", FileType::GLB},
 	{"VRM", FileType::VRM},
+	{"CRS", FileType::CESCENE},
 };
 void EditorComponent::Open(const std::string& filename)
 {
@@ -3836,7 +3839,7 @@ void EditorComponent::Open(const std::string& filename)
 
 	main->loader.addLoadingFunction([=](wi::jobsystem::JobArgs args) {
 
-		if (type == FileType::WISCENE) // engine-serialized
+		if (type == FileType::WISCENE || type == FileType::CESCENE) // engine-serialized
 		{
 			Scene scene;
 			wi::scene::LoadModel(scene, filename);
@@ -3909,6 +3912,8 @@ void EditorComponent::Save(const std::string& filename)
 {
 	std::string extension = wi::helper::toUpper(wi::helper::GetExtensionFromFileName(filename));
 
+	std::string filenamechange = "";
+
 	FileType type = FileType::INVALID;
 	auto it = filetypes.find(extension);
 	if (it != filetypes.end())
@@ -3918,11 +3923,17 @@ void EditorComponent::Save(const std::string& filename)
 	if (type == FileType::INVALID)
 		return;
 
-	if(type == FileType::WISCENE)
+	if (type == FileType::WISCENE)
+	{
+		type = FileType::CESCENE;
+		filenamechange = wi::helper::ReplaceExtension(filename, "crs");
+	}
+
+	if(type == FileType::CESCENE)
 	{
 		const bool dump_to_header = optionsWnd.generalWnd.saveModeComboBox.GetSelected() == 2;
-
-		wi::Archive archive = dump_to_header ? wi::Archive() : wi::Archive(filename, false);
+		filenamechange = filenamechange.empty() ? filename : filenamechange;
+		wi::Archive archive = dump_to_header ? wi::Archive() : wi::Archive(filenamechange, false);
 		if (archive.IsOpen())
 		{
 			Scene& scene = GetCurrentScene();
@@ -3934,12 +3945,12 @@ void EditorComponent::Save(const std::string& filename)
 
 			if (dump_to_header)
 			{
-				archive.SaveHeaderFile(filename, wi::helper::RemoveExtension(wi::helper::GetFileNameFromPath(filename)));
+				archive.SaveHeaderFile(filenamechange, wi::helper::RemoveExtension(wi::helper::GetFileNameFromPath(filenamechange)));
 			}
 		}
 		else
 		{
-			wi::helper::messageBox("Could not create " + filename + "!");
+			wi::helper::messageBox("Could not create " + filenamechange + "!");
 			return;
 		}
 	}
@@ -3948,7 +3959,15 @@ void EditorComponent::Save(const std::string& filename)
 		ExportModel_GLTF(filename, GetCurrentScene());
 	}
 
-	GetCurrentEditorScene().path = filename;
+	if (!filenamechange.empty())
+	{
+		GetCurrentEditorScene().path = filenamechange;
+	}
+	else
+	{
+		GetCurrentEditorScene().path = filename;
+	}
+	
 	RefreshSceneList();
 
 	PostSaveText("Scene saved: ", GetCurrentEditorScene().path);
@@ -3966,8 +3985,8 @@ void EditorComponent::SaveAs()
 	}
 	else
 	{
-		params.description = "Wicked Scene (.wiscene) | GLTF Model (.gltf) | GLTF Binary Model (.glb)";
-		params.extensions.push_back("wiscene");
+		params.description = "Crucible Scene (.crs) | GLTF Model (.gltf) | GLTF Binary Model (.glb)";
+		params.extensions.push_back("crs");
 		params.extensions.push_back("gltf");
 		params.extensions.push_back("glb");
 	}
