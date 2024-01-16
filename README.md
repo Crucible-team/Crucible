@@ -1,6 +1,6 @@
-<img align="left" src="Content/logo_small.png" width="180px"/>
+<img align="left" src="Content/crucible.svg" width="180px"/>
 
-# Wicked Engine
+# Crucible Engine
 
 [![Github Build Status](https://github.com/turanszkij/WickedEngine/workflows/Build/badge.svg)](https://github.com/turanszkij/WickedEngine/actions)
 [![Discord chat](https://img.shields.io/discord/602811659224088577?logo=discord)](https://discord.gg/CFjRYmE)
@@ -15,7 +15,7 @@
 Wicked Engine is an open-source 3D engine with modern graphics. Use this as a C++ framework for your graphics projects, a standalone 3D editor, LUA scripting or just for learning.<br/>
 This project is hosted on <a href="https://github.com/turanszkij/WickedEngine/">GitHub</a>.
 
-- [Documentation](Content/Documentation/WickedEngine-Documentation.md)<br/>
+- [Documentation](Content/Documentation/CrucibleEngine-Documentation.md)<br/>
 - [Scripting API Documentation](Content/Documentation/ScriptingAPI-Documentation.md)<br/>
 - [Features](features.txt)<br/>
 - [Devblog](https://wickedengine.net/)<br/>
